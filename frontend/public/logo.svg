@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="340" height="200" viewBox="0 0 340 200" preserveAspectRatio="xMidYMid meet">
+  <g fill="#343c3e" class="pmspacesvg" transform="translate(41.75,88.72200012207031)">
+    <!-- Yellow Stroke Background -->
+    <rect data-gra="graph-name" fill="#FFCC66" x="1.5" y="1.5" width="249" height="48" rx="8" ry="8"/>
+
+    <!-- Main Text -->
+    <g data-gra="path-name" class="tp-name" fill="#343c3e" transform="translate(10,10)">
+      <g transform="scale(1)">
+        <g>
+          <path d="M24.96-1.3L19.22-9.65C21.75-10.51 24.88-13.48 24.88-17.75 ... Z" transform="translate(-3.009999990463257, 27.40999984741211)"/>
+        </g>
+      </g>
+    </g>
+
+    <!-- Slogan -->
+    <g data-gra="path-slogan" class="tp-slogan" fill="#343c3e" transform="translate(68.70499801635742,62.5)">
+      <g transform="scale(1,1)">
+        <g transform="scale(1)">
+          <path d="M2.35 0L2.35-3.05L-0.01-7.87 ... Z" transform="translate(0.012, 8.016)"/>
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>
