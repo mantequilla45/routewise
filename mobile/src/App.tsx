@@ -6,14 +6,14 @@ import '../global.css';
 import './utils/suppressWarnings';
 import React from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import Dashboard from './screens/Dashboard';
+import RootNavigator from './navigation/RootNavigator';
 
 function App() {
   return (
     <SafeAreaProvider>
-      <Dashboard />
+      <RootNavigator></RootNavigator>
     </SafeAreaProvider>
   );
 }
 
-export default App;
+export default App; 
