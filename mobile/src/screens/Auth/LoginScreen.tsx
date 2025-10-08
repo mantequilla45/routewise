@@ -2,26 +2,50 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../hooks/AuthContext';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { AuthStackParamList } from '../../navigation/types';
+
+type LoginScreenProp = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
+
 
 const LoginScreen = () => {
     const insets = useSafeAreaInsets();
     const { setIsAuthenticated } = useAuth();
+    const navigation = useNavigation<LoginScreenProp>();
+
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
-    // Mock Credentials
-    const validCredentials = {
-        username: 'test',
-        password: '123',
-    };
 
-    const handleLogin = () => {
-        console.log('Logging in with:', { email, password });
-        if (email === validCredentials.username && password === validCredentials.password) {
+    const handleLogin = async () => {
+        if (!email || !password) {
+            Alert.alert('Error', 'Please fill in all fields.');
+            return;
+        }
+
+        try {
+            const response = await fetch('http://10.0.2.2:3000/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email,
+                    password,
+                }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Login failed');
+            }
+            Alert.alert('Success', 'Login successful!');
             setIsAuthenticated(true);
-        } else {
-            Alert.alert('Invalid credentials', 'Please try again.');
+        } catch (error: any) {
+            console.error('Register error:', error);
+            Alert.alert('Error', error.message || 'Network error');
         }
     };
 
@@ -64,7 +88,7 @@ const LoginScreen = () => {
 
             <View className="mt-6 flex-row justify-center">
                 <Text className="text-gray-600">Don’t have an account? </Text>
-                <TouchableOpacity>
+                <TouchableOpacity onPress={() => navigation.navigate("Register")}>
                     <Text className="text-blue-600 font-semibold">Sign Up</Text>
                 </TouchableOpacity>
             </View>
