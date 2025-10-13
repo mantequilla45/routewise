@@ -1,7 +1,8 @@
 import React from 'react';
 import { StatusBar, useColorScheme, Text, TextInput } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import OnboardingScreen from './screens/OnboardingScreen';
+import { AuthProvider } from './context/AuthContext';
+import AppNavigator from './navigation/AppNavigator';
 
 // Set default font family globally with TypeScript support
 interface TextWithDefaultProps extends React.ComponentClass {
@@ -23,7 +24,9 @@ function App() {
   return (
     <SafeAreaProvider>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <OnboardingScreen />
+      <AuthProvider>
+        <AppNavigator />
+      </AuthProvider>
     </SafeAreaProvider>
   );
 }
