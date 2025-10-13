@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import {
   StyleSheet,
   View,
-  Text,
+  Text as RNText,
   Image,
   TouchableOpacity,
   TextInput,
@@ -16,6 +16,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../lib/supabase';
+import { Text, Title, Body, Caption, Label } from '../components/Text';
+
+// For animated text, still use RNText
+const AnimatedText = Animated.createAnimatedComponent(RNText);
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -26,14 +30,14 @@ const OnboardingScreen = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
-  
+
   const slideAnim = useRef(new Animated.Value(0)).current;
   const arrowRotation = useRef(new Animated.Value(0)).current;
   const expandedFadeAnim = useRef(new Animated.Value(0)).current;
 
   const toggleBottomSheet = () => {
     const toValue = isExpanded ? 0 : 1;
-    
+
     Animated.parallel([
       Animated.spring(slideAnim, {
         toValue,
@@ -53,7 +57,7 @@ const OnboardingScreen = () => {
         useNativeDriver: true,
       }),
     ]).start();
-    
+
     setIsExpanded(!isExpanded);
   };
 
@@ -103,7 +107,7 @@ const OnboardingScreen = () => {
 
   const translateY = slideAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, -SCREEN_HEIGHT * 0.45],
+    outputRange: [400, 0], // Move up 400px to reveal auth forms
   });
 
   const arrowRotate = arrowRotation.interpolate({
@@ -113,30 +117,31 @@ const OnboardingScreen = () => {
 
   return (
     <View style={styles.container}>
-      <ScrollView 
+      <ScrollView
         contentContainerStyle={styles.heroContainer}
         showsVerticalScrollIndicator={false}
       >
-        <Image 
+        <Image
           source={require('../../assets/logo/logo.png')}
           style={styles.logo}
           resizeMode="contain"
         />
-        
-        <Text style={styles.tagline}>Find the Best Jeepney Route in Seconds</Text>
-        
-        <Text style={styles.description}>
+
+        <Text weight="bold" style={styles.tagline}>Find the Best Jeepney Route in Seconds</Text>
+
+        <Text weight="300" style={styles.description}>
           RouteWise shows your best jeepney route, total fare, and transfer points — automatically.
         </Text>
-        
-        <Image 
+
+        <Image
           source={require('../../assets/pictures/map.png')}
           style={styles.mapImage}
           resizeMode="contain"
         />
       </ScrollView>
 
-      <Animated.View 
+      {/* Bottom Sheet - Everything rendered, but positioned to show only header initially */}
+      <Animated.View
         style={[
           styles.bottomSheet,
           {
@@ -144,7 +149,8 @@ const OnboardingScreen = () => {
           },
         ]}
       >
-        <TouchableOpacity 
+        {/* Get Started Header - Always visible */}
+        <TouchableOpacity
           style={styles.slideUpButton}
           onPress={toggleBottomSheet}
           activeOpacity={0.8}
@@ -152,17 +158,14 @@ const OnboardingScreen = () => {
           <Animated.View style={{ transform: [{ rotate: arrowRotate }] }}>
             <Text style={styles.arrow}>⌃</Text>
           </Animated.View>
+          <Text style={styles.getStartedTitle}>Get Started Now</Text>
           <Text style={styles.getStartedSubtitle}>
             Create an account or log in to explore further.
           </Text>
-          <Text style={styles.getStartedTitle}>Get Started Now</Text>
         </TouchableOpacity>
 
-        <Animated.View style={{ opacity: expandedFadeAnim }}>
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={styles.authContainer}
-          >
+        {/* Auth Forms - Rendered but initially off-screen below */}
+        <Animated.View style={[styles.authFormsContainer, { opacity: expandedFadeAnim }]}>
           <View style={styles.toggleContainer}>
             <TouchableOpacity
               style={[
@@ -234,7 +237,7 @@ const OnboardingScreen = () => {
               </View>
             )}
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.submitButton, isLoading && styles.buttonDisabled]}
               onPress={handleAuth}
               disabled={isLoading}
@@ -248,7 +251,6 @@ const OnboardingScreen = () => {
               )}
             </TouchableOpacity>
           </View>
-          </KeyboardAvoidingView>
         </Animated.View>
       </Animated.View>
     </View>
@@ -274,7 +276,7 @@ const styles = StyleSheet.create({
   },
   tagline: {
     fontSize: 28,
-    fontWeight: 'bold',
+    fontFamily: 'Lexend-Regular',
     color: '#333',
     textAlign: 'center',
     marginBottom: 15,
@@ -282,6 +284,7 @@ const styles = StyleSheet.create({
   },
   description: {
     fontSize: 16,
+    fontFamily: 'Lexend-Light',
     color: '#666',
     textAlign: 'center',
     marginBottom: 30,
@@ -295,7 +298,7 @@ const styles = StyleSheet.create({
   },
   bottomSheet: {
     position: 'absolute',
-    bottom: 0,
+    bottom: -400,
     left: 0,
     right: 0,
     backgroundColor: '#fff',
@@ -306,8 +309,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 10,
     elevation: 15,
-    minHeight: 100,
-    maxHeight: SCREEN_HEIGHT * 0.15,
+    paddingBottom: 400,
   },
   slideUpButton: {
     paddingTop: 12,
@@ -323,18 +325,21 @@ const styles = StyleSheet.create({
   },
   getStartedTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: 'Lexend-Regular',
     color: '#333',
-    marginTop: 4,
   },
   getStartedSubtitle: {
     fontSize: 13,
+    fontFamily: 'Lexend-Light',
+    fontWeight: '400',
     color: '#666',
     textAlign: 'center',
+    marginTop: 4,
+    marginBottom: 25
   },
-  authContainer: {
-    flex: 1,
+  authFormsContainer: {
     paddingHorizontal: 30,
+    paddingTop: 10,
     paddingBottom: 30,
   },
   toggleContainer: {
@@ -343,6 +348,7 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     padding: 4,
     marginBottom: 30,
+    height: 'auto'
   },
   toggleButton: {
     flex: 1,
@@ -362,7 +368,7 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   formContainer: {
-    flex: 1,
+    // Removed flex: 1 to allow auto height
   },
   inputContainer: {
     marginBottom: 20,
