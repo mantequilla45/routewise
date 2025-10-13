@@ -1,65 +1,249 @@
-import React, { useState } from 'react';
-import { supabase } from '../lib/supabase';
+import React, { useState, useRef } from 'react';
 import {
   StyleSheet,
+  View,
+  Text as RNText,
+  Image,
+  TouchableOpacity,
+  TextInput,
+  ScrollView,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
+  Dimensions,
   Alert,
-  Image,
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
   ActivityIndicator,
+  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { supabase } from '../lib/supabase';
+import { Text, Title, Body, Caption, Label } from '../components/Text';
+
+// For animated text, still use RNText
+const AnimatedText = Animated.createAnimatedComponent(RNText);
+
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const LoginScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
 
-  const handleLogin = async () => {
+  console.log('=== LoginScreen mounted ===');
+
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const arrowRotation = useRef(new Animated.Value(0)).current;
+  const expandedFadeAnim = useRef(new Animated.Value(0)).current;
+
+  const toggleBottomSheet = () => {
+    const toValue = isExpanded ? 0 : 1;
+
+    Animated.parallel([
+      Animated.spring(slideAnim, {
+        toValue,
+        useNativeDriver: true,
+        tension: 50,
+        friction: 10,
+      }),
+      Animated.timing(arrowRotation, {
+        toValue,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(expandedFadeAnim, {
+        toValue: isExpanded ? 0 : 1,
+        duration: 400,
+        delay: isExpanded ? 0 : 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    setIsExpanded(!isExpanded);
+  };
+
+  const handleAuth = async () => {
     if (!email || !password) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
 
+    if (!isLogin && password !== confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match');
+      return;
+    }
+
     setIsLoading(true);
+    
+    const authEmail = email.toLowerCase().trim();
+    console.log(`[AUTH] Attempting ${isLogin ? 'login' : 'signup'} with email:`, authEmail);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.toLowerCase().trim(),
-        password,
-      });
+      if (isLogin) {
+        console.log('[AUTH] Calling signInWithPassword...');
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: authEmail,
+          password,
+        });
 
-      if (error) {
-        Alert.alert('Error', error.message);
+        console.log('[AUTH] Login response:', { 
+          success: !error, 
+          error: error?.message,
+          user: data?.user?.email,
+          session: !!data?.session 
+        });
+
+        if (error) {
+          console.log('[AUTH] Login error message:', error.message);
+          if (error.message === 'Email not confirmed') {
+            Alert.alert('Email Not Confirmed', 'Please check your email and confirm your account before logging in.');
+          } else if (error.message === 'Invalid login credentials') {
+            Alert.alert('Invalid Credentials', 'The email or password you entered is incorrect.');
+          } else {
+            Alert.alert('Login Failed', error.message);
+          }
+        } else {
+          console.log('[AUTH] Login successful!', data.user);
+          // Navigation will happen automatically via AuthContext
+        }
       } else {
-        // Navigation to main app will happen here
-        Alert.alert('Success', 'Login successful!');
+        console.log('[AUTH] Calling signUp...');
+        const { data, error } = await supabase.auth.signUp({
+          email: authEmail,
+          password,
+          options: {
+            data: {
+              full_name: '',  // Can add more fields here later
+            }
+          }
+        });
+
+        console.log('[AUTH] Signup response:', { 
+          success: !error, 
+          error: error?.message,
+          user: data?.user?.email,
+          session: !!data?.session,
+          identities: data?.user?.identities?.length 
+        });
+
+        if (error) {
+          console.log('[AUTH] Signup error message:', error.message);
+          Alert.alert('Error', error.message);
+        } else if (data?.user?.identities && data.user.identities.length === 0) {
+          // User already exists (confirmed or unconfirmed)
+          console.log('[AUTH] User already exists');
+          Alert.alert('Email Already Registered', 'This email is already registered. Please log in instead.');
+        } else if (data?.user && !data?.session) {
+          // New user created but needs confirmation
+          console.log('[AUTH] Signup successful, confirmation needed');
+          Alert.alert('Confirm Your Email', 'Please check your email to confirm your account before logging in.');
+        } else {
+          console.log('[AUTH] Signup successful!', data.user);
+          // User created and logged in (when confirmation is disabled)
+        }
       }
     } catch (error) {
+      console.log('[AUTH] Unexpected error:', error);
       Alert.alert('Error', 'An unexpected error occurred');
     } finally {
       setIsLoading(false);
     }
   };
+
+  const translateY = slideAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [400, 0], // Move up 400px to reveal auth forms
+  });
+
+  const arrowRotate = arrowRotation.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '180deg'],
+  });
+
   return (
-    <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
+    <View style={styles.container}>
+      <ScrollView
+        contentContainerStyle={styles.heroContainer}
+        showsVerticalScrollIndicator={false}
       >
-        <ScrollView
-          contentContainerStyle={styles.scrollContainer}
-          keyboardShouldPersistTaps="handled"
+        <Image
+          source={require('../../assets/logo/logo.png')}
+          style={styles.logo}
+          resizeMode="contain"
+        />
+
+        <Text weight="bold" style={styles.tagline}>Find the Best Jeepney Route in Seconds</Text>
+
+        <Text weight="300" style={styles.description}>
+          RouteWise shows your best jeepney route, total fare, and transfer points — automatically.
+        </Text>
+
+        <Image
+          source={require('../../assets/pictures/map.png')}
+          style={styles.mapImage}
+          resizeMode="contain"
+        />
+      </ScrollView>
+
+      {/* Bottom Sheet - Everything rendered, but positioned to show only header initially */}
+      <Animated.View
+        style={[
+          styles.bottomSheet,
+          {
+            transform: [{ translateY }],
+          },
+        ]}
+      >
+        {/* Get Started Header - Always visible */}
+        <TouchableOpacity
+          style={styles.slideUpButton}
+          onPress={toggleBottomSheet}
+          activeOpacity={0.8}
         >
+          <Animated.View style={{ transform: [{ rotate: arrowRotate }] }}>
+            <Text style={styles.arrow}>⌃</Text>
+          </Animated.View>
+          <Text style={styles.getStartedTitle}>Get Started Now</Text>
+          <Text style={styles.getStartedSubtitle}>
+            Create an account or log in to explore further.
+          </Text>
+        </TouchableOpacity>
+
+        {/* Auth Forms - Rendered but initially off-screen below */}
+        <Animated.View style={[styles.authFormsContainer, { opacity: expandedFadeAnim }]}>
+          <View style={styles.toggleContainer}>
+            <TouchableOpacity
+              style={[
+                styles.toggleButton,
+                isLogin && styles.toggleButtonActive,
+              ]}
+              onPress={() => setIsLogin(true)}
+            >
+              <Text style={[
+                styles.toggleText,
+                isLogin && styles.toggleTextActive,
+              ]}>
+                Log In
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.toggleButton,
+                !isLogin && styles.toggleButtonActive,
+              ]}
+              onPress={() => setIsLogin(false)}
+            >
+              <Text style={[
+                styles.toggleText,
+                !isLogin && styles.toggleTextActive,
+              ]}>
+                Sign Up
+              </Text>
+            </TouchableOpacity>
+          </View>
+
           <View style={styles.formContainer}>
-            <Text style={styles.title}>RouteWise</Text>
-            <Text style={styles.subtitle}>Sign in to your account</Text>
-            
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Email</Text>
               <TextInput
@@ -85,21 +269,37 @@ const LoginScreen = () => {
               />
             </View>
 
-            <TouchableOpacity 
-              style={[styles.button, isLoading && styles.buttonDisabled]}
-              onPress={handleLogin}
+            {!isLogin && (
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>Confirm Password</Text>
+                <TextInput
+                  style={styles.input}
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  placeholder="Confirm your password"
+                  secureTextEntry
+                  editable={!isLoading}
+                />
+              </View>
+            )}
+
+            <TouchableOpacity
+              style={[styles.submitButton, isLoading && styles.buttonDisabled]}
+              onPress={handleAuth}
               disabled={isLoading}
             >
               {isLoading ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={styles.buttonText}>Sign In</Text>
+                <Text style={styles.submitButtonText}>
+                  {isLogin ? 'Log In' : 'Sign Up'}
+                </Text>
               )}
             </TouchableOpacity>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+        </Animated.View>
+      </Animated.View>
+    </View>
   );
 };
 
@@ -108,36 +308,113 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F9F9F9',
   },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollContainer: {
+  heroContainer: {
     flexGrow: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 30,
+    paddingTop: 40,
+    paddingBottom: 200,
+    alignItems: 'center',
   },
-  formContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
+  logo: {
+    width: 150,
+    height: 150,
+    marginBottom: 30,
   },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
+  tagline: {
+    fontSize: 28,
+    fontFamily: 'Lexend-Regular',
     color: '#333',
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 15,
+    lineHeight: 36,
   },
-  subtitle: {
+  description: {
     fontSize: 16,
+    fontFamily: 'Lexend-Light',
     color: '#666',
     textAlign: 'center',
-    marginBottom: 32,
+    marginBottom: 30,
+    lineHeight: 24,
+    paddingHorizontal: 20,
+  },
+  mapImage: {
+    width: '100%',
+    height: 250,
+    marginTop: 20,
+  },
+  bottomSheet: {
+    position: 'absolute',
+    bottom: -400,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 15,
+    paddingBottom: 400,
+  },
+  slideUpButton: {
+    paddingTop: 12,
+    paddingHorizontal: 30,
+    paddingBottom: 20,
+    alignItems: 'center',
+  },
+  arrow: {
+    fontSize: 18,
+    color: '#007AFF',
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  getStartedTitle: {
+    fontSize: 18,
+    fontFamily: 'Lexend-Regular',
+    color: '#333',
+  },
+  getStartedSubtitle: {
+    fontSize: 13,
+    fontFamily: 'Lexend-Light',
+    fontWeight: '400',
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 4,
+    marginBottom: 25
+  },
+  authFormsContainer: {
+    paddingHorizontal: 30,
+    paddingTop: 10,
+    paddingBottom: 30,
+  },
+  toggleContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#F0F0F0',
+    borderRadius: 25,
+    padding: 4,
+    marginBottom: 30,
+    height: 'auto'
+  },
+  toggleButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 22,
+    alignItems: 'center',
+  },
+  toggleButtonActive: {
+    backgroundColor: '#007AFF',
+  },
+  toggleText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#666',
+  },
+  toggleTextActive: {
+    color: '#fff',
+  },
+  formContainer: {
+    // Removed flex: 1 to allow auto height
   },
   inputContainer: {
     marginBottom: 20,
@@ -151,25 +428,25 @@ const styles = StyleSheet.create({
   input: {
     borderWidth: 1,
     borderColor: '#ddd',
-    borderRadius: 8,
+    borderRadius: 12,
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-    backgroundColor: '#fff',
-  },
-  button: {
-    backgroundColor: '#007AFF',
-    borderRadius: 8,
     paddingVertical: 14,
+    fontSize: 16,
+    backgroundColor: '#FAFAFA',
+  },
+  submitButton: {
+    backgroundColor: '#007AFF',
+    borderRadius: 12,
+    paddingVertical: 16,
     alignItems: 'center',
-    marginTop: 12,
+    marginTop: 20,
   },
   buttonDisabled: {
     opacity: 0.7,
   },
-  buttonText: {
+  submitButtonText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
   },
 });
