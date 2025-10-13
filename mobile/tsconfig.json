@@ -4,7 +4,7 @@
     "**/*.ts",
     "**/*.tsx",
     "env.d.ts"
-  ],
+, "App.js"  ],
   "exclude": [
     "**/node_modules",
     "**/Pods"
