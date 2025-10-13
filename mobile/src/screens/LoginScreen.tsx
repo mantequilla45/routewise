@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
+import { supabase } from '../lib/supabase';
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   Alert,
+  Image,
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -25,35 +27,25 @@ const LoginScreen = () => {
     }
 
     setIsLoading(true);
-    
+
     try {
-      // TODO: Replace with actual API endpoint
-      const response = await fetch('http://localhost:3000/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: email.toLowerCase().trim(),
-          password,
-        }),
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.toLowerCase().trim(),
+        password,
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        // TODO: Store token and navigate to main app
-        Alert.alert('Success', 'Login successful!');
+      if (error) {
+        Alert.alert('Error', error.message);
       } else {
-        Alert.alert('Error', data.message || 'Login failed');
+        // Navigation to main app will happen here
+        Alert.alert('Success', 'Login successful!');
       }
     } catch (error) {
-      Alert.alert('Error', 'Unable to connect to server');
+      Alert.alert('Error', 'An unexpected error occurred');
     } finally {
       setIsLoading(false);
     }
   };
-
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
@@ -66,58 +58,44 @@ const LoginScreen = () => {
         >
           <View style={styles.formContainer}>
             <Text style={styles.title}>RouteWise</Text>
-            <Text style={styles.subtitle}>Welcome back</Text>
-
+            <Text style={styles.subtitle}>Sign in to your account</Text>
+            
             <View style={styles.inputContainer}>
+              <Text style={styles.label}>Email</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Email"
-                placeholderTextColor="#999"
                 value={email}
                 onChangeText={setEmail}
+                placeholder="Enter your email"
                 keyboardType="email-address"
                 autoCapitalize="none"
-                autoCorrect={false}
                 editable={!isLoading}
               />
             </View>
 
             <View style={styles.inputContainer}>
+              <Text style={styles.label}>Password</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Password"
-                placeholderTextColor="#999"
                 value={password}
                 onChangeText={setPassword}
+                placeholder="Enter your password"
                 secureTextEntry
-                autoCapitalize="none"
-                autoCorrect={false}
                 editable={!isLoading}
               />
             </View>
 
-            <TouchableOpacity
-              style={[styles.loginButton, isLoading && styles.disabledButton]}
+            <TouchableOpacity 
+              style={[styles.button, isLoading && styles.buttonDisabled]}
               onPress={handleLogin}
               disabled={isLoading}
             >
               {isLoading ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={styles.loginButtonText}>Login</Text>
+                <Text style={styles.buttonText}>Sign In</Text>
               )}
             </TouchableOpacity>
-
-            <TouchableOpacity style={styles.forgotPassword}>
-              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-            </TouchableOpacity>
-
-            <View style={styles.signupContainer}>
-              <Text style={styles.signupText}>Don't have an account? </Text>
-              <TouchableOpacity>
-                <Text style={styles.signupLink}>Sign Up</Text>
-              </TouchableOpacity>
-            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -128,7 +106,7 @@ const LoginScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F9F9F9',
   },
   keyboardView: {
     flex: 1,
@@ -136,70 +114,62 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flexGrow: 1,
     justifyContent: 'center',
+    paddingHorizontal: 20,
   },
   formContainer: {
-    paddingHorizontal: 30,
-    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
   },
   title: {
-    fontSize: 36,
+    fontSize: 32,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 10,
+    textAlign: 'center',
+    marginBottom: 8,
   },
   subtitle: {
-    fontSize: 18,
+    fontSize: 16,
     color: '#666',
-    marginBottom: 40,
+    textAlign: 'center',
+    marginBottom: 32,
   },
   inputContainer: {
-    width: '100%',
     marginBottom: 20,
   },
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+  },
   input: {
-    backgroundColor: '#fff',
-    paddingHorizontal: 15,
-    paddingVertical: 15,
-    borderRadius: 10,
-    fontSize: 16,
     borderWidth: 1,
     borderColor: '#ddd',
-    color: '#333',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+    backgroundColor: '#fff',
   },
-  loginButton: {
-    width: '100%',
+  button: {
     backgroundColor: '#007AFF',
-    padding: 15,
-    borderRadius: 10,
+    borderRadius: 8,
+    paddingVertical: 14,
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: 12,
   },
-  disabledButton: {
+  buttonDisabled: {
     opacity: 0.7,
   },
-  loginButtonText: {
+  buttonText: {
     color: '#fff',
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  forgotPassword: {
-    marginTop: 20,
-  },
-  forgotPasswordText: {
-    color: '#007AFF',
-    fontSize: 14,
-  },
-  signupContainer: {
-    flexDirection: 'row',
-    marginTop: 30,
-  },
-  signupText: {
-    color: '#666',
-    fontSize: 14,
-  },
-  signupLink: {
-    color: '#007AFF',
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
   },
 });
