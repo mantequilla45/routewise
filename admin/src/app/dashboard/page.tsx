@@ -7,7 +7,7 @@ import React from 'react';
 
 export default function DashboardPage() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg: rgba(64, 64, 64, 1) p-8">
+    <div className="flex flex-col items-center justify-center min-h-screen p-8">
       
       <main className="bg-white p-10 rounded-xl shadow-2xl border-t-4 border-green-500 text-center w-full max-w-lg">
         <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-green-500 mx-auto mb-4" viewBox="0 0 20 20" fill="currentColor">
