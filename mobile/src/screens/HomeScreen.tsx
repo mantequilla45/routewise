@@ -9,9 +9,15 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { Text } from '../components/Text';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { AppStackParamList } from '../navigation/AppStack';
+
+type HomeScreenNavigationProp = NativeStackNavigationProp<AppStackParamList, 'Home'>;
 
 const HomeScreen = () => {
   const { user, signOut } = useAuth();
+  const navigation = useNavigation<HomeScreenNavigationProp>();
 
   return (
     <SafeAreaView style={styles.container}>
@@ -27,43 +33,43 @@ const HomeScreen = () => {
         </View>
 
         <View style={styles.mainContent}>
-          <TouchableOpacity style={styles.routeButton}>
+          <TouchableOpacity style={styles.routeButton} onPress={() => navigation.navigate('Map') }>
             <Text style={styles.routeButtonIcon}>🗺️</Text>
             <Text weight="600" style={styles.routeButtonTitle}>Find Routes</Text>
             <Text style={styles.routeButtonSubtitle}>Search for the best jeepney routes</Text>
           </TouchableOpacity>
 
-          <View style={styles.quickActions}>
-            <TouchableOpacity style={styles.actionCard}>
-              <Text style={styles.actionIcon}>⭐</Text>
-              <Text weight="500" style={styles.actionText}>Saved Routes</Text>
-            </TouchableOpacity>
+        <View style={styles.quickActions}>
+          <TouchableOpacity style={styles.actionCard}>
+            <Text style={styles.actionIcon}>⭐</Text>
+            <Text weight="500" style={styles.actionText}>Saved Routes</Text>
+          </TouchableOpacity>
 
-            <TouchableOpacity style={styles.actionCard}>
-              <Text style={styles.actionIcon}>📍</Text>
-              <Text weight="500" style={styles.actionText}>Recent Trips</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity style={styles.actionCard}>
+            <Text style={styles.actionIcon}>📍</Text>
+            <Text weight="500" style={styles.actionText}>Recent Trips</Text>
+          </TouchableOpacity>
+        </View>
 
-          <View style={styles.infoSection}>
-            <Text weight="600" style={styles.sectionTitle}>Quick Tips</Text>
-            <View style={styles.tipCard}>
-              <Text style={styles.tipIcon}>💡</Text>
-              <View style={styles.tipContent}>
-                <Text weight="500" style={styles.tipTitle}>Save your frequent routes</Text>
-                <Text style={styles.tipDescription}>
-                  Bookmark your daily commute for quick access
-                </Text>
-              </View>
+        <View style={styles.infoSection}>
+          <Text weight="600" style={styles.sectionTitle}>Quick Tips</Text>
+          <View style={styles.tipCard}>
+            <Text style={styles.tipIcon}>💡</Text>
+            <View style={styles.tipContent}>
+              <Text weight="500" style={styles.tipTitle}>Save your frequent routes</Text>
+              <Text style={styles.tipDescription}>
+                Bookmark your daily commute for quick access
+              </Text>
             </View>
           </View>
         </View>
+      </View>
 
-        <TouchableOpacity style={styles.signOutButton} onPress={signOut}>
-          <Text style={styles.signOutText}>Sign Out</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </SafeAreaView>
+      <TouchableOpacity style={styles.signOutButton} onPress={signOut}>
+        <Text style={styles.signOutText}>Sign Out</Text>
+      </TouchableOpacity>
+    </ScrollView>
+    </SafeAreaView >
   );
 };
 

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { User } from '@supabase/supabase-js';
 
@@ -17,19 +17,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     console.log('[AUTH CONTEXT] Checking initial session...');
     supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('[AUTH CONTEXT] Initial session:', { 
-        hasSession: !!session, 
-        user: session?.user?.email 
+      console.log('[AUTH CONTEXT] Initial session:', {
+        hasSession: !!session,
+        user: session?.user?.email
       });
       setUser(session?.user ?? null);
       setLoading(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('[AUTH CONTEXT] Auth state changed:', { 
-        event, 
-        hasSession: !!session, 
-        user: session?.user?.email 
+      console.log('[AUTH CONTEXT] Auth state changed:', {
+        event,
+        hasSession: !!session,
+        user: session?.user?.email
       });
       setUser(session?.user ?? null);
       setLoading(false);
@@ -47,8 +47,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const memoizedValue = useMemo(
+    () => ({ user, loading, signOut }),
+    [user, loading]
+  );
+
   return (
-    <AuthContext.Provider value={{ user, loading, signOut }}>
+    <AuthContext.Provider value={memoizedValue}>
       {children}
     </AuthContext.Provider>
   );

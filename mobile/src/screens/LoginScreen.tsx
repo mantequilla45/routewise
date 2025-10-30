@@ -1,14 +1,12 @@
 import React, { useState, useRef } from 'react';
 import {
   StyleSheet,
-  View,
   Text as RNText,
   Image,
   TouchableOpacity,
   TextInput,
   ScrollView,
-  KeyboardAvoidingView,
-  Platform,
+  View,
   Dimensions,
   Alert,
   ActivityIndicator,
@@ -162,7 +160,7 @@ const LoginScreen = () => {
   });
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <ScrollView
         contentContainerStyle={styles.heroContainer}
         showsVerticalScrollIndicator={false}
@@ -299,7 +297,7 @@ const LoginScreen = () => {
           </View>
         </Animated.View>
       </Animated.View>
-    </View>
+    </SafeAreaView>
   );
 };
 
