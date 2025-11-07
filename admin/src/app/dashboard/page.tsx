@@ -1,28 +1,92 @@
-"use client";
-
 import React from "react";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server-client";
+import UserManagementToggle from "@/components/Toggle";
 
-// Function to fetch the users from Supabase Auth
-async function getUsers() {
+interface UserData {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  phone_number: string | null;
+  created_at: string;
+}
+
+async function getUsersData(): Promise<UserData[]> {
   const supabaseAdmin = createAdminClient();
 
-  // This call uses the Service Role Key to fetch ALL users
-  const {
-    data: { users },
-    error,
-  } = await supabaseAdmin.auth.admin.listUsers();
+  const { data: users, error } = await supabaseAdmin
+    .from("users")
+    .select("id, full_name, email, phone_number, created_at");
 
   if (error) {
-    console.error("Error fetching users:", error);
+    console.error("Error fetching data from the users table:", error);
     return [];
   }
-  return users;
+
+  return users as UserData[];
+}
+
+// A new component to render the actual table
+function UserTable({ users }: { users: any[] }) {
+  // 🛑 MOVE ALL YOUR TABLE HTML (<thead>, <tbody>, etc.) HERE
+
+  return (
+    <div
+      className="m-5 bg-[#ffcc66] rounded-lg overflow-y-auto"
+      style={{ maxHeight: "calc(60vh - 10px)" }}
+    >
+      <table className="min-w-full text-black table-fixed sticky top-0">
+        <thead>
+          <tr>
+            <th className="py-3 px-6 text-left text-sm font-bold rounded-tl-lg bg-white w-1/5">
+              Full Name
+            </th>
+            <th className="py-3 px-6 text-left text-sm font-bold bg-white w-1/5">
+              Email
+            </th>
+            <th className="py-3 px-6 text-left text-sm font-bold bg-white w-1/5">
+              Status
+            </th>
+            <th className="py-3 px-6 text-left text-sm font-bold bg-white w-1/5">
+              Phone Number
+            </th>
+            <th className="py-3 px-6 text-left text-sm font-bold rounded-tr-lg bg-white w-1/5">
+              Created At
+            </th>
+          </tr>
+        </thead>
+
+        <tbody className="divide-y divide-gray-700 sticky top-0">
+          {users.map((user) => (
+            <tr
+              key={user.id}
+              className="hover:bg-gray-750 transition duration-150"
+            >
+              <td className="py-4 px-6 text-sm">{user.full_name || "N/A"}</td>
+
+              <td className="py-4 px-6 text-sm">{user.email || "N/A"}</td>
+
+              <td className="py-4 px-6 text-sm">
+                {user.email ? "Active" : "Unknown"}
+              </td>
+
+              <td className="py-4 px-6 text-sm">
+                {user.phone_number || "N/A"}
+              </td>
+
+              <td className="py-4 px-6 text-sm">
+                {new Date(user.created_at).toLocaleDateString()}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 }
 
 export default async function DashboardPage() {
-  const users = await getUsers();
+  const users = await getUsersData();
 
   return (
     // <div className="flex flex-col items-center justify-center min-h-screen p-8 bg-[#404040]">
@@ -46,43 +110,18 @@ export default async function DashboardPage() {
     //   </footer>
     // </div>
 
-    <div className="p-8">
-      <h1 className="text-2xl font-bold mb-6">User Management</h1>
-      <div className="overflow-x-auto bg-gray-800 rounded-lg shadow-xl">
-        <table className="min-w-full text-white">
-          <thead className="bg-gray-700">
-            <tr>
-              <th className="py-3 px-6 text-left text-sm font-medium">ID</th>
-              <th className="py-3 px-6 text-left text-sm font-medium">Email</th>
-              <th className="py-3 px-6 text-left text-sm font-medium">
-                Status
-              </th>
-              <th className="py-3 px-6 text-left text-sm font-medium">
-                Created At
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-700">
-            {users.map((user) => (
-              <tr
-                key={user.id}
-                className="hover:bg-gray-750 transition duration-150"
-              >
-                <td className="py-4 px-6 text-sm">
-                  {user.id.substring(0, 8)}...
-                </td>
-                <td className="py-4 px-6 text-sm">{user.email || "N/A"}</td>
-                <td className="py-4 px-6 text-sm">
-                  {user.email_confirmed_at ? "Active" : "Unconfirmed"}
-                </td>
-                <td className="py-4 px-6 text-sm">
-                  {new Date(user.created_at).toLocaleDateString()}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+    <div className="p-8 min-h-screen">
+      <h1 className="text-2xl font-bold mb-6 text-center">
+        Welcome to the Routewise Admin Dashboard
+      </h1>
+
+      <div className="bg-[#404040] pt-2 pb-1 rounded-lg h-120">
+        <UserManagementToggle
+          // We render the table component on the server and pass the result
+          userTable={<UserTable users={users} />}
+        />
       </div>
+
       {users.length === 0 && (
         <p className="mt-4 text-gray-400">No users found.</p>
       )}
