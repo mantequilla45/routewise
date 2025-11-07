@@ -115,7 +115,7 @@ export default async function DashboardPage() {
         Welcome to the Routewise Admin Dashboard
       </h1>
 
-      <div className="bg-[#404040] pt-2 pb-1 rounded-lg h-120">
+      <div className="bg-[#404040] rounded-lg h-125">
         <UserManagementToggle
           // We render the table component on the server and pass the result
           userTable={<UserTable users={users} />}
