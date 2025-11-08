@@ -12,8 +12,7 @@ import {
     Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-// Map component will be implemented later
-// import { MapComponent } from '../components/Map/MapComponent';
+// Map component removed - will be implemented later
 import { MapPointsProvider, MapPointsContext } from '../context/MapPointContext';
 import { latLongStringifier } from '../lib/helper/latLongStringifier';
 // Temporarily commenting out the import to avoid the react-native-maps type error
@@ -168,9 +167,9 @@ const MapScreenContent = () => {
 
                 {/* Map Container */}
                 <View style={styles.mapContainer}>
-                    {/* Map will be implemented here */}
                     <View style={{ flex: 1, backgroundColor: '#E0E0E0', justifyContent: 'center', alignItems: 'center' }}>
-                        <Text style={{ color: '#666' }}>Map View</Text>
+                        <Text style={{ fontSize: 16, color: '#666' }}>Map Placeholder</Text>
+                        <Text style={{ fontSize: 14, color: '#999', marginTop: 10 }}>Map will be implemented here</Text>
                     </View>
                     
                     {/* Pin placement indicator */}
