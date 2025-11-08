@@ -1,5 +1,5 @@
 import { supabase } from "../../lib/supabase";
-import { LatLng } from "react-native-maps";
+import { LatLng } from "../../context/MapPointContext";
 
 export async function findJeepneyPath(startLatLng: LatLng | null, endLatLng: LatLng | null) {
     if (!startLatLng || !endLatLng) return
