@@ -1,6 +1,6 @@
 import React from "react";
 
-export default function HelloWorld(): JSX.Element {
+export default function HelloWorld() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="p-8 bg-white rounded-2xl shadow-lg border border-gray-200">
