@@ -10,7 +10,6 @@ if (localPropsFile.exists()) {
     println "===> local.properties NOT FOUND"
 }
 
-def googleMapsKey = localProps.getProperty("GOOGLE_MAPS_API_KEY")
 
 /**
  * This is the configuration block to customize your React Native Android app.
@@ -94,7 +93,9 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
-        manifestPlaceholders = [GOOGLE_MAPS_API_KEY: googleMapsKey]
+        manifestPlaceholders = [
+            usesCleartextTraffic: "true"
+        ]
     }
     signingConfigs {
         debug {

@@ -12,15 +12,21 @@ import { Text } from '../components/Text';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../navigation/AppStack';
+import { HamburgerMenu } from '../components/HamburgerMenu';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<AppStackParamList, 'Home'>;
 
 const HomeScreen = () => {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const navigation = useNavigation<HomeScreenNavigationProp>();
 
   return (
     <SafeAreaView style={styles.container}>
+      <View style={styles.topBar}>
+        <HamburgerMenu />
+        <Text weight="600" style={styles.appName}>RouteWise</Text>
+        <View style={{ width: 45 }} />
+      </View>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
           <Image
@@ -64,10 +70,6 @@ const HomeScreen = () => {
           </View>
         </View>
       </View>
-
-      <TouchableOpacity style={styles.signOutButton} onPress={signOut}>
-        <Text style={styles.signOutText}>Sign Out</Text>
-      </TouchableOpacity>
     </ScrollView>
     </SafeAreaView >
   );
@@ -77,6 +79,21 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F9F9F9',
+  },
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  appName: {
+    fontSize: 20,
+    color: '#333',
+    fontFamily: 'Lexend-Regular',
   },
   scrollContent: {
     flexGrow: 1,
@@ -207,20 +224,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
     fontFamily: 'Lexend-Light',
-  },
-  signOutButton: {
-    backgroundColor: '#FF3B30',
-    borderRadius: 12,
-    paddingVertical: 16,
-    marginHorizontal: 20,
-    marginTop: 20,
-    alignItems: 'center',
-  },
-  signOutText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'Lexend-Regular',
   },
 });
 

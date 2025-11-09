@@ -1,5 +1,10 @@
 import React, { createContext, useState, useMemo, ReactNode } from 'react';
-import { LatLng } from 'react-native-maps';
+
+// Define our own LatLng type instead of using react-native-maps
+export interface LatLng {
+    latitude: number;
+    longitude: number;
+}
 
 type MapPointsContextType = {
     pointA: LatLng | null;
