@@ -1,6 +1,7 @@
 import * as React from "react";
 import * as WebBrowser from "expo-web-browser";
-import { AuthError } from "expo-auth-session";
+import { AuthError, AuthRequestConfig, DiscoveryDocument, makeRedirectUri, useAuthRequest } from "expo-auth-session";
+import { BASE_URL } from "@/constants";
 
 
 WebBrowser.maybeCompleteAuthSession();
@@ -25,10 +26,24 @@ const AuthContext = React.createContext({
     error: null as AuthError | null,
 });
 
+const config: AuthRequestConfig = {
+    clientId: "google",
+    scopes: ["openid", "profile", "email"],
+    redirectUri: makeRedirectUri(),
+};
+
+const discovery: DiscoveryDocument = {
+    authorizationEndpoint: `${BASE_URL}/api/auth/callback`,
+    tokenEndpoint: `${BASE_URL}/api/auth/token`,
+};
+
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = React.useState<AuthUser | null>(null);
     const [isLoading, setIsLoading] = React.useState(false);
     const [error, setError] = React.useState<AuthError | null>(null);
+
+    const [request, respones, promptAsync] = useAuthRequest(config, discovery);
+
     const signIn = async () => { };
     const signOut = async () => { };
     const fetchWithAuth = async (url: string, options?: RequestInit) => { };

@@ -1,29 +1,46 @@
-import * as React from "react";
-import * as WebBrowser from "expo-web-browser";
-import { AuthError } from "expo-auth-session";
+import { APP_SCHEME, BASE_URL, GOOGLE_AUTH_URL, GOOGLE_CLIENT_ID, GOOGLE_REDIRECT_URI } from "@/constants";
 
-export type AuthUser = {
-    id: string;
-    email: string;
-    name: string;
-    picture?: string;
-    given_name?: string;
-    family_name?: string;
-    email_verified?: boolean;
-    provider?: string;
-    exp?: number;
-    cookieExpiration?: number; // Added for web cookie expiration tracking
-};
+export async function GET(request: Request) {
 
-const AuthContext = React.createContext({
-    user: null as AuthUser | null,
-    signIn: () => { },
-    signOut: () => { },
-    fetchWithAuth: async (url: string, options?: RequestInit) => Promise.resolve(new Response()),
-    isLoading: false,
-    error: null as AuthError | null,
-});
+    if (!GOOGLE_CLIENT_ID) {
+        return Response.json(
+            { error: "GOOGLE_CLIENT_ID is not set" },
+            { status: 500 }
+        );
+    }
 
-export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-    return <AuthContext.Provider
-};
+    const url = new URL(request.url);
+    let idpClientId: string;
+    const internalClient = url.searchParams.get("client_id");
+    const redirectUri = url.searchParams.get("redirect_uri");
+
+    let platform;
+
+    if (redirectUri === APP_SCHEME) {
+        platform = "mobile";
+    } else if (redirectUri === BASE_URL) {
+        platform = "web";
+    } else {
+        return Response.json({ error: "Invalid redirect URI" }, { status: 400 });
+    }
+
+    // use state to drive redirect back to platform
+    let state = platform + "/" + url.searchParams.get("state");
+
+    if (internalClient === "google")
+        idpClientId = GOOGLE_CLIENT_ID;
+    else {
+        return Response.json({ error: "Invalid client" }, { status: 400 });
+    }
+
+    const params = new URLSearchParams({
+        client_id: idpClientId,
+        redirect_uri: GOOGLE_REDIRECT_URI,
+        response_type: "code",
+        scope: url.searchParams.get("scope") || "identity",
+        state: state,
+        prompt: "select_account",
+    });
+
+    return Response.redirect(GOOGLE_AUTH_URL + "?" + params.toString());
+}
