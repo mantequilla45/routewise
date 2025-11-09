@@ -9,7 +9,11 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.routewise.app",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.routewise.app",
@@ -25,7 +29,11 @@
           "apiKey": "AIzaSyDgnDF0VgEtZn6WD9D89ZMH_oiGUqoEedw"
         }
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
     },
     "web": {
       "output": "static",
@@ -50,6 +58,22 @@
         {
           "requestLocationPermission": true,
           "locationPermission": "Allow $(PRODUCT_NAME) to use your location"
+        }
+      ],
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "node_modules/@expo-google-fonts/lexend/Lexend_100Thin.ttf",
+            "node_modules/@expo-google-fonts/lexend/Lexend_200ExtraLight.ttf",
+            "node_modules/@expo-google-fonts/lexend/Lexend_300Light.ttf",
+            "node_modules/@expo-google-fonts/lexend/Lexend_400Regular.ttf",
+            "node_modules/@expo-google-fonts/lexend/Lexend_500Medium.ttf",
+            "node_modules/@expo-google-fonts/lexend/Lexend_600SemiBold.ttf",
+            "node_modules/@expo-google-fonts/lexend/Lexend_700Bold.ttf",
+            "node_modules/@expo-google-fonts/lexend/Lexend_800ExtraBold.ttf",
+            "node_modules/@expo-google-fonts/lexend/Lexend_900Black.ttf"
+          ]
         }
       ]
     ],

@@ -1,19 +1,33 @@
 import { Tabs } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
+
 export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#ffd33d',
+        tabBarActiveTintColor: '#FFCC66',
         headerStyle: {
-          backgroundColor: '#25292e',
+          backgroundColor: '#fff',
         },
-        headerShadowVisible: false,
+        headerTitleStyle: {
+          fontFamily: 'Lexend_600SemiBold',
+          color: '#303030',
+          fontSize: 24,
+        },
+        headerShadowVisible: true,
         headerTintColor: '#fff',
         tabBarStyle: {
           backgroundColor: '#25292e',
-        }
+          position: 'absolute',
+          bottom: 25,
+          paddingTop: 10,
+          borderRadius: 35,
+          marginHorizontal: 50,
+        },
+        tabBarLabelStyle: {
+          fontFamily: 'Lexend_400Regular',
+        },
       }}
     >
       <Tabs.Screen
@@ -25,11 +39,20 @@ export default function TabLayout() {
           ),
         }} />
       <Tabs.Screen
-        name="history"
+        name="saved"
         options={{
-          title: 'History',
+          title: 'Saved Routes',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'information-circle' : 'information-circle-outline'} color={color} size={24} />
+            <Ionicons name={focused ? 'bookmark' : 'bookmark-outline'} color={color} size={24} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="account"
+        options={{
+          title: 'Account',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'person-circle' : 'person-circle-outline'} color={color} size={24} />
           ),
         }}
       />
