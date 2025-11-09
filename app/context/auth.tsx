@@ -44,7 +44,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const [request, respones, promptAsync] = useAuthRequest(config, discovery);
 
-    const signIn = async () => { };
+    const signIn = async () => {
+        try {
+            if (!request) {
+                console.log("no request");
+                return;
+            }
+            await promptAsync();
+        } catch (e) {
+            console.log(e);
+        };
+
+    };
+
     const signOut = async () => { };
     const fetchWithAuth = async (url: string, options?: RequestInit) => { };
 

@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "routewise",
-    "slug": "routewise",
+    "name": "app",
+    "slug": "app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -75,7 +75,8 @@
             "node_modules/@expo-google-fonts/lexend/900Black/Lexend_900Black.ttf"
           ]
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,
