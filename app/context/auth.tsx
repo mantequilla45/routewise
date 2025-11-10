@@ -1,6 +1,7 @@
 import * as React from "react";
 import * as WebBrowser from "expo-web-browser";
-import { AuthError, AuthRequestConfig, DiscoveryDocument, makeRedirectUri, useAuthRequest } from "expo-auth-session";
+import * as Google from "expo-auth-session/providers/google";
+import { makeRedirectUri } from "expo-auth-session";
 import { BASE_URL } from "@/constants";
 
 
@@ -23,42 +24,88 @@ const AuthContext = React.createContext({
     signOut: () => { },
     fetchWithAuth: async (url: string, options?: RequestInit) => Promise.resolve(new Response()),
     isLoading: false,
-    error: null as AuthError | null,
+    error: null as string | null,
 });
 
-const config: AuthRequestConfig = {
-    clientId: "google",
-    scopes: ["openid", "profile", "email"],
-    redirectUri: makeRedirectUri(),
-};
-
-const discovery: DiscoveryDocument = {
-    authorizationEndpoint: `${BASE_URL}/api/auth/callback`,
-    tokenEndpoint: `${BASE_URL}/api/auth/token`,
-};
+// Your Google OAuth Client ID
+const GOOGLE_CLIENT_ID = "880953895599-q9qljrddahcj5rhlmqehiq130i8lh9oj.apps.googleusercontent.com";
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = React.useState<AuthUser | null>(null);
     const [isLoading, setIsLoading] = React.useState(false);
-    const [error, setError] = React.useState<AuthError | null>(null);
+    const [error, setError] = React.useState<string | null>(null);
 
-    const [request, respones, promptAsync] = useAuthRequest(config, discovery);
+    // For development with Expo Go, use the Expo proxy
+    const redirectUri = makeRedirectUri({
+        scheme: 'routewise',
+        useProxy: true // This is important for development with Expo Go
+    });
+
+    console.log('Redirect URI:', redirectUri); // This will help you see what URI to add to Google Console
+
+    const [request, response, promptAsync] = Google.useAuthRequest({
+        clientId: GOOGLE_CLIENT_ID,
+        scopes: ["openid", "profile", "email"],
+        redirectUri,
+    });
+
+    React.useEffect(() => {
+        if (response?.type === 'success') {
+            const { authentication } = response;
+            // Get user info from Google
+            getUserInfo(authentication?.accessToken);
+        }
+    }, [response]);
+
+    const getUserInfo = async (token: string | undefined) => {
+        if (!token) return;
+        
+        try {
+            setIsLoading(true);
+            const response = await fetch(
+                "https://www.googleapis.com/userinfo/v2/me",
+                {
+                    headers: { Authorization: `Bearer ${token}` },
+                }
+            );
+            
+            const userInfo = await response.json();
+            setUser({
+                id: userInfo.id,
+                email: userInfo.email,
+                name: userInfo.name,
+                picture: userInfo.picture,
+                email_verified: userInfo.verified_email,
+                provider: 'google'
+            });
+            setError(null);
+        } catch (e) {
+            console.error(e);
+            setError("Failed to get user information");
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const signIn = async () => {
         try {
-            if (!request) {
-                console.log("no request");
-                return;
-            }
+            setError(null);
             await promptAsync();
         } catch (e) {
             console.log(e);
+            setError("Failed to sign in");
         };
-
     };
 
-    const signOut = async () => { };
-    const fetchWithAuth = async (url: string, options?: RequestInit) => { };
+    const signOut = async () => { 
+        setUser(null);
+        setError(null);
+    };
+    
+    const fetchWithAuth = async (url: string, options?: RequestInit) => {
+        // This can be implemented if you need to make authenticated API calls
+        return fetch(url, options);
+    };
 
     return (
         <AuthContext.Provider value={{
