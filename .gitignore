@@ -1,1 +1,4 @@
 mobile/.vscode/settings.json
+
+# Documentation folder (for development docs)
+docs/

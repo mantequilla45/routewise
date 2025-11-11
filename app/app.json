@@ -36,7 +36,7 @@
       ]
     },
     "web": {
-      "output": "static",
+      "output": "server",
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
@@ -64,18 +64,19 @@
         "expo-font",
         {
           "fonts": [
-            "node_modules/@expo-google-fonts/lexend/Lexend_100Thin.ttf",
-            "node_modules/@expo-google-fonts/lexend/Lexend_200ExtraLight.ttf",
-            "node_modules/@expo-google-fonts/lexend/Lexend_300Light.ttf",
-            "node_modules/@expo-google-fonts/lexend/Lexend_400Regular.ttf",
-            "node_modules/@expo-google-fonts/lexend/Lexend_500Medium.ttf",
-            "node_modules/@expo-google-fonts/lexend/Lexend_600SemiBold.ttf",
-            "node_modules/@expo-google-fonts/lexend/Lexend_700Bold.ttf",
-            "node_modules/@expo-google-fonts/lexend/Lexend_800ExtraBold.ttf",
-            "node_modules/@expo-google-fonts/lexend/Lexend_900Black.ttf"
+            "node_modules/@expo-google-fonts/lexend/100Thin/Lexend_100Thin.ttf",
+            "node_modules/@expo-google-fonts/lexend/200ExtraLight/Lexend_200ExtraLight.ttf",
+            "node_modules/@expo-google-fonts/lexend/300Light/Lexend_300Light.ttf",
+            "node_modules/@expo-google-fonts/lexend/400Regular/Lexend_400Regular.ttf",
+            "node_modules/@expo-google-fonts/lexend/500Medium/Lexend_500Medium.ttf",
+            "node_modules/@expo-google-fonts/lexend/600SemiBold/Lexend_600SemiBold.ttf",
+            "node_modules/@expo-google-fonts/lexend/700Bold/Lexend_700Bold.ttf",
+            "node_modules/@expo-google-fonts/lexend/800ExtraBold/Lexend_800ExtraBold.ttf",
+            "node_modules/@expo-google-fonts/lexend/900Black/Lexend_900Black.ttf"
           ]
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,
