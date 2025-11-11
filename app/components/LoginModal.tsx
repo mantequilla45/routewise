@@ -1,5 +1,7 @@
+import { useAuth } from "@/context/hybrid-auth";
 import { PropsWithChildren, useEffect, useRef, useState } from "react";
-import { Animated, Dimensions, Modal, PanResponder, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Animated, Dimensions, Modal, PanResponder, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import LoginForm from "./LoginForm";
 
 const { height: screenHeight } = Dimensions.get('window');
 
@@ -77,6 +79,17 @@ export default function LoginModal({ isVisible, onClose }: Props) {
         }
     }, [isVisible]);
 
+
+
+    const { user, isLoading, signOut } = useAuth();
+
+    // Close modal when user signs in successfully
+    useEffect(() => {
+        if (user && isVisible) {
+            onClose();
+        }
+    }, [user, isVisible, onClose]);
+
     return (
         <View>
             <Modal animationType="none" transparent={true} visible={isVisible}>
@@ -125,6 +138,23 @@ export default function LoginModal({ isVisible, onClose }: Props) {
                                     Signup
                                 </Text>
                             </TouchableOpacity>
+                        </View>
+                        
+                        <View style={styles.contentContainer}>
+                            {isLoading ? (
+                                <View style={styles.loadingContainer}>
+                                    <ActivityIndicator size="large" color="#FFCC66" />
+                                    <Text style={styles.loadingText}>Signing in...</Text>
+                                </View>
+                            ) : (
+                                activeTab === 'login' ? (
+                                    <LoginForm />
+                                ) : (
+                                    <View style={styles.signupContainer}>
+                                        <Text style={styles.signupText}>Sign up coming soon!</Text>
+                                    </View>
+                                )
+                            )}
                         </View>
                     </Animated.View>
                 </Animated.View>
@@ -192,5 +222,30 @@ const styles = StyleSheet.create({
         borderRadius: 2,
         alignSelf: 'center',
         marginBottom: 15,
+    },
+    contentContainer: {
+        flex: 1,
+        marginTop: 20,
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    loadingText: {
+        color: '#fff',
+        marginTop: 10,
+        fontSize: 16,
+        fontFamily: 'Lexend_400Regular',
+    },
+    signupContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    signupText: {
+        color: '#fff',
+        fontSize: 18,
+        fontFamily: 'Lexend_400Regular',
     }
 });

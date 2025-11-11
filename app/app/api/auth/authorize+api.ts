@@ -25,7 +25,7 @@ export async function GET(request: Request) {
     }
 
     // use state to drive redirect back to platform
-    let state = platform + "/" + url.searchParams.get("state");
+    let state = platform + "|" + url.searchParams.get("state");
 
     if (internalClient === "google")
         idpClientId = GOOGLE_CLIENT_ID;
@@ -37,7 +37,7 @@ export async function GET(request: Request) {
         client_id: idpClientId,
         redirect_uri: GOOGLE_REDIRECT_URI,
         response_type: "code",
-        scope: url.searchParams.get("scope") || "identity",
+        scope: url.searchParams.get("scope") || "openid email profile",
         state: state,
         prompt: "select_account",
     });

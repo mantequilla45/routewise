@@ -1,6 +1,6 @@
 import { View, Text, Button, StyleSheet } from "react-native";
 
-import { useAuth } from "@/context/auth";
+import { useAuth } from "@/context/hybrid-auth";
 
 export default function LoginForm() {
     const { signIn } = useAuth();

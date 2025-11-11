@@ -14,7 +14,7 @@ import {
 } from '@expo-google-fonts/lexend';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { AuthProvider } from '@/context/auth';
+import { AuthProvider } from "@/context/hybrid-auth";
 
 // Prevent splash screen from hiding automatically
 SplashScreen.preventAutoHideAsync();
