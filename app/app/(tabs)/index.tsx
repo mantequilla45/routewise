@@ -1,4 +1,5 @@
-import { AppleMaps, GoogleMaps } from 'expo-maps';
+import NativeMap from '@/components/NativeMap';
+import { AppleMaps } from 'expo-maps';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 
 export default function Index() {
@@ -6,13 +7,7 @@ export default function Index() {
   if (Platform.OS === 'android') {
     return (
       <View style={styles.container}>
-        <GoogleMaps.View
-          style={styles.map}
-          cameraPosition={{
-            coordinates: { latitude: 10.3157, longitude: 123.8854 },
-            zoom: 12,
-          }}
-        />
+        <NativeMap/>
       </View>
     );
   } else if (Platform.OS === 'ios') {
