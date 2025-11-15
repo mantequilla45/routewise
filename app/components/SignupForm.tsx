@@ -1,11 +1,22 @@
 import { useAuth } from "@/context/hybrid-auth";
 import React, { useState } from "react";
-import { View, Text, Button, StyleSheet, TextInput, TouchableOpacity } from "react-native";
+import { View, Text, Button, StyleSheet, TextInput, TouchableOpacity, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons"; // install with expo: expo install @expo/vector-icons
+import { AntDesign } from '@expo/vector-icons';
 export default function SignupForm() {
     const { signIn } = useAuth();
     const [passwordVisible, setPasswordVisible] = useState(false); // toggle password visibility
-    const [checked, setChecked] = useState(false);
+
+    const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const handleSignUp = () => {
+        if (password !== confirmPassword) {
+            Alert.alert('Error', 'Passwords do not match! nigga');
+            return;
+        }
+        // Continue with signup logic
+        console.log('Passwords match. Proceed to signup.');
+    };
 
     return (
         <View style={styles.container}>
@@ -22,10 +33,12 @@ export default function SignupForm() {
                 <Text style={styles.text}> Password </Text>
                 <View style={styles.passwordWrapper}>
                     <TextInput
-                        style={styles.passwordtextbox}       // <- your existing style
+                        style={styles.passwordtextbox}
                         placeholder="Password"
                         placeholderTextColor="#585756"
-                        secureTextEntry={!passwordVisible}  // hide/show
+                        secureTextEntry={!passwordVisible}
+                        value={password}
+                        onChangeText={setPassword}
                     />
                     <TouchableOpacity
                         onPress={() => setPasswordVisible(!passwordVisible)}
@@ -40,14 +53,17 @@ export default function SignupForm() {
                 </View>
             </View>
 
+            {/* Confirm Password */}
             <View style={styles.passwordcontainer}>
                 <Text style={styles.text}> Confirm Password </Text>
                 <View style={styles.passwordWrapper}>
                     <TextInput
-                        style={styles.passwordtextbox}       // <- your existing style
-                        placeholder="Password"
+                        style={styles.passwordtextbox}
+                        placeholder="Confirm Password"
                         placeholderTextColor="#585756"
-                        secureTextEntry={!passwordVisible}  // hide/show
+                        secureTextEntry={!passwordVisible}
+                        value={confirmPassword}
+                        onChangeText={setConfirmPassword}
                     />
                     <TouchableOpacity
                         onPress={() => setPasswordVisible(!passwordVisible)}
@@ -61,12 +77,11 @@ export default function SignupForm() {
                     </TouchableOpacity>
                 </View>
             </View>
-            
-            {/* // SIGNUP BUTTON */}
-            <TouchableOpacity style={styles.loginbutton}>
+
+            {/* Sign Up Button */}
+            <TouchableOpacity style={styles.loginbutton} onPress={handleSignUp}>
                 <Text style={styles.loginbuttonText}>Sign Up</Text>
             </TouchableOpacity>
-
             {/* // divider rani para sa or signup with */}
             <View style={styles.dividerContainer}>
                 <Text style={styles.dividerText}>or signup with</Text>
@@ -74,7 +89,10 @@ export default function SignupForm() {
 
             {/* // GOOGLE Signin BUTTON */}
             <TouchableOpacity style={styles.googlebutton} onPress={signIn}>
-                <Text style={styles.googlebuttonText}>Google</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <AntDesign name="google" size={20} color="#DB4437" style={{ marginRight: 4 }} />
+                    <Text style={styles.googlebuttonText}>Google</Text>
+                </View>
             </TouchableOpacity>
 
             {/* // TERMS OF SERVICE AND DATA PROCESSING AGREEMENT */}
@@ -134,6 +152,7 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontFamily: 'Lexend_400Regular',
         paddingVertical: 8,        // adjust instead of fixed height
+        color: '#FFFFFF'
     },
     eyeButton: {
         marginLeft: 10,
@@ -187,7 +206,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        marginVertical: 15,
+        marginVertical: 10,
     },
     dividerText: {
         fontFamily: 'Lexend_400Regular',
@@ -202,21 +221,25 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     linkText: {
-    color: '#888888',   // grey for links
-    textDecorationLine: 'underline', // optional: makes it look clickable
+        color: '#888888',   // grey for links
+        textDecorationLine: 'underline', // optional: makes it look clickable
     },
     googlebutton: {
-    paddingVertical: 10,        // same height as login button
-    borderRadius: 8,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '50%',               // 50% of parent container width
-    alignSelf: 'center',        // centers it horizontally
-},
+        paddingVertical: 10,        // same height as login button
+        borderRadius: 8,
+        backgroundColor: '#FFFFFF',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '50%',               // 50% of parent container width
+        alignSelf: 'center',        // center horizontally
+    },
+    googlebuttonContent: {
+        flexDirection: 'row',       // logo + text in a row
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+
     googlebuttonText: {
-        paddingVertical: 10,
-        paddingHorizontal: 40,
         color: 'black',
         fontFamily: 'Lexend_400Regular',
         fontSize: 16,

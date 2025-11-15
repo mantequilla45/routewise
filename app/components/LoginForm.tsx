@@ -2,6 +2,7 @@ import { useAuth } from "@/context/hybrid-auth";
 import React, { useState } from "react";
 import { View, Text, Button, StyleSheet, TextInput, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons"; // install with expo: expo install @expo/vector-icons
+import { AntDesign } from '@expo/vector-icons';
 export default function LoginForm() {
     const { signIn } = useAuth();
     const [passwordVisible, setPasswordVisible] = useState(false); // toggle password visibility
@@ -74,12 +75,15 @@ export default function LoginForm() {
 
             {/* // GOOGLE LOGIN BUTTON */}
             <TouchableOpacity style={styles.googlebutton} onPress={signIn}>
-                <Text style={styles.googlebuttonText}>Google</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <AntDesign name="google" size={20} color="#DB4437" style={{ marginRight: 4 }} />
+                    <Text style={styles.googlebuttonText}>Google</Text>
+                </View>
             </TouchableOpacity>
 
             {/* // TERMS OF SERVICE AND DATA PROCESSING AGREEMENT */}
             <Text style={styles.dividersText}>
-                By signing up, you agree to the{' '}
+                By signing in, you agree to the{' '}
             <Text style={styles.linkText}>Terms of Service</Text> and{' '}
                 <Text style={styles.linkText}>Data Processing Agreement</Text>
             </Text>
@@ -202,23 +206,27 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     linkText: {
-    color: '#888888',   // grey for links
-    textDecorationLine: 'underline', // optional: makes it look clickable
+        color: '#888888',   // grey for links
+        textDecorationLine: 'underline', // optional: makes it look clickable
     },
     googlebutton: {
-    paddingVertical: 10,        // same height as login button
-    borderRadius: 8,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '50%',               // 50% of parent container width
-    alignSelf: 'center',        // centers it horizontally
-},
+        paddingVertical: 10,        // same height as login button
+        borderRadius: 8,
+        backgroundColor: '#FFFFFF',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '50%',               // 50% of parent container width
+        alignSelf: 'center',        // center horizontally
+    },
+    googlebuttonContent: {
+        flexDirection: 'row',       // logo + text in a row
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
     googlebuttonText: {
-        paddingVertical: 10,
-        paddingHorizontal: 40,
         color: 'black',
         fontFamily: 'Lexend_400Regular',
         fontSize: 16,
-    },
+        marginLeft: 0,              // spacing between logo and text
+}
 })
