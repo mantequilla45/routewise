@@ -4,8 +4,8 @@ import { Image } from "expo-image";
 import { useState } from "react";
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, ActivityIndicator } from "react-native";
 import { useAuth } from "@/context/hybrid-auth";
+import { LOGO } from "@/constants";
 
-const LogoImage = require('@/assets/logo/logo.svg');
 
 export default function Account() {
     const { user, signOut, isLoading } = useAuth();
@@ -39,10 +39,10 @@ export default function Account() {
                 <View style={styles.profileHeader}>
                     <View style={styles.avatarContainer}>
                         {user.picture ? (
-                            <Image 
-                                source={{ uri: user.picture }} 
-                                style={styles.avatar} 
-                                contentFit="cover" 
+                            <Image
+                                source={{ uri: user.picture }}
+                                style={styles.avatar}
+                                contentFit="cover"
                             />
                         ) : (
                             <View style={styles.avatarPlaceholder}>
@@ -91,7 +91,7 @@ export default function Account() {
     // Show sign up screen if user is not signed in
     return (
         <View style={styles.container}>
-            <Image source={LogoImage} style={styles.logo} contentFit="contain" />
+            <Image source={LOGO} style={styles.logo} contentFit="contain" />
             <Text style={styles.heading}>
                 Sign up now!
             </Text>
@@ -99,7 +99,7 @@ export default function Account() {
                 Create an account to save your routes, activities, and many more.
             </Text>
             <View>
-                <Button label="Sign Up" onPress={openModal} />
+                <Button label="Sign Up" onPress={openModal} theme="primary" />
             </View>
             <LoginModal isVisible={isModalVisible} onClose={closeModal}>
 

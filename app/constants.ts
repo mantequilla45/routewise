@@ -37,3 +37,7 @@ export const REFRESH_COOKIE_OPTIONS = {
     path: "/api/auth/refresh", // Restrict to refresh endpoint only
     maxAge: REFRESH_TOKEN_MAX_AGE,
 };
+
+
+export const LOGO = require('@/assets/logo/logo.svg');
+export const LOGO_ICON = require('@/assets/logo/logo-icon.svg');

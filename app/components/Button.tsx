@@ -5,25 +5,50 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 type Props = {
     label: string,
     onPress?: () => void;
+    theme?: 'primary' | 'secondary' | 'tags';
 }
 
-export default function Button({ label, onPress }: Props) {
-    return (
-        <View style={[styles.buttonContainer, {
-            borderRadius: 25,
-        }]}>
-            <Pressable
-                style={[
-                    styles.button,
-                    { backgroundColor: '#FFCC66', borderRadius: 25, }
-                ]}
-                onPress={onPress}
-            >
-                <Text style={styles.buttonLabel}>{label}</Text>
-                <Ionicons name='log-in' color="#2D2D2D" size={24} />
-            </Pressable>
-        </View>
-    );
+export default function Button({ label, onPress, theme }: Props) {
+    if (theme === 'primary') {
+        return (
+            <View style={[styles.buttonContainer, {
+                borderRadius: 25,
+            }]}>
+                <Pressable
+                    style={[
+                        styles.button,
+                        { backgroundColor: '#FFCC66', borderRadius: 25, }
+                    ]}
+                    onPress={onPress}
+                >
+                    <Text style={styles.buttonLabel}>{label}</Text>
+                </Pressable>
+            </View>
+        );
+    }
+
+    else if (theme === 'secondary') {
+    }
+
+    else if (theme === 'tags') {
+        return (
+            <View style={[styles.buttonContainer, {
+                borderRadius: 25,
+                width: 'auto',
+                height: 'auto'
+            }]}>
+                <Pressable
+                    style={[
+                        styles.button,
+                        { backgroundColor: '#FFCC66', borderRadius: 25, width: 'auto', height: 'auto', paddingHorizontal: 25, paddingVertical: 10, }
+                    ]}
+                    onPress={onPress}
+                >
+                    <Text style={[styles.buttonLabel, { fontSize: 14, fontFamily: 'Lexend_400Regular' }]}>{label}</Text>
+                </Pressable>
+            </View>
+        );
+    }
 }
 
 const styles = StyleSheet.create({
