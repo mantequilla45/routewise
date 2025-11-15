@@ -1,3 +1,4 @@
+import { GoogleMapsPolyline } from 'expo-maps/build/google/GoogleMaps.types';
 import React, { createContext, ReactNode, useMemo, useState } from 'react';
 
 export interface LatLng {
@@ -14,6 +15,8 @@ type MapPointsContextType = {
     setIsPointAB: (value: boolean) => void;
     isPinPlacementEnabled: boolean;
     setIsPinPlacementEnabled: (value: boolean) => void;
+    routes: GoogleMapsPolyline[] | null;
+    setRoutes: (p: GoogleMapsPolyline[] | null) => void;
 };
 
 export const MapPointsContext = createContext<MapPointsContextType>({
@@ -24,7 +27,9 @@ export const MapPointsContext = createContext<MapPointsContextType>({
     isPointAB: true,
     setIsPointAB: () => { },
     isPinPlacementEnabled: false,
-    setIsPinPlacementEnabled: () => { }
+    setIsPinPlacementEnabled: () => { },
+    routes: null,
+    setRoutes: () => { }
 });
 
 export const MapPointsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -32,6 +37,7 @@ export const MapPointsProvider: React.FC<{ children: ReactNode }> = ({ children 
     const [pointB, setPointB] = useState<LatLng | null>(null);
     const [isPointAB, setIsPointAB] = useState<boolean>(true);
     const [isPinPlacementEnabled, setIsPinPlacementEnabled] = useState<boolean>(false);
+    const [routes, setRoutes] = useState<GoogleMapsPolyline[] | null>(null);
 
     const memoizedValue = useMemo(
         () => ({
@@ -43,8 +49,10 @@ export const MapPointsProvider: React.FC<{ children: ReactNode }> = ({ children 
             setIsPointAB,
             isPinPlacementEnabled,
             setIsPinPlacementEnabled,
+            routes,
+            setRoutes
         }),
-        [pointA, pointB, isPointAB, isPinPlacementEnabled]
+        [pointA, pointB, isPointAB, isPinPlacementEnabled, routes]
     );
 
     return (
