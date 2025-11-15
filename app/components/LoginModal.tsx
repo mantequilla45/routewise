@@ -2,6 +2,7 @@ import { useAuth } from "@/context/hybrid-auth";
 import { PropsWithChildren, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Animated, Dimensions, Modal, PanResponder, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import LoginForm from "./LoginForm";
+import SignupForm from "./SignupForm";
 
 const { height: screenHeight } = Dimensions.get('window');
 
@@ -150,9 +151,7 @@ export default function LoginModal({ isVisible, onClose }: Props) {
                                 activeTab === 'login' ? (
                                     <LoginForm />
                                 ) : (
-                                    <View style={styles.signupContainer}>
-                                        <Text style={styles.signupText}>Sign up coming soon!</Text>
-                                    </View>
+                                    <SignupForm />
                                 )
                             )}
                         </View>
