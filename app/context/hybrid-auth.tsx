@@ -77,9 +77,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }, []);
 
     const signIn = async () => {
+        let timeoutId: NodeJS.Timeout | null = null;
+        
         try {
             setError(null);
             setIsLoading(true);
+            
+            // Set a timeout to prevent infinite loading state
+            timeoutId = setTimeout(() => {
+                setIsLoading(false);
+                setError("Authentication timeout. Please try again.");
+            }, 60000); // 60 second timeout
             
             // Use YOUR OAuth endpoint (shows "Continue to RouteWise")
             const authUrl = `${BASE_URL}/api/auth/authorize?` + new URLSearchParams({
@@ -90,6 +98,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             }).toString();
             
             const result = await WebBrowser.openAuthSessionAsync(authUrl, APP_SCHEME);
+            
+            // Clear timeout since we got a response
+            if (timeoutId) clearTimeout(timeoutId);
             
             if (result.type === 'success' && result.url) {
                 const parsed = Linking.parse(result.url);
@@ -102,12 +113,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 
                 if (parsed.queryParams?.access_token) {
                     await handleGoogleToken(parsed.queryParams.access_token as string);
+                } else {
+                    // Success but no token - shouldn't happen
+                    setError('No access token received');
+                    setIsLoading(false);
                 }
             } else if (result.type === 'cancel') {
+                // User cancelled the sign in
+                setError(null);
+                setIsLoading(false);
+            } else if (result.type === 'dismiss') {
+                // Browser was dismissed
                 setError(null);
                 setIsLoading(false);
             }
         } catch (e) {
+            // Clear timeout on error
+            if (timeoutId) clearTimeout(timeoutId);
             console.error('Sign in error:', e);
             setError("Failed to sign in");
             setIsLoading(false);
