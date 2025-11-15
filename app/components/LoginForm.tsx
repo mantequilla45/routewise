@@ -2,7 +2,6 @@ import { useAuth } from "@/context/hybrid-auth";
 import React, { useState } from "react";
 import { View, Text, Button, StyleSheet, TextInput, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons"; // install with expo: expo install @expo/vector-icons
-import LinearGradient from 'react-native-linear-gradient';
 export default function LoginForm() {
     const { signIn } = useAuth();
     const [passwordVisible, setPasswordVisible] = useState(false); // toggle password visibility
@@ -10,15 +9,15 @@ export default function LoginForm() {
 
     return (
         <View style={styles.container}>
-            // EMAIL CONTAINER
-            // EMAIL RELATED STUFF IS HERE
+            {/* // EMAIL CONTAINER
+                // EMAIL RELATED STUFF IS HERE */}
             <View style={styles.emailcontainer} >
                 <Text style={styles.text}> Email </Text>
                 <TextInput style={styles.emailtextbox} placeholder="email@example.com" placeholderTextColor="#585756" />
             </View>
 
-            // PASSWORD CONTAINER
-            // PASSWORD RELATED STUFF IS HERE
+            {/* // PASSWORD CONTAINER
+                // PASSWORD RELATED STUFF IS HERE */}
             <View style={styles.passwordcontainer}>
                 <Text style={styles.text}> Password </Text>
                 <View style={styles.passwordWrapper}>
@@ -40,15 +39,19 @@ export default function LoginForm() {
                     </TouchableOpacity>
                 </View>
             </View>
+
+            {/* // THIRD CONTAINER 
+                // CONTAINS REMEMBER ME AND FORGOT PASSWORD */}
             <View style={styles.thirdcontainer}>
                 <View style={styles.firsthalf}>
                     <TouchableOpacity onPress={() => setChecked(!checked)}>
                         <Ionicons
                             name={checked ? "checkbox" : "square-outline"}
                             size={24}
-                            color="#585756"
+                            color={checked ? "#FFFFFF" : "#585756"} 
                         />
                     </TouchableOpacity>
+
                     <Text style={styles.rememberText}>
                         Remember me
                     </Text>
@@ -58,17 +61,28 @@ export default function LoginForm() {
                     <Text style={styles.forgotText}>Forgot Password?</Text>
                 </View>
             </View>
-            <TouchableOpacity onPress={signIn}>
-    <LinearGradient
-        colors={['#4C4C4C', '#3B3B3B']}   // top → bottom
-        style={styles.loginbutton}
-        start={{ x: 0.5, y: 0 }}         // vertical gradient
-        end={{ x: 0.5, y: 1 }}
-    >
-        <Text style={styles.loginbuttonText}>Log In</Text>
-    </LinearGradient>
-</TouchableOpacity>
-            <Button title="Sign in with Google" onPress={signIn} />
+            
+            {/* // LOGIN BUTTON */}
+            <TouchableOpacity style={styles.loginbutton}>
+                <Text style={styles.loginbuttonText}>Log In</Text>
+            </TouchableOpacity>
+
+            {/* // divider rani para sa or login with */}
+            <View style={styles.dividerContainer}>
+                <Text style={styles.dividerText}>or login with</Text>
+            </View>
+
+            {/* // GOOGLE LOGIN BUTTON */}
+            <TouchableOpacity style={styles.googlebutton} onPress={signIn}>
+                <Text style={styles.googlebuttonText}>Google</Text>
+            </TouchableOpacity>
+
+            {/* // TERMS OF SERVICE AND DATA PROCESSING AGREEMENT */}
+            <Text style={styles.dividersText}>
+                By signing up, you agree to the{' '}
+            <Text style={styles.linkText}>Terms of Service</Text> and{' '}
+                <Text style={styles.linkText}>Data Processing Agreement</Text>
+            </Text>
         </View>
     );
 }
@@ -78,7 +92,6 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     emailcontainer: {
-        // backgroundColor: 'red',       // container color
         flexDirection: 'column',       // stack children vertically
         justifyContent: 'flex-start',  // start content from top
         alignItems: 'stretch',         // stretch inputs to full width (or use 'flex-start' to align left)
@@ -156,23 +169,56 @@ const styles = StyleSheet.create({
         fontWeight: '700',      // bold
     },
     loginbutton: {
-    paddingVertical: 10,
-    paddingHorizontal: 40,
+        paddingVertical: 10,
+        paddingHorizontal: 40,
+        borderRadius: 8,
+        backgroundColor: '#4C4C4C',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    loginbuttonText: {
+        paddingVertical: 10,
+        paddingHorizontal: 40,
+        color: 'white',
+        fontFamily: 'Lexend_400Regular',
+        fontSize: 16,
+    },
+    dividerContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginVertical: 15,
+    },
+    dividerText: {
+        fontFamily: 'Lexend_400Regular',
+        fontSize: 12,
+        color: '#FFFFFF',
+    },
+    dividersText: {
+        fontFamily: 'Lexend_400Regular',
+        fontSize: 12,
+        color: '#FFFFFF',
+        marginTop: 10,
+        textAlign: 'center',
+    },
+    linkText: {
+    color: '#888888',   // grey for links
+    textDecorationLine: 'underline', // optional: makes it look clickable
+    },
+    googlebutton: {
+    paddingVertical: 10,        // same height as login button
     borderRadius: 8,
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
-
-    // Shadow
-    shadowColor: '#FFCC66',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.6,
-    shadowRadius: 4,
-    elevation: 6,
+    width: '50%',               // 50% of parent container width
+    alignSelf: 'center',        // centers it horizontally
 },
-loginbuttonText: {
-    color: 'white',
-    fontFamily: 'Lexend_400Regular',
-    fontSize: 16,
-}
-
+    googlebuttonText: {
+        paddingVertical: 10,
+        paddingHorizontal: 40,
+        color: 'black',
+        fontFamily: 'Lexend_400Regular',
+        fontSize: 16,
+    },
 })
