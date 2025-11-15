@@ -68,7 +68,6 @@ export default function DynamicBoxes({ routes, onToggleFavorite }: DynamicBoxesP
 
 const styles = StyleSheet.create({
     listContent: {
-        paddingVertical: 16,
     },
     routeBox: {
         backgroundColor: '#fff',
