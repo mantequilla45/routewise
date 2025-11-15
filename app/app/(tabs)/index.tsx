@@ -1,19 +1,14 @@
 import Ionicons from '@expo/vector-icons/build/Ionicons';
 import { router } from 'expo-router';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import MapScreen from '../(screens)/MapScreen';
 
 export default function Index() {
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity 
-      style={styles.fab}
-      onPress={() => router.push('/MapScreen')}
-      >
-        <Text style={styles.fabText}>Map</Text>
-        <Ionicons name={'map'} color={'#000'} size={20} />
-      </TouchableOpacity>
-    </View>
+      <MapScreen />
+    </View >
   );
 }
 
