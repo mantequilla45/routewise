@@ -1,4 +1,5 @@
 import NativeMap from '@/components/Map/NativeMap';
+import SwipeModal from '@/components/SwipeModal';
 import { LatLng, MapPointsContext, MapPointsProvider } from '@/context/map-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Stack } from 'expo-router';
@@ -6,15 +7,9 @@ import { useContext, useRef, useState } from 'react';
 import { PanResponder, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-function MapScreenContent () {
+function MapScreenContent() {
 
-    const { setIsPointAB, setIsPinPlacementEnabled, pointA, pointB } = useContext(MapPointsContext)
     const [showBottomSheet, setShowBottomSheet] = useState(true)
-
-    const latLongStringifier = (latLong: LatLng | null): string => {
-        if (!latLong) return "No location set";
-        return `${latLong.latitude.toFixed(6)}, ${latLong.longitude.toFixed(6)}`;
-    };
 
     const panResponder = useRef(
         PanResponder.create({
@@ -30,60 +25,82 @@ function MapScreenContent () {
     return (
         <SafeAreaView style={styles.container} {...panResponder.panHandlers}>
             <Stack.Screen options={{ headerShown: false }} />
-            <NativeMap/>
-            {showBottomSheet && (
-                <Pressable style={styles.bottomSheet} onPress={() => setIsPinPlacementEnabled(false)}>
-                    <View
-                        onStartShouldSetResponder={() => true}
-                    >
-                        <View style={styles.bottomSheetTopRow}>
-                            <Text style={styles.bottomSheetTitleText}>Directions</Text>
-                            <Pressable onPress={() => setShowBottomSheet(false)}>
-                                <Ionicons name={'close-circle'} color={'white'} size={30}></Ionicons>
-                            </Pressable>
-                        </View>
+            <NativeMap />
+            <SwipeModal
+                isVisible={showBottomSheet}
+                onClose={() => setShowBottomSheet(false)}
+                height={'50%'}
+            >
+                <ModalContent exit={() => setShowBottomSheet(false)} />
+            </SwipeModal>
+        </SafeAreaView>
+    );
+}
 
-                        <View style={styles.bottomSheetRow}>
-                            <View style={styles.pointInputBox}>
-                                <View style={styles.pointInputContainer}>
-                                    <TouchableOpacity onPress={() => {
-                                        setIsPinPlacementEnabled(true);
-                                        setIsPointAB(true);
-                                    }}>
-                                        <View style={styles.pointInputRow}>
-                                            <View style={styles.pointInputIcon}>
-                                                <Ionicons name={'navigate-circle-outline'} color="blue" size={18} />
-                                            </View>
-                                            <Text style={styles.pointInputText}>{latLongStringifier(pointA)}</Text>
+function ModalContent({ exit }: Readonly<{ exit: () => void }>) {
+    const { setIsPointAB, setIsPinPlacementEnabled, pointA, pointB } = useContext(MapPointsContext)
+
+    const latLongStringifier = (latLong: LatLng | null): string => {
+        if (!latLong) return "No location set";
+        return `${latLong.latitude.toFixed(6)}, ${latLong.longitude.toFixed(6)}`;
+    };
+
+    return (
+        <Pressable onPress={() => setIsPinPlacementEnabled(false)}>
+            <View
+                onStartShouldSetResponder={() => true}
+            >
+                <View style={styles.bottomSheetTopRow}>
+                    <Text style={styles.bottomSheetTitleText}>Directions</Text>
+                    <Pressable onPress={exit}>
+                        <Ionicons name={'close-circle'} color={'white'} size={30}></Ionicons>
+                    </Pressable>
+                </View>
+
+                <View style={styles.bottomSheetRow}>
+                    <View style={styles.pointInputBox}>
+                        <View style={styles.pointInputContainer}>
+                            <TouchableOpacity onPress={() => {
+                                setIsPinPlacementEnabled(true);
+                                setIsPointAB(true);
+                            }}>
+                                <View style={styles.pointInputRow}>
+                                    <View>
+                                        <View style={styles.pointInputIcon}>
+                                            <Ionicons name={'navigate-circle-outline'} color="blue" size={18} />
                                         </View>
-                                    </TouchableOpacity>
-
-                                    <View style={styles.line}></View>
-
-                                    <TouchableOpacity onPress={() => {
-                                        setIsPinPlacementEnabled(true);
-                                        setIsPointAB(false);
-                                    }}>
-                                        <View style={styles.pointInputRow}>
-                                            <View style={styles.pointInputIcon}>
-                                                <Ionicons name={'location-outline'} color="blue" size={18} />
-                                            </View>
-                                            <Text style={styles.pointInputText}>{latLongStringifier(pointB)}</Text>
-                                        </View>
-                                    </TouchableOpacity>
+                                        <Text style={styles.pointInputText}>{latLongStringifier(pointA)}</Text>
+                                    </View>
+                                    <View>
+                                        <Ionicons name={'globe-outline'} color={'black'} size={16}></Ionicons>
+                                    </View>
                                 </View>
-                            </View>
-                        </View>
-                        <View style={styles.bottomSheetRow}>
-                            <TouchableOpacity style={styles.calculateButton}>
-                                <Text>Calculate Price</Text>
+                            </TouchableOpacity>
+
+                            <View style={styles.line}></View>
+
+                            <TouchableOpacity onPress={() => {
+                                setIsPinPlacementEnabled(true);
+                                setIsPointAB(false);
+                            }}>
+                                <View style={styles.pointInputRow}>
+                                    <View style={styles.pointInputIcon}>
+                                        <Ionicons name={'location-outline'} color="blue" size={18} />
+                                    </View>
+                                    <Text style={styles.pointInputText}>{latLongStringifier(pointB)}</Text>
+                                </View>
                             </TouchableOpacity>
                         </View>
                     </View>
-                </Pressable>
-            )}
-        </SafeAreaView>
-    );
+                </View>
+                <View style={styles.bottomSheetRow}>
+                    <TouchableOpacity style={styles.calculateButton}>
+                        <Text>Calculate Price</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        </Pressable>
+    )
 }
 
 export default function MapScreen() {
@@ -160,30 +177,11 @@ const styles = StyleSheet.create({
         alignItems: 'stretch',
     },
 
-    pointInputIcon: {
-        width: '10%',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-
-    pointInputRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        width: '100%',
-    },
-
     pointInputContainer: {
         flex: 1,
         flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'stretch',
-    },
-
-    pointInputText: {
-        fontWeight: 'bold',
-        color: '#000',
-        fontSize: 16,
-        width: "90%"
     },
 
     calculateButton: {
@@ -195,6 +193,25 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         width: '100%'
+    },
+
+    pointInputRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        width: '100%',
+    },
+
+    pointInputIcon: {
+        width: '10%',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+
+    pointInputText: {
+        fontWeight: 'bold',
+        color: '#000',
+        fontSize: 16,
+        width: "90%"
     },
 
     line: {
