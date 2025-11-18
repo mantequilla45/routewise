@@ -2,6 +2,7 @@ import NativeMap from '@/components/Map/NativeMap';
 import SwipeModal from '@/components/SwipeModal';
 import { LatLng, MapPointsContext, MapPointsProvider } from '@/context/map-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
+//import * as Location from 'expo-location';
 import { Stack } from 'expo-router';
 import { useContext, useRef, useState } from 'react';
 import { PanResponder, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -13,19 +14,38 @@ function MapScreenContent() {
 
     const panResponder = useRef(
         PanResponder.create({
-            onMoveShouldSetPanResponder: (_, gestureState) => Math.abs(gestureState.dy) > 10,
-            onPanResponderRelease: (_, gestureState) => {
-                if (gestureState.dy < -50) {
+            onStartShouldSetPanResponder: (_, g) => {
+                return Math.abs(g.dy) > 10 && g.dy < 0;
+            },
+
+            onMoveShouldSetPanResponder: (_, g) => {
+                return Math.abs(g.dy) > 10 && g.dy < 0;
+            },
+
+            onPanResponderRelease: (_, g) => {
+                if (g.dy < -50) {
                     setShowBottomSheet(true);
                 }
-            },
+            }
         })
     ).current;
 
+
     return (
-        <SafeAreaView style={styles.container} {...panResponder.panHandlers}>
+        <SafeAreaView style={styles.container}>
             <Stack.Screen options={{ headerShown: false }} />
             <NativeMap />
+            <View
+                style={{
+                    position: "absolute",
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    height: "20%",
+                    //backgroundColor: "red"
+                }}
+                {...panResponder.panHandlers}
+            />
             <SwipeModal
                 isVisible={showBottomSheet}
                 onClose={() => setShowBottomSheet(false)}
@@ -38,12 +58,36 @@ function MapScreenContent() {
 }
 
 function ModalContent({ exit }: Readonly<{ exit: () => void }>) {
-    const { setIsPointAB, setIsPinPlacementEnabled, pointA, pointB } = useContext(MapPointsContext)
+    const { setIsPointAB, setIsPinPlacementEnabled, pointA, pointB, setPointA } = useContext(MapPointsContext)
 
     const latLongStringifier = (latLong: LatLng | null): string => {
         if (!latLong) return "No location set";
         return `${latLong.latitude.toFixed(6)}, ${latLong.longitude.toFixed(6)}`;
     };
+
+    /* Uncoment for location
+    
+
+    const getLocation = async () => {
+        try {
+            const { status } = await Location.requestForegroundPermissionsAsync();
+            if (status !== 'granted') {
+                console.warn('Location permission not granted');
+                return;
+            }
+
+            const loc = await Location.getCurrentPositionAsync({
+                accuracy: Location.Accuracy.Highest,
+            });
+
+            setPointA({
+                latitude: loc.coords.latitude,
+                longitude: loc.coords.longitude,
+            });
+        } catch (error) {
+            console.warn('Error getting location:', error);
+        }
+    };*/
 
     return (
         <Pressable onPress={() => setIsPinPlacementEnabled(false)}>
@@ -65,16 +109,28 @@ function ModalContent({ exit }: Readonly<{ exit: () => void }>) {
                                 setIsPointAB(true);
                             }}>
                                 <View style={styles.pointInputRow}>
-                                    <View>
-                                        <View style={styles.pointInputIcon}>
+                                    <View style={styles.pointInputBlock}>
+                                        <View style={styles.pointInputIconLeft}>
                                             <Ionicons name={'navigate-circle-outline'} color="blue" size={18} />
                                         </View>
-                                        <Text style={styles.pointInputText}>{latLongStringifier(pointA)}</Text>
+                                        <Text style={styles.pointInputText}
+                                            numberOfLines={1}
+                                            ellipsizeMode="tail">
+                                            {latLongStringifier(pointA)}
+                                        </Text>
                                     </View>
-                                    <View>
-                                        <Ionicons name={'globe-outline'} color={'black'} size={16}></Ionicons>
+
+                                    <View style={[styles.pointInputBlock, { justifyContent: 'flex-end' }]}>
+                                        <Text style={styles.pointPickerText}
+                                            numberOfLines={1}>
+                                            Choose on Map
+                                        </Text>
+                                        <View style={styles.pointInputIconRight}>
+                                            <Ionicons name={'globe-outline'} color={'black'} size={16} />
+                                        </View>
                                     </View>
                                 </View>
+
                             </TouchableOpacity>
 
                             <View style={styles.line}></View>
@@ -84,10 +140,26 @@ function ModalContent({ exit }: Readonly<{ exit: () => void }>) {
                                 setIsPointAB(false);
                             }}>
                                 <View style={styles.pointInputRow}>
-                                    <View style={styles.pointInputIcon}>
-                                        <Ionicons name={'location-outline'} color="blue" size={18} />
+                                    <View style={styles.pointInputBlock}>
+                                        <View style={styles.pointInputIconLeft}>
+                                            <Ionicons name={'location-outline'} color="blue" size={18} />
+                                        </View>
+                                        <Text style={styles.pointInputText}
+                                            numberOfLines={1}
+                                            ellipsizeMode="tail">
+                                            {latLongStringifier(pointB)}
+                                        </Text>
+
                                     </View>
-                                    <Text style={styles.pointInputText}>{latLongStringifier(pointB)}</Text>
+                                    <View style={[styles.pointInputBlock, { justifyContent: 'flex-end' }]}>
+                                        <Text style={styles.pointPickerText}
+                                            numberOfLines={1}>
+                                            Choose on Map
+                                        </Text>
+                                        <View style={styles.pointInputIconRight}>
+                                            <Ionicons name={'globe-outline'} color={'black'} size={16} />
+                                        </View>
+                                    </View>
                                 </View>
                             </TouchableOpacity>
                         </View>
@@ -95,7 +167,13 @@ function ModalContent({ exit }: Readonly<{ exit: () => void }>) {
                 </View>
                 <View style={styles.bottomSheetRow}>
                     <TouchableOpacity style={styles.calculateButton}>
-                        <Text>Calculate Price</Text>
+                        <Text style={styles.calculateButtonText}>Get Location</Text>
+                    </TouchableOpacity>
+                </View>
+
+                <View style={styles.bottomSheetRow}>
+                    <TouchableOpacity style={styles.calculateButton}>
+                        <Text style={styles.calculateButtonText}>Calculate Price</Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -151,6 +229,7 @@ const styles = StyleSheet.create({
         textAlign: 'left',
         fontSize: 24,
         fontWeight: '600',
+        fontFamily: 'Lexend_500Medium'
     },
 
     closeButton: {
@@ -184,7 +263,58 @@ const styles = StyleSheet.create({
         alignItems: 'stretch',
     },
 
+    pointInputRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        width: '100%',
+        paddingVertical: 8,
+    },
+
+    pointInputBlock: {
+        flexDirection: 'row',
+        width: '50%'
+    },
+
+    pointInputIconLeft: {
+        width: 24,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 8,
+    },
+
+    pointInputIconRight: {
+        width: 24,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginLeft: 8,
+    },
+
+    pointInputText: {
+        fontWeight: 'bold',
+        color: '#000',
+        fontSize: 12,
+        flexShrink: 1,
+        fontFamily: 'Lexend_400Regular'
+    },
+
+    pointPickerText: {
+        fontWeight: 'bold',
+        color: '#000',
+        fontSize: 12,
+        flexShrink: 1,
+        fontFamily: 'Lexend_300Light'
+    },
+
+    line: {
+        height: 1,
+        backgroundColor: '#6C6C6C',
+        width: '100%',
+        marginVertical: 4,
+    },
+
     calculateButton: {
+        height: 48,
+        shadowRadius: 25,
         backgroundColor: '#FFCC66',
         padding: 8,
         borderRadius: 8,
@@ -195,29 +325,10 @@ const styles = StyleSheet.create({
         width: '100%'
     },
 
-    pointInputRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        width: '100%',
-    },
-
-    pointInputIcon: {
-        width: '10%',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-
-    pointInputText: {
-        fontWeight: 'bold',
-        color: '#000',
+    calculateButtonText: {
+        fontFamily: 'Lexend_400Regular',
         fontSize: 16,
-        width: "90%"
-    },
-
-    line: {
-        height: 1,
-        backgroundColor: '#6C6C6C',
-        width: '100%',
-        marginVertical: 4,
-    },
+        color: '#2D2D2D',
+        marginRight: 5,
+    }
 });
