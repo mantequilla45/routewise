@@ -6,7 +6,7 @@ import { Platform, StyleSheet, Text } from 'react-native';
 
 export default function NativeMap() {
 
-  const { pointA, pointB, setPointA, setPointB, isPointAB, isPinPlacementEnabled } = useContext(MapPointsContext);
+  const { pointA, pointB, setPointA, setPointB, isPointAB, isPinPlacementEnabled, routes } = useContext(MapPointsContext);
 
   const handleMapPress = (event: { coordinates: Coordinates }) => {
     console.log(isPinPlacementEnabled)
@@ -14,7 +14,7 @@ export default function NativeMap() {
 
     const { coordinates } = event;
 
-    if (coordinates.latitude == null || coordinates.longitude == null) return; // guard
+    if (coordinates.latitude == null || coordinates.longitude == null) return;
 
     const point: LatLng = {
       latitude: coordinates.latitude,
@@ -40,7 +40,7 @@ export default function NativeMap() {
 
   const commonCamera = {
     coordinates: { latitude: 10.3157, longitude: 123.8854 },
-    zoom: 12,
+    zoom: 14,
   };
 
   const commonUISettings = {
@@ -51,12 +51,14 @@ export default function NativeMap() {
 
   if (Platform.OS === 'android') {
     return (
+
       <GoogleMaps.View
         style={styles.map}
         cameraPosition={commonCamera}
         uiSettings={commonUISettings}
         onMapClick={handleMapPress}
         markers={markers}
+        polylines={routes ?? undefined}
       />
     );
   } else if (Platform.OS === 'ios') {
@@ -64,6 +66,9 @@ export default function NativeMap() {
       <AppleMaps.View
         style={styles.map}
         cameraPosition={commonCamera}
+        onMapClick={handleMapPress}
+        markers={markers}
+        polylines={routes ?? undefined}
       />
     );
   } else {
@@ -74,3 +79,4 @@ export default function NativeMap() {
 const styles = StyleSheet.create({
   map: { flex: 1 },
 });
+

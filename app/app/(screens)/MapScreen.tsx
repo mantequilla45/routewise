@@ -3,10 +3,12 @@ import SwipeModal from '@/components/SwipeModal';
 import { LatLng, MapPointsContext, MapPointsProvider } from '@/context/map-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 //import * as Location from 'expo-location';
+import { GoogleMapsPolyline } from 'expo-maps/build/google/GoogleMaps.types';
 import { Stack } from 'expo-router';
 import { useContext, useRef, useState } from 'react';
 import { PanResponder, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { calculatePossibleRoutes } from '../services/routes/calculatePossibleRoutes';
 
 function MapScreenContent() {
 
@@ -51,19 +53,65 @@ function MapScreenContent() {
                 onClose={() => setShowBottomSheet(false)}
                 height={'50%'}
             >
-                <ModalContent exit={() => setShowBottomSheet(false)} />
+                <ModalContent exit={() => setShowBottomSheet(false)} setShowBottomSheet={setShowBottomSheet} />
             </SwipeModal>
         </SafeAreaView>
     );
 }
 
-function ModalContent({ exit }: Readonly<{ exit: () => void }>) {
-    const { setIsPointAB, setIsPinPlacementEnabled, pointA, pointB, setPointA } = useContext(MapPointsContext)
+function ModalContent({ exit, setShowBottomSheet }: Readonly<{ exit: () => void, setShowBottomSheet: (value: boolean) => void }>) {
+    const { setIsPointAB, setIsPinPlacementEnabled, pointA, pointB, setPointA, setRoutes } = useContext(MapPointsContext)
+    const [routeCode, setRouteCode] = useState<string>("");
+    const [distance, setDistance] = useState<string>("");
 
     const latLongStringifier = (latLong: LatLng | null): string => {
         if (!latLong) return "No location set";
         return `${latLong.latitude.toFixed(6)}, ${latLong.longitude.toFixed(6)}`;
     };
+
+    const onCalculate = async () => {
+        try {
+            if (!pointA || !pointB) {
+                console.warn("Both points must be set");
+                return;
+            }
+
+            const routes = await calculatePossibleRoutes(pointA, pointB);
+
+            if (!routes || routes.length === 0) {
+                console.warn("No routes returned");
+                return;
+            }
+
+            const googlePolylineRoutes: GoogleMapsPolyline[] = routes.map(
+                (r: {
+                    routeId: string;
+                    coordinates: { latitude: number; longitude: number }[];
+                    distanceMeters: number;
+                    routeCode?: string;
+                }) => ({
+                    id: r.routeId,
+                    coordinates: r.coordinates,
+                    color: '#33ff00ff',
+                    width: 16,
+                    geodesic: true
+                })
+            );
+
+            setRoutes(googlePolylineRoutes);
+
+            const first = routes[0];
+
+            if (first) {
+                setRouteCode(first.routeId);
+                setDistance((first.distanceMeters / 1000).toFixed(2) + " km");
+            }
+
+        } catch (error) {
+            console.error("Error calculating routes:", error);
+        }
+    };
+
 
     /* Uncoment for location
     
@@ -107,6 +155,7 @@ function ModalContent({ exit }: Readonly<{ exit: () => void }>) {
                             <TouchableOpacity onPress={() => {
                                 setIsPinPlacementEnabled(true);
                                 setIsPointAB(true);
+                                setShowBottomSheet(false);
                             }}>
                                 <View style={styles.pointInputRow}>
                                     <View style={styles.pointInputBlock}>
@@ -138,6 +187,7 @@ function ModalContent({ exit }: Readonly<{ exit: () => void }>) {
                             <TouchableOpacity onPress={() => {
                                 setIsPinPlacementEnabled(true);
                                 setIsPointAB(false);
+                                setShowBottomSheet(false);
                             }}>
                                 <View style={styles.pointInputRow}>
                                     <View style={styles.pointInputBlock}>
@@ -172,9 +222,14 @@ function ModalContent({ exit }: Readonly<{ exit: () => void }>) {
                 </View>
 
                 <View style={styles.bottomSheetRow}>
-                    <TouchableOpacity style={styles.calculateButton}>
+                    <TouchableOpacity style={styles.calculateButton} onPress={onCalculate}>
                         <Text style={styles.calculateButtonText}>Calculate Price</Text>
                     </TouchableOpacity>
+                </View>
+
+                <View style={styles.bottomSheetRow}>
+                    <Text style={{color: "white"}}>Route: {routeCode}</Text>
+                    <Text style={{color: "white"}}>Distance: {distance}</Text>
                 </View>
             </View>
         </Pressable>
@@ -292,13 +347,12 @@ const styles = StyleSheet.create({
     pointInputText: {
         fontWeight: 'bold',
         color: '#000',
-        fontSize: 12,
+        fontSize: 14,
         flexShrink: 1,
         fontFamily: 'Lexend_400Regular'
     },
 
     pointPickerText: {
-        fontWeight: 'bold',
         color: '#000',
         fontSize: 12,
         flexShrink: 1,
