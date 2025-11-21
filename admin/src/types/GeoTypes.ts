@@ -1,6 +1,6 @@
 export interface LatLng {
-    latitude: number;
-    longitude: number;
+  latitude: number;
+  longitude: number;
 }
 
 export interface RouteSnap {
@@ -15,3 +15,20 @@ export interface RouteSnap {
   snapped_reverse_lon: number;
   snapped_reverse_lat: number;
 };
+
+export interface CalculatedRoutes {
+  routeId: string;
+  distanceMeters: number;
+  segmentGeoJSON: string;
+}
+
+export interface MappedGeoRouteResult {
+  routeId: string;
+  distanceMeters?: number;
+  latLng?: LatLng[];
+  fare?: number;
+  startingPoint?: string;
+  endPoint?: string;
+}
+
+

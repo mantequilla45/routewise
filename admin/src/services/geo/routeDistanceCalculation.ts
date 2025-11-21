@@ -1,6 +1,5 @@
 import { query } from "@/lib/db/db";
-import { LatLng, RouteSnap } from "@/types/GeoTypes";
-
+import { CalculatedRoutes, LatLng, MappedGeoRouteResult, RouteSnap } from "@/types/GeoTypes";
 
 export async function calculateRoute(latLngA: LatLng, latLngB: LatLng) {
     const snappedRoutesA: RouteSnap[] = await findNearestRoutesPoints(latLngA);
@@ -18,27 +17,21 @@ export async function calculateRoute(latLngA: LatLng, latLngB: LatLng) {
         [direction.horizontal, direction.vertical]
     );
 
-    const results = rawResults.map(r => {
-        const geojson = JSON.parse(r.segmentGeoJSON);
-        const coordinates = geojson.coordinates.map(([lon, lat]: [number, number]) => ({
-            latitude: lat,
-            longitude: lon
-        }));
+    if (!rawResults || rawResults.length === 0) {
+        return [];
+    }
+    const results: MappedGeoRouteResult[] = rawResults.map(r => ({
+        routeId: r.routeId,
+        distanceMeters: r.distanceMeters,
+        latLng: parsePostgisGeoJson(r.segmentGeoJSON)
+    }));
 
-
-        return {
-            routeId: r.routeId,
-            distanceMeters: r.distanceMeters,
-            coordinates
-        };
-    });
 
     console.log(results);
     return results;
 }
 
 export async function findNearestRoutesPoints(latLng: LatLng) {
-
     const radiusMeters = 200;
     const lon = latLng.longitude;
     const lat = latLng.latitude;
@@ -123,7 +116,7 @@ function findMatchingRoutePairs(
     return pairs;
 }
 
-export async function calculateRouteDistances(
+async function calculateRouteDistances(
     snappedRoutesA: RouteSnap[],
     snappedRoutesB: RouteSnap[],
     direction: [string, string]
@@ -132,7 +125,7 @@ export async function calculateRouteDistances(
 
     if (matchingPairs.length === 0) return [];
 
-    const results: { routeId: string; distanceMeters: number, segmentGeoJSON: string; }[] = [];
+    const results: CalculatedRoutes[] = [];
 
     for (const [routeA, routeB] of matchingPairs) {
         const sql = `
@@ -245,4 +238,14 @@ function getMovementDirection(latLngA: LatLng, latLngB: LatLng) {
     else vertical = "none";
 
     return { horizontal, vertical };
+}
+
+function parsePostgisGeoJson(segmentGeoJSON: string): LatLng[] {
+    const geojson = JSON.parse(segmentGeoJSON);
+    return geojson.coordinates.map(
+        ([lon, lat]: [number, number]) => ({
+            latitude: lat,
+            longitude: lon
+        })
+    );
 }
