@@ -1,4 +1,5 @@
-import { LatLng, MapPointsContext } from '@/context/map-context';
+import { MapPointsContext } from '@/context/map-context';
+import { LatLng } from '@/types/GeoTypes';
 import { AppleMaps, Coordinates, GoogleMaps } from 'expo-maps';
 import { GoogleMapsMarker } from 'expo-maps/build/google/GoogleMaps.types';
 import { useContext } from 'react';

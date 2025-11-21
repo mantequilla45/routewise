@@ -1,10 +1,6 @@
+import { LatLng, MappedGeoRouteResult } from '@/types/GeoTypes';
 import { GoogleMapsPolyline } from 'expo-maps/build/google/GoogleMaps.types';
 import React, { createContext, ReactNode, useMemo, useState } from 'react';
-
-export interface LatLng {
-    latitude: number;
-    longitude: number;
-}
 
 type MapPointsContextType = {
     pointA: LatLng | null;
@@ -17,6 +13,8 @@ type MapPointsContextType = {
     setIsPinPlacementEnabled: (value: boolean) => void;
     routes: GoogleMapsPolyline[] | null;
     setRoutes: (p: GoogleMapsPolyline[] | null) => void;
+    results: MappedGeoRouteResult[] | null;
+    setResults: (r: MappedGeoRouteResult[] | null) => void;
 };
 
 export const MapPointsContext = createContext<MapPointsContextType>({
@@ -29,7 +27,9 @@ export const MapPointsContext = createContext<MapPointsContextType>({
     isPinPlacementEnabled: false,
     setIsPinPlacementEnabled: () => { },
     routes: null,
-    setRoutes: () => { }
+    setRoutes: () => { },
+    results: null,
+    setResults: () => { }
 });
 
 export const MapPointsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -38,6 +38,7 @@ export const MapPointsProvider: React.FC<{ children: ReactNode }> = ({ children 
     const [isPointAB, setIsPointAB] = useState<boolean>(true);
     const [isPinPlacementEnabled, setIsPinPlacementEnabled] = useState<boolean>(false);
     const [routes, setRoutes] = useState<GoogleMapsPolyline[] | null>(null);
+    const [results, setResults] = useState<MappedGeoRouteResult[] | null>(null);
 
     const memoizedValue = useMemo(
         () => ({
@@ -50,9 +51,11 @@ export const MapPointsProvider: React.FC<{ children: ReactNode }> = ({ children 
             isPinPlacementEnabled,
             setIsPinPlacementEnabled,
             routes,
-            setRoutes
+            setRoutes,
+            results,
+            setResults
         }),
-        [pointA, pointB, isPointAB, isPinPlacementEnabled, routes]
+        [pointA, pointB, isPointAB, isPinPlacementEnabled, routes, results]
     );
 
     return (
@@ -61,3 +64,4 @@ export const MapPointsProvider: React.FC<{ children: ReactNode }> = ({ children 
         </MapPointsContext.Provider>
     );
 };
+
