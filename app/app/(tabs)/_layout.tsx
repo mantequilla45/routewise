@@ -16,7 +16,7 @@ export default function TabLayout() {
           color: '#303030',
           fontSize: 24,
         },
-        headerShown:false,
+        headerShown: false,
         headerShadowVisible: true,
         headerTintColor: '#fff',
         tabBarStyle: {
@@ -24,7 +24,7 @@ export default function TabLayout() {
           position: 'absolute',
           paddingTop: 10,
           paddingBottom: 10,
-          bottom:50,
+          bottom: 50,
           borderRadius: 35,
           marginHorizontal: 50,
           height: 80
@@ -36,7 +36,7 @@ export default function TabLayout() {
     >
       <Tabs.Screen
         name="index"
-      
+
         options={{
           title: 'Home',
           tabBarIcon: ({ color, focused }) => (
