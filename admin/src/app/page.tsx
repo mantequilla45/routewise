@@ -55,7 +55,7 @@ export default function LoginPage() {
       <main className="bg-[#303030] p-5 rounded-xl shadow-2xl flex flex-col gap-4 row-start-2 items-center w-full max-w-sm">
 
         <div className="text-white flex flex-col items-center gap-2">
-          <p className="text-lg">
+          <p className="text-sl">
             Welcome to
           </p>
           <Image
@@ -65,7 +65,7 @@ export default function LoginPage() {
             height={38}
             priority
           />
-          <p className="pt-3 text-sm">
+          <p className="pt-3 text-sl">
             Log in using an admin account
           </p>
         </div>
@@ -78,7 +78,7 @@ export default function LoginPage() {
           )}
 
           <div className="flex flex-col w-full max-w-xs">
-            <label htmlFor="email-input" className="text-sm font-medium">Email:</label>
+            <label htmlFor="email-input" className="text-sl font-medium">Email:</label>
             <input
               id="email-input"
               name="email-input"
@@ -98,13 +98,13 @@ export default function LoginPage() {
           </div>
 
           <div className="flex flex-col w-full max-w-xs">
-            <label htmlFor="password-input" className="text-sm font-medium">Password:</label>
+            <label htmlFor="password-input" className="text-sl font-medium">Password:</label>
             <input
               id="password-input"
               name="password-input"
               type="password"
               required
-              placeholder="secure"
+              placeholder="Password"
               value={password}
               onChange={handlePasswordChange}
               className={standardInputClasses}
@@ -113,9 +113,9 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            className="mt-4 rounded-lg bg-[#4c4c4c] text-white font-bold shadow-md transition-all duration-200 
-                           hover:bg-[#404040] hover:shadow-sm focus:outline-none shadow-sm shadow-[#ffcc66]
-                           h-12 px-8 w-full max-w-xs"
+            className="mt-4 mb-5 rounded-lg bg-[#4c4c4c] text-white font-bold shadow-md transition-all duration-200 
+            hover:bg-[#404040] hover:shadow-sm focus:outline-none shadow-sm shadow-[#ffcc66]
+            h-12 px-8 w-full max-w-xs"
           >
             Log In
           </button>
@@ -123,11 +123,11 @@ export default function LoginPage() {
       </main>
 
       <footer className="row-start-3 flex flex-col items-center justify-center p-4">
-        <div className="text-xs text-gray-500 text-center max-w-md">
-          By signing up, you agree to the
-          <span className="text-black font-bold text-gray-700"> Terms of Service </span>
+        <div className="text-xs text-gray-400 text-center max-w-md">
+          By signing up, you agree tseo the
+          <span className="text-black font-bold text-gray-100"> Terms of Service </span>
           and
-          <span className="text-black font-bold text-gray-700"> Data Processing Agreement</span>
+          <span className="text-black font-bold text-gray-100"> Data Processing Agreement</span>
         </div>
       </footer>
     </div>
