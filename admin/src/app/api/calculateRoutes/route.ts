@@ -1,5 +1,5 @@
 import { calculateFareForRoutes } from "@/lib/fare/fareCalculation";
-import { geocodeRoutes } from "@/services/geo/geocoding";
+import { getPlaceNamesForRoutes } from "@/services/geo/placeGeocode";
 import { calculateRoute } from "@/services/geo/routeDistanceCalculation";
 import { LatLng } from "@/types/GeoTypes";
 import { NextResponse } from "next/server";
@@ -16,7 +16,7 @@ export async function POST(request: Request) {
         }
         const calculatedRoutes = await calculateRoute(from, to);
         const routesWithFare = calculateFareForRoutes(calculatedRoutes);
-        const routesWithGeo = await geocodeRoutes(routesWithFare);
+        const routesWithGeo = await getPlaceNamesForRoutes(routesWithFare);
 
         console.log(routesWithGeo)
         return NextResponse.json(routesWithGeo);
