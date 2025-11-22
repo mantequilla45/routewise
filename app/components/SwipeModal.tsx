@@ -111,7 +111,6 @@ const styles = StyleSheet.create({
         justifyContent: "flex-end"
     },
     modalContent: {
-        height: "50%",
         width: "100%",
         backgroundColor: "#303030",
         borderTopLeftRadius: 59,

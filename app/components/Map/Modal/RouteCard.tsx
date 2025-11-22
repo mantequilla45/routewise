@@ -1,5 +1,8 @@
+import { LOCATION_ICON } from "@/constants";
 import { MappedGeoRouteResult } from "@/types/GeoTypes";
-import { StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 type RouteCardProps = {
     route: MappedGeoRouteResult;
@@ -7,10 +10,27 @@ type RouteCardProps = {
 
 export default function RouteCard({ route }: Readonly<RouteCardProps>) {
     return (
-        <View style={styles.routeCard}>
-            <View style={styles.routeCardInnerPadding}>
+        <Pressable>
+            <View style={styles.routeCard}>
+                <View style={styles.column1}>
+                    <Text style={styles.routeCode}>{route.routeId}</Text>
+                    <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+
+                        <Ionicons name="compass-outline" size={25} />
+                        <Text style={styles.route} numberOfLines={1}>
+                            {route.startingPoint} - {route.endPoint}
+                        </Text>
+
+                    </View>
+                </View>
+                <View style={styles.column2}>
+                    <Ionicons name="bookmark-outline" size={25} />
+                    <Text style={styles.fare}>P{route.fare}</Text>
+                </View>
+                <View style={styles.routeSave} />
+
+                {/*<View style={styles.routeCardInnerPadding}>
                 <View style={styles.routeCardType}>
-                    <Text style={styles.routeCardFieldName}>Type:</Text>
                     <Text style={styles.routeCardFieldOutputLarge}>{route.routeId}</Text>
                 </View>
                 <View style={styles.routeName}>
@@ -28,54 +48,54 @@ export default function RouteCard({ route }: Readonly<RouteCardProps>) {
                     <Text style={styles.routeCardSmallText}>PWD / Senior / Student: {route.fare - (route.fare * 0.2)}</Text>
                     <Text style={styles.routeCardSmallText}>Reg: {route.fare}</Text>
                 </View>
+            </View> */}
             </View>
-        </View>
+        </Pressable>
     );
 }
 
 const styles = StyleSheet.create({
     routeCard: {
         width: "100%",
-        borderColor: "#FFCC66",
-        borderWidth: 1,
-        borderRadius: 8,
-    },
-    routeCardInnerPadding: {
-        padding: 8,
+        backgroundColor: "#FFCC66",
+        borderRadius: 15,
         flexDirection: "row",
+        padding: 25,
+        gap: '5%',
     },
-    routeCardType: {
-        width: "20%",
-        borderRightColor: "#656565",
-        borderRightWidth: 2,
-        borderBottomColor: "#656565",
-        borderBottomWidth: 2,
-        paddingBottom: 12
+    column1: {
+        width: '75%',
+        gap: 10,
+        overflow: 'hidden',
     },
-    routeCardFieldName: {
+    column2: {
+        width: '20%',
+        alignItems: 'flex-end',
+        paddingRight: 5,
+        gap: 10,
+        justifyContent: 'space-between',
+    },
+    routeCode: {
+        fontFamily: 'Lexend_600SemiBold',
+        fontSize: 24,
+        color: "#2D2D2D",
+    },
+    fare: {
+        fontFamily: 'Lexend_600SemiBold',
+        fontSize: 30,
+        color: "#2D2D2D",
+    },
+    route: {
         fontFamily: 'Lexend_400Regular',
         fontSize: 16,
-        color: "#FFFFFF",
-        fontWeight: "bold"
+        color: "#2D2D2D",
     },
-    routeCardFieldOutputLarge: {
-        fontFamily: 'Lexend_700Bold',
-        fontSize: 24,
-        color: "#FFFFFF",
-    },
-    routeName: {
-        width: "65%",
-        borderRightColor: "#656565",
-        borderRightWidth: 2,
-        borderBottomColor: "#656565",
-        borderBottomWidth: 2,
-        paddingHorizontal: 8,
-        paddingBottom: 12
+    icon: {
+        width: 20,
+        height: 20
     },
     routeSave: {
         width: "15%",
-        borderBottomColor: "#656565",
-        borderBottomWidth: 2,
     },
     routeCardSmallText: {
         fontFamily: 'Lexend_400Regular',
