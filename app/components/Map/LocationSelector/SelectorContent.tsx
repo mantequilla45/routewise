@@ -48,9 +48,6 @@ export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{
             >
                 <View style={styles.bottomSheetTopRow}>
                     <Text style={styles.bottomSheetTitleText}>Directions</Text>
-                    <Pressable onPress={exit}>
-                        <Ionicons name={'close-circle'} color={'white'} size={30}></Ionicons>
-                    </Pressable>
                 </View>
 
                 <View style={styles.bottomSheetRow}>
