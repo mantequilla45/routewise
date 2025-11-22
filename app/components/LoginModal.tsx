@@ -140,7 +140,7 @@ export default function LoginModal({ isVisible, onClose }: Props) {
                                 </Text>
                             </TouchableOpacity>
                         </View>
-                        
+
                         <View style={styles.contentContainer}>
                             {isLoading ? (
                                 <View style={styles.loadingContainer}>

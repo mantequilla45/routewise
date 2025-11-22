@@ -126,8 +126,12 @@ export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{
                     </TouchableOpacity>
                 </View>
 
-                <View style={styles.bottomScroll}>
-                    <ScrollView style={{ height: 200 }} contentContainerStyle={{ paddingVertical: 8 }}>
+                <View style={styles.routeList}>
+                    <ScrollView
+                        style={{ flex: 1 }}  // Add this
+                        contentContainerStyle={styles.routeCard}
+                        showsVerticalScrollIndicator={true}  // Add this to debug
+                    >
                         {results?.map((route, index) => (
                             <RouteCard key={route.routeId || index} route={route} />
                         ))}
@@ -136,7 +140,6 @@ export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{
                         ))}
                     </ScrollView>
                 </View>
-
             </View>
         </Pressable>
     )
@@ -258,11 +261,14 @@ const styles = StyleSheet.create({
         marginRight: 5,
     },
 
-    bottomScroll: {
-        flex: 1,
-        flexDirection: 'row',
-        justifyContent: 'flex-start',
-        alignItems: 'flex-start',
+    routeList: {
+        minHeight: '80%',
         marginBottom: 12,
+        width: '100%',
+    },
+
+    routeCard: {
+        paddingVertical: 10,
+        gap: 20,
     }
 });

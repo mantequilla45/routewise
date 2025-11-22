@@ -47,7 +47,7 @@ function MapScreenContent() {
             <SwipeModal
                 isVisible={showBottomSheet}
                 onClose={() => setShowBottomSheet(false)}
-                height={'50%'}
+                height={'80%'}
             >
                 <MapModalContent exit={() => setShowBottomSheet(false)} setShowBottomSheet={setShowBottomSheet}></MapModalContent>
             </SwipeModal>
