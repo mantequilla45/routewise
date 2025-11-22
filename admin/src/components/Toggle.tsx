@@ -5,10 +5,12 @@ import { useState } from "react";
 // Assume you pass the fetched table content as a prop
 interface ToggleProps {
   userTable: React.ReactNode;
+  tripHistoryTable: React.ReactNode;
 }
 
 export default function Toggle({ userTable }: ToggleProps) {
   const [showTable, setShowTable] = useState(false);
+  const [showTripHistoryTable, setShowTripHistoryTable] = useState(false);
 
   return (
     <div>
@@ -33,7 +35,7 @@ export default function Toggle({ userTable }: ToggleProps) {
         </button>
 
         <button
-          //   onClick={() => setShowTable(!showTable)}
+          onClick={() => setShowTripHistoryTable(!showTripHistoryTable)}
           className={`
         flex items-center gap-4 rounded-xl bg-[#404040] text-white transition-all duration-200 
         hover:bg-[#4c4c4c] 
@@ -47,12 +49,13 @@ export default function Toggle({ userTable }: ToggleProps) {
         `}
         >
           {/* Toggle the text based on the state */}
-          {showTable ? "Jeepney Routes" : "Jeepney Routes"}
+          {showTripHistoryTable ? "Jeepney Routes" : "Jeepney Routes"}
         </button>
       </div>
 
       {/* 2. The Conditional Table Display */}
       {showTable && <div>{userTable}</div>}
+      {showTripHistoryTable && <div>{userTable}</div>}
     </div>
   );
 }

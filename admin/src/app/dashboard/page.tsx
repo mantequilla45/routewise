@@ -1,7 +1,7 @@
 import React from "react";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server-client";
-import UserManagementToggle from "@/components/Toggle";
+import Toggle from "@/components/Toggle";
 
 interface UserData {
   id: string;
@@ -9,6 +9,46 @@ interface UserData {
   email: string | null;
   phone_number: string | null;
   created_at: string;
+  commuter_type: string | null;
+}
+interface TripHistoryData {
+  id: string;
+  user_id: string;
+  start_location: string;
+  end_location: string;
+  start_lat: string;
+  end_lat: string;
+  start_lng: string;
+  end_lng: string;
+  jeepney_codes: string;
+  total_fare: string;
+  trip_date: string;
+}
+interface SavedRoutesData {
+  id: string;
+  user_id: string;
+  route_name: string;
+  start_location: string;
+  end_location: string;
+  start_lat: string;
+  end_lat: string;
+  start_lng: string;
+  end_lng: string;
+  jeepney_codes: string;
+  total_fare: string;
+}
+interface NewJeepneyRoutesData {
+  id: string;
+  route_code: string;
+  start_point_name: string;
+  end_point_name: string;
+}
+interface JeepneyRoutesData {
+  id: string;
+  route_code: string;
+  name: string;
+  city: string | null;
+  jeepney_type: string | null;
 }
 
 async function getUsersData(): Promise<UserData[]> {
@@ -16,8 +56,7 @@ async function getUsersData(): Promise<UserData[]> {
 
   const { data: users, error } = await supabaseAdmin
     .from("users")
-    .select("id, full_name, email, phone_number, created_at");
-
+    .select("id, full_name, email, phone_number, created_at, commuter_type");
   if (error) {
     console.error("Error fetching data from the users table:", error);
     return [];
@@ -25,11 +64,122 @@ async function getUsersData(): Promise<UserData[]> {
 
   return users as UserData[];
 }
+async function getTripHistoryData(): Promise<TripHistoryData[]> {
+  const supabaseAdmin = createAdminClient();
 
-// A new component to render the actual table
+  const { data: trip, error } = await supabaseAdmin
+    .from("trip_history")
+    .select("*");
+  if (error) {
+    console.error("Error fetching data from user trip history:", error);
+    return [];
+  }
+
+  return trip as TripHistoryData[];
+}
+async function getSavedRoutesData(): Promise<SavedRoutesData[]> {
+  const supabaseAdmin = createAdminClient();
+
+  const { data: savedRoutes, error } = await supabaseAdmin
+    .from("saved_routes")
+    .select("*");
+  if (error) {
+    console.error("Error fetching data from user saved routes:", error);
+    return [];
+  }
+  return savedRoutes as SavedRoutesData[];
+}
+async function getNewJeepneyRoutesData(): Promise<NewJeepneyRoutesData[]> {
+  const supabaseAdmin = createAdminClient();
+
+  const { data: newJeepneyRoutes, error } = await supabaseAdmin
+    .from("new_jeepney_routes")
+    .select("*");
+  if (error) {
+    console.error("Error fetching new jeepney routes:", error);
+    return [];
+  }
+  return newJeepneyRoutes as NewJeepneyRoutesData[];
+}
+async function getJeepneyRoutesData(): Promise<JeepneyRoutesData[]> {
+  const supabaseAdmin = createAdminClient();
+
+  const { data: jeepneyRoutes, error } = await supabaseAdmin
+    .from("jeepney_routes")
+    .select("*");
+  if (error) {
+    console.error("Error fetching jeepney routes:", error);
+    return [];
+  }
+  return jeepneyRoutes as JeepneyRoutesData[];
+}
+
+// Component to render the table
 function UserTable({ users }: { users: any[] }) {
-  // 🛑 MOVE ALL YOUR TABLE HTML (<thead>, <tbody>, etc.) HERE
+  return (
+    <div
+      className="m-5 bg-[#ffcc66] rounded-lg overflow-y-auto"
+      style={{ maxHeight: "calc(60vh - 10px)" }}
+    >
+      <table className="min-w-full text-black table-fixed sticky top-0">
+        <thead>
+          <tr>
+            <th className="py-3 px-6 text-left text-sm font-bold rounded-tl-lg bg-white w-1/5">
+              Full Name
+            </th>
+            <th className="py-3 px-6 text-left text-sm font-bold bg-white w-1/5">
+              Email
+            </th>
+            <th className="py-3 px-6 text-left text-sm font-bold bg-white w-1/5">
+              Status
+            </th>
+            <th className="py-3 px-6 text-left text-sm font-bold bg-white w-1/5">
+              Phone Number
+            </th>
+            <th className="py-3 px-6 text-left text-sm font-bold bg-white w-1/5">
+              Created At
+            </th>
+            <th className="py-3 px-6 text-left text-sm font-bold rounded-tr-lg bg-white w-1/5">
+              User Type
+            </th>
+          </tr>
+        </thead>
 
+        <tbody className="divide-y divide-gray-700 sticky top-0">
+          {users.map((user) => (
+            <tr
+              key={user.id}
+              className="hover:bg-gray-750 transition duration-150"
+            >
+              <td className="py-4 px-6 text-sm">{user.full_name || "N/A"}</td>
+
+              <td className="py-4 px-6 text-sm">{user.email || "N/A"}</td>
+
+              <td className="py-4 px-6 text-sm">
+                {user.email ? "Active" : "Unknown"}
+              </td>
+
+              <td className="py-4 px-6 text-sm">
+                {user.phone_number || "N/A"}
+              </td>
+
+              <td className="py-4 px-6 text-sm">
+                {new Date(user.created_at).toLocaleDateString()}
+              </td>
+
+              <td className="py-4 px-6 text-sm">
+                {user.commuter_type || "N/A"}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function TripHistoryTable({ users }: { users: any[] }) {
+  // 🛑 MOVE ALL YOUR TABLE HTML (<thead>, <tbody>, etc.) HERE
   return (
     <div
       className="m-5 bg-[#ffcc66] rounded-lg overflow-y-auto"
@@ -116,9 +266,10 @@ export default async function DashboardPage() {
       </h1>
 
       <div className="bg-[#404040] rounded-lg h-125">
-        <UserManagementToggle
+        <Toggle
           // We render the table component on the server and pass the result
           userTable={<UserTable users={users} />}
+          tripHistoryTable={<TripHistoryTable users={users} />}
         />
       </div>
 
