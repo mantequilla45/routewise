@@ -7,16 +7,13 @@ export default function SignupForm() {
     const { signIn } = useAuth();
     const [passwordVisible, setPasswordVisible] = useState(false); // toggle password visibility
 
-    const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
     const handleSignUp = () => {
-        if (password !== confirmPassword) {
-            Alert.alert('Error', 'Passwords do not match! nigga');
-            return;
-        }
         // Continue with signup logic
-        console.log('Passwords match. Proceed to signup.');
+        console.log('Proceeding to signup.');
     };
+    const [selectedType, setSelectedType] = useState("");
+    const [openDropdown, setOpenDropdown] = useState(false);
+    const commuterTypes = ["Regular", "Student", "PWD", "Senior"];
 
     return (
         <View style={styles.container}>
@@ -37,8 +34,6 @@ export default function SignupForm() {
                         placeholder="Password"
                         placeholderTextColor="#585756"
                         secureTextEntry={!passwordVisible}
-                        value={password}
-                        onChangeText={setPassword}
                     />
                     <TouchableOpacity
                         onPress={() => setPasswordVisible(!passwordVisible)}
@@ -53,30 +48,43 @@ export default function SignupForm() {
                 </View>
             </View>
 
-            {/* Confirm Password */}
+            {/* Commuter Type */}
             <View style={styles.passwordcontainer}>
-                <Text style={styles.text}> Confirm Password </Text>
-                <View style={styles.passwordWrapper}>
-                    <TextInput
-                        style={styles.passwordtextbox}
-                        placeholder="Confirm Password"
-                        placeholderTextColor="#585756"
-                        secureTextEntry={!passwordVisible}
-                        value={confirmPassword}
-                        onChangeText={setConfirmPassword}
-                    />
+        <Text style={styles.text}> Commuter Type </Text>
+
+        <TouchableOpacity
+            style={styles.passwordWrapper}
+            onPress={() => setOpenDropdown(!openDropdown)}
+            activeOpacity={0.8}
+        >
+            <Text style={[styles.passwordtextbox, { color: selectedType ? "#FFFFFF" : "#585756" }]}>
+                {selectedType || "(e.g., Student)"}
+            </Text>
+
+            {/* ▼ arrow */}
+            <Text style={{ color: "#FFFFFF", fontSize: 18 }}>
+                {openDropdown ? "▲" : "▼"}
+            </Text>
+        </TouchableOpacity>
+
+        {/* Dropdown List */}
+        {openDropdown && (
+            <View style={styles.dropdown}>
+                {commuterTypes.map((type, index) => (
                     <TouchableOpacity
-                        onPress={() => setPasswordVisible(!passwordVisible)}
-                        style={styles.eyeButton}
+                        key={index}
+                        style={styles.dropdownItem}
+                        onPress={() => {
+                            setSelectedType(type);
+                            setOpenDropdown(false);
+                        }}
                     >
-                        <Ionicons
-                            name={passwordVisible ? "eye" : "eye-off"}
-                            size={24}
-                            color="#585756"
-                        />
+                        <Text style={styles.dropdownText}>{type}</Text>
                     </TouchableOpacity>
-                </View>
+                ))}
             </View>
+        )}
+    </View>
 
             {/* Sign Up Button */}
             <TouchableOpacity style={styles.loginbutton} onPress={handleSignUp}>
@@ -154,6 +162,27 @@ const styles = StyleSheet.create({
         paddingVertical: 8,        // adjust instead of fixed height
         color: '#FFFFFF'
     },
+    dropdown: {
+    backgroundColor: "#4c4c4c",
+    borderWidth: 2,
+    borderColor: "#585756",
+    borderRadius: 8,
+    marginTop: 4,
+    overflow: "hidden",
+},
+
+dropdownItem: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#585756",
+},
+
+dropdownText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontFamily: "Lexend_400Regular",
+},
     eyeButton: {
         marginLeft: 10,
     },
