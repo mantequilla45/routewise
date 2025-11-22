@@ -4,6 +4,7 @@ import { View, Text, Button, StyleSheet, TextInput, TouchableOpacity, Alert } fr
 import { Ionicons } from "@expo/vector-icons"; // install with expo: expo install @expo/vector-icons
 import { AntDesign } from '@expo/vector-icons';
 export default function SignupForm() {
+
     const { signIn } = useAuth();
     const [passwordVisible, setPasswordVisible] = useState(false); // toggle password visibility
 
@@ -50,28 +51,28 @@ export default function SignupForm() {
 
             {/* Commuter Type */}
             <View style={styles.passwordcontainer}>
-        <Text style={styles.text}> Commuter Type </Text>
+                <Text style={styles.text}> Commuter Type </Text>
 
-        <TouchableOpacity
-            style={styles.passwordWrapper}
-            onPress={() => setOpenDropdown(!openDropdown)}
-            activeOpacity={0.8}
-        >
-            <Text style={[styles.passwordtextbox, { color: selectedType ? "#FFFFFF" : "#585756" }]}>
-                {selectedType || "(e.g., Student)"}
-            </Text>
+                <TouchableOpacity
+                style={styles.passwordWrapper}
+                onPress={() => setOpenDropdown(!openDropdown)}
+                activeOpacity={0.8}
+            >
+                    <Text style={[styles.passwordtextbox, { color: selectedType ? "#FFFFFF" : "#585756" }]}>
+                        {selectedType || "(e.g., Student)"}
+                    </Text>
 
-            {/* ▼ arrow */}
-            <Text style={{ color: "#FFFFFF", fontSize: 18 }}>
-                {openDropdown ? "▲" : "▼"}
-            </Text>
-        </TouchableOpacity>
+                {/* ▼ arrow */}
+                    <Text style={{ color: "#FFFFFF", fontSize: 18 }}>
+                        {openDropdown ? "▲" : "▼"}
+                    </Text>
+                </TouchableOpacity>
 
-        {/* Dropdown List */}
-        {openDropdown && (
-            <View style={styles.dropdown}>
-                {commuterTypes.map((type, index) => (
-                    <TouchableOpacity
+                {/* Dropdown List */}
+                {openDropdown && (
+                <View style={styles.dropdown}>
+                    {commuterTypes.map((type, index) => (
+                        <TouchableOpacity
                         key={index}
                         style={styles.dropdownItem}
                         onPress={() => {
@@ -82,9 +83,9 @@ export default function SignupForm() {
                         <Text style={styles.dropdownText}>{type}</Text>
                     </TouchableOpacity>
                 ))}
+                </View>
+                )}
             </View>
-        )}
-    </View>
 
             {/* Sign Up Button */}
             <TouchableOpacity style={styles.loginbutton} onPress={handleSignUp}>
@@ -163,26 +164,25 @@ const styles = StyleSheet.create({
         color: '#FFFFFF'
     },
     dropdown: {
-    backgroundColor: "#4c4c4c",
-    borderWidth: 2,
-    borderColor: "#585756",
-    borderRadius: 8,
-    marginTop: 4,
-    overflow: "hidden",
-},
+        backgroundColor: "#4c4c4c",
+        borderWidth: 2,
+        borderColor: "#585756",
+        borderRadius: 8,
+        marginTop: 4,
+        overflow: "hidden",
+    },
 
-dropdownItem: {
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#585756",
-},
-
-dropdownText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontFamily: "Lexend_400Regular",
-},
+    dropdownItem: {
+        paddingVertical: 10,
+        paddingHorizontal: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: "#585756",
+    },
+    dropdownText: {
+        color: "#FFFFFF",
+        fontSize: 16,
+        fontFamily: "Lexend_400Regular",
+    },
     eyeButton: {
         marginLeft: 10,
     },
