@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
         fontFamily: 'Lexend_300Light'
     },
     recentHeading: {
-        marginTop: 10,
+        marginVertical: 10,
         flexDirection: 'row',
         alignItems: 'center'
     },

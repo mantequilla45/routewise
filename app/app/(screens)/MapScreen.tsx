@@ -1,10 +1,11 @@
-import MapModalContent from '@/components/Map/Modal/MapModalContent';
+import MapModalContent from '@/components/Map/LocationSelector/SelectorContent';
 import NativeMap from '@/components/Map/NativeMap';
 import SwipeModal from '@/components/SwipeModal';
 import { MapPointsProvider } from '@/context/map-context';
+import { Ionicons } from '@expo/vector-icons';
 import { Stack } from 'expo-router';
 import { useRef, useState } from 'react';
-import { PanResponder, StyleSheet, View } from 'react-native';
+import { PanResponder, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 function MapScreenContent() {
@@ -44,10 +45,17 @@ function MapScreenContent() {
                 }}
                 {...panResponder.panHandlers}
             />
+            <TouchableOpacity
+                style={styles.arrowButton}
+                onPress={() => setShowBottomSheet(true)}
+                activeOpacity={0.8}
+            >
+                <Ionicons name="chevron-up" size={24} color="#303030" />
+            </TouchableOpacity>
             <SwipeModal
                 isVisible={showBottomSheet}
                 onClose={() => setShowBottomSheet(false)}
-                height={'50%'}
+                height={'80%'}
             >
                 <MapModalContent exit={() => setShowBottomSheet(false)} setShowBottomSheet={setShowBottomSheet}></MapModalContent>
             </SwipeModal>
@@ -68,5 +76,21 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#F9F9F9',
         position: 'relative',
+    },
+    arrowButton: {
+        position: 'absolute',
+        bottom: 140,
+        alignSelf: 'center',
+        backgroundColor: '#FFCC66',
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        justifyContent: 'center',
+        alignItems: 'center',
+        elevation: 5,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
     },
 });

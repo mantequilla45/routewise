@@ -41,3 +41,4 @@ export const REFRESH_COOKIE_OPTIONS = {
 
 export const LOGO = require('@/assets/logo/logo.svg');
 export const LOGO_ICON = require('@/assets/logo/logo-icon.svg');
+export const LOCATION_ICON = require('@/assets/icons/location.svg')
