@@ -1,10 +1,8 @@
 import Button from "@/components/Button";
 import DynamicBoxes from "@/components/SavedRoute/DynamicBoxes";
-import { LOGO_ICON } from "@/constants";
-import { Lexend_500Medium } from "@expo-google-fonts/lexend";
+import { supabase } from "@/lib/supabase-client";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { Image } from "expo-image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { StyleSheet, Text, TextInput, View } from "react-native";
 
 export interface SavedRoute {
@@ -15,6 +13,31 @@ export interface SavedRoute {
     favorite: boolean;
 }
 
+export interface JeepneyRoute {
+    id: string;
+    route_code: string;
+    name: string | null;
+    geom_forward: any;
+    geom_reverse: any;
+    start_point_name: string | null;
+    end_point_name: string | null;
+    created_at: string;
+}
+
+
+export async function getAllRoutes(): Promise<JeepneyRoute[]> {
+    const { data, error } = await supabase
+        .from("new_jeepney_routes")
+        .select("*");
+
+    if (error) {
+        console.error("Error fetching routes:", error);
+        return [];
+    }
+
+    return data ?? [];
+}
+
 const savedRoutes: SavedRoute[] = [
     {
         id: '1',
@@ -23,39 +46,25 @@ const savedRoutes: SavedRoute[] = [
         destination: 'Cubao Terminal',
         favorite: true
     },
-    {
-        id: '2',
-        jeepCode: '08H',
-        start: 'SM Marikina',
-        destination: 'Antipolo Church',
-        favorite: false
-    },
-    {
-        id: '3',
-        jeepCode: '10M',
-        start: 'Cogeo Gate 2',
-        destination: 'Robinsons Metro East',
-        favorite: true
-    },
-    {
-        id: '4',
-        jeepCode: '05C',
-        start: 'Bayan-Bayanan',
-        destination: 'Ayala Triangle',
-        favorite: false
-    },
-    {
-        id: '5',
-        jeepCode: '05C',
-        start: 'Bayan-Bayanan',
-        destination: 'Ayala Triangle',
-        favorite: false
-    },
 ];
 
 export default function Saved() {
     const [searchQuery, setSearchQuery] = useState('');
     const [routes, setRoutes] = useState<SavedRoute[]>(savedRoutes);
+
+    useEffect(() => {
+        getAllRoutes().then((fetchedRoutes: JeepneyRoute[]) => {
+            const mappedRoutes: SavedRoute[] = fetchedRoutes.map((route) => ({
+                id: route.id,
+                jeepCode: route.route_code,
+                start: route.start_point_name ?? "Unknown",
+                destination: route.end_point_name ?? "Unknown",
+                favorite: false,
+            }));
+
+            setRoutes((prev) => [...prev, ...mappedRoutes]);
+        });
+    }, []);
 
     const sortRecent = () => {
         // Sort logic here
