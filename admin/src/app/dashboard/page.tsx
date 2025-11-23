@@ -118,11 +118,11 @@ async function getJeepneyRoutesData(): Promise<JeepneyRoutesData[]> {
 function UserTable({ users }: { users: any[] }) {
   return (
     <div
-      className="m-5 bg-[#ffcc66] rounded-lg overflow-y-auto"
-      style={{ maxHeight: "calc(60vh - 10px)" }}
+      className="m-5 bg-[#FFCC66] rounded-lg overflow-y-auto"
+      style={{ maxHeight: "330px" }}
     >
-      <table className="min-w-full text-black table-fixed sticky top-0">
-        <thead>
+      <table className="min-w-full text-black table-fixed">
+        <thead className="top-0 sticky">
           <tr>
             <th className="py-3 px-6 text-left text-sm font-bold rounded-tl-lg bg-white w-1/5">
               Full Name
@@ -145,7 +145,7 @@ function UserTable({ users }: { users: any[] }) {
           </tr>
         </thead>
 
-        <tbody className="divide-y divide-gray-700 sticky top-0">
+        <tbody className="divide-y divide-gray-700">
           {users.map((user) => (
             <tr
               key={user.id}
@@ -177,55 +177,234 @@ function UserTable({ users }: { users: any[] }) {
     </div>
   );
 }
-
-function TripHistoryTable({ users }: { users: any[] }) {
-  // 🛑 MOVE ALL YOUR TABLE HTML (<thead>, <tbody>, etc.) HERE
+function TripHistoryTable({ trips }: { trips: any[] }) {
   return (
     <div
       className="m-5 bg-[#ffcc66] rounded-lg overflow-y-auto"
       style={{ maxHeight: "calc(60vh - 10px)" }}
     >
-      <table className="min-w-full text-black table-fixed sticky top-0">
-        <thead>
+      <table className="min-w-full text-black table-fixed">
+        <thead className="sticky top-0">
           <tr>
             <th className="py-3 px-6 text-left text-sm font-bold rounded-tl-lg bg-white w-1/5">
-              Full Name
-            </th>
-            <th className="py-3 px-6 text-left text-sm font-bold bg-white w-1/5">
               Email
             </th>
             <th className="py-3 px-6 text-left text-sm font-bold bg-white w-1/5">
-              Status
+              Start Location
             </th>
             <th className="py-3 px-6 text-left text-sm font-bold bg-white w-1/5">
-              Phone Number
+              End Location
+            </th>
+            <th className="py-3 px-6 text-left text-sm font-bold bg-white w-1/5">
+              Jeepney Code
+            </th>
+            <th className="py-3 px-6 text-left text-sm font-bold bg-white w-1/5">
+              Total Fare
             </th>
             <th className="py-3 px-6 text-left text-sm font-bold rounded-tr-lg bg-white w-1/5">
-              Created At
+              Trip Date
             </th>
           </tr>
         </thead>
 
-        <tbody className="divide-y divide-gray-700 sticky top-0">
-          {users.map((user) => (
+        <tbody className="divide-y divide-gray-700">
+          {trips.map((trip_history) => (
             <tr
-              key={user.id}
+              key={trip_history.id}
               className="hover:bg-gray-750 transition duration-150"
             >
-              <td className="py-4 px-6 text-sm">{user.full_name || "N/A"}</td>
-
-              <td className="py-4 px-6 text-sm">{user.email || "N/A"}</td>
-
               <td className="py-4 px-6 text-sm">
-                {user.email ? "Active" : "Unknown"}
+                {trip_history.user_id || "N/A"}
               </td>
 
               <td className="py-4 px-6 text-sm">
-                {user.phone_number || "N/A"}
+                {trip_history.start_location || "N/A"}
               </td>
 
               <td className="py-4 px-6 text-sm">
-                {new Date(user.created_at).toLocaleDateString()}
+                {trip_history.end_location || "N/A"}
+              </td>
+
+              <td className="py-4 px-6 text-sm">
+                {trip_history.jeepney_codes || "N/A"}
+              </td>
+
+              <td className="py-4 px-6 text-sm">
+                {trip_history.total_fare || "N/A"}
+              </td>
+
+              <td className="py-4 px-6 text-sm">
+                {new Date(trip_history.trip_date).toLocaleDateString()}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+function SavedRoutesTable({ saved }: { saved: any[] }) {
+  return (
+    <div
+      className="m-5 bg-[#ffcc66] rounded-lg overflow-y-auto"
+      style={{ maxHeight: "calc(60vh - 10px)" }}
+    >
+      <table className="min-w-full text-black table-fixed">
+        <thead className="sticky top-0">
+          <tr>
+            <th className="py-3 px-6 text-left text-sm font-bold rounded-tl-lg bg-white w-1/5">
+              Email
+            </th>
+            <th className="py-3 px-6 text-left text-sm font-bold bg-white w-1/5">
+              Route Name
+            </th>
+            <th className="py-3 px-6 text-left text-sm font-bold bg-white w-1/5">
+              Start Location
+            </th>
+            <th className="py-3 px-6 text-left text-sm font-bold bg-white w-1/5">
+              End Location
+            </th>
+            <th className="py-3 px-6 text-left text-sm font-bold bg-white w-1/5">
+              Jeepney Code
+            </th>
+            <th className="py-3 px-6 text-left text-sm font-bold rounded-tr-lg bg-white w-1/5">
+              Trip Date
+            </th>
+          </tr>
+        </thead>
+
+        <tbody className="divide-y divide-gray-700">
+          {saved.map((saved_routes) => (
+            <tr
+              key={saved_routes.id}
+              className="hover:bg-gray-750 transition duration-150"
+            >
+              <td className="py-4 px-6 text-sm">
+                {saved_routes.user_id || "N/A"}
+              </td>
+
+              <td className="py-4 px-6 text-sm">
+                {saved_routes.route_name || "N/A"}
+              </td>
+
+              <td className="py-4 px-6 text-sm">
+                {saved_routes.start_location || "N/A"}
+              </td>
+
+              <td className="py-4 px-6 text-sm">
+                {saved_routes.end_location || "N/A"}
+              </td>
+
+              <td className="py-4 px-6 text-sm">
+                {saved_routes.jeepney_codes || "N/A"}
+              </td>
+
+              <td className="py-4 px-6 text-sm">
+                {new Date(saved_routes.created_at).toLocaleDateString()}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+function NewJeepneyRoutesTable({ newJ }: { newJ: any[] }) {
+  return (
+    <div
+      className="m-5 bg-[#ffcc66] rounded-lg overflow-y-auto"
+      style={{ maxHeight: "calc(60vh - 10px)" }}
+    >
+      <table className="min-w-full text-black table-fixed">
+        <thead className="sticky top-0">
+          <tr>
+            <th className="py-3 px-6 text-left text-sm font-bold rounded-tl-lg bg-white w-1/5">
+              Route Code
+            </th>
+            <th className="py-3 px-6 text-left text-sm font-bold bg-white w-1/5">
+              Start Point
+            </th>
+            <th className="py-3 px-6 text-left text-sm font-bold rounded-tr-lg bg-white w-1/5">
+              End Point
+            </th>
+          </tr>
+        </thead>
+
+        <tbody className="divide-y divide-gray-700">
+          {newJ.map((new_jeepney_routes) => (
+            <tr
+              key={new_jeepney_routes.id}
+              className="hover:bg-gray-750 transition duration-150"
+            >
+              <td className="py-4 px-6 text-sm">
+                {new_jeepney_routes.route_code || "N/A"}
+              </td>
+
+              <td className="py-4 px-6 text-sm">
+                {new_jeepney_routes.start_point_name || "N/A"}
+              </td>
+
+              <td className="py-4 px-6 text-sm">
+                {new_jeepney_routes.end_point_name || "N/A"}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+function JeepneyRoutesTable({ jeepR }: { jeepR: any[] }) {
+  return (
+    <div
+      className="m-5 bg-[#ffcc66] rounded-lg overflow-y-auto"
+      style={{ maxHeight: "calc(60vh - 10px)" }}
+    >
+      <table className="min-w-full text-black table-fixed">
+        <thead className="sticky top-0">
+          <tr>
+            <th className="py-3 px-6 text-left text-sm font-bold rounded-tl-lg bg-white w-1/5">
+              Route Code
+            </th>
+            <th className="py-3 px-6 text-left text-sm font-bold bg-white w-1/5">
+              Name
+            </th>
+            <th className="py-3 px-6 text-left text-sm font-bold bg-white w-1/5">
+              Length
+            </th>
+            <th className="py-3 px-6 text-left text-sm font-bold bg-white w-1/5">
+              City
+            </th>
+            <th className="py-3 px-6 text-left text-sm font-bold rounded-tr-lg bg-white w-1/5">
+              Jeepney Type
+            </th>
+          </tr>
+        </thead>
+
+        <tbody className="divide-y divide-gray-700">
+          {jeepR.map((jeepney_routes) => (
+            <tr
+              key={jeepney_routes.id}
+              className="hover:bg-gray-750 transition duration-150"
+            >
+              <td className="py-4 px-6 text-sm">
+                {jeepney_routes.route_code || "N/A"}
+              </td>
+
+              <td className="py-4 px-6 text-sm">
+                {jeepney_routes.name || "N/A"}
+              </td>
+
+              <td className="py-4 px-6 text-sm">
+                {jeepney_routes.length_m || "N/A"}
+              </td>
+
+              <td className="py-4 px-6 text-sm">
+                {jeepney_routes.city || "N/A"}
+              </td>
+
+              <td className="py-4 px-6 text-sm">
+                {jeepney_routes.jeepney_type || "N/A"}
               </td>
             </tr>
           ))}
@@ -237,6 +416,10 @@ function TripHistoryTable({ users }: { users: any[] }) {
 
 export default async function DashboardPage() {
   const users = await getUsersData();
+  const trips = await getTripHistoryData();
+  const saved = await getSavedRoutesData();
+  const newJ = await getNewJeepneyRoutesData();
+  const jeepR = await getJeepneyRoutesData();
 
   return (
     // <div className="flex flex-col items-center justify-center min-h-screen p-8 bg-[#404040]">
@@ -260,22 +443,28 @@ export default async function DashboardPage() {
     //   </footer>
     // </div>
 
-    <div className="p-8 min-h-screen">
-      <h1 className="text-2xl font-bold mb-6 text-center">
+    <div className="p-8 min-h-screen bg-[#2D2D2D] font-[lexend]">
+      <h1 className="text-[29px] font-bold font-[lexend] mb-6 text-center">
         Welcome to the Routewise Admin Dashboard
       </h1>
 
-      <div className="bg-[#404040] rounded-lg h-125">
-        <Toggle
-          // We render the table component on the server and pass the result
-          userTable={<UserTable users={users} />}
-          tripHistoryTable={<TripHistoryTable users={users} />}
-        />
-      </div>
-
-      {users.length === 0 && (
-        <p className="mt-4 text-gray-400">No users found.</p>
-      )}
+      <main className="justify-center">
+        <div className="bg-[#404040] rounded-[20px] h-[450px] w-[1280px]">
+          <Toggle
+            // We render the table component on the server and pass the result
+            userTable={<UserTable users={users} />}
+            tripHistoryTable={<TripHistoryTable trips={trips} />}
+            savedRoutesTable={<SavedRoutesTable saved={saved} />}
+            newJeepneyRoutesTable={<NewJeepneyRoutesTable newJ={newJ} />}
+            jeepneyRoutesTable={<JeepneyRoutesTable jeepR={jeepR} />}
+            users={users}
+            trips={trips}
+            saved={saved}
+            newJ={newJ}
+            jeepR={jeepR}
+          />
+        </div>
+      </main>
     </div>
   );
 }
