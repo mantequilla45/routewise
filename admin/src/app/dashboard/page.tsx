@@ -118,11 +118,11 @@ async function getJeepneyRoutesData(): Promise<JeepneyRoutesData[]> {
 function UserTable({ users }: { users: any[] }) {
   return (
     <div
-      className="m-5 bg-[#ffcc66] rounded-lg overflow-y-auto"
-      style={{ maxHeight: "calc(60vh - 10px)" }}
+      className="m-5 bg-[#FFCC66] rounded-lg overflow-y-auto"
+      style={{ maxHeight: "330px" }}
     >
-      <table className="min-w-full text-black table-fixed sticky top-0">
-        <thead>
+      <table className="min-w-full text-black table-fixed">
+        <thead className="top-0 sticky">
           <tr>
             <th className="py-3 px-6 text-left text-sm font-bold rounded-tl-lg bg-white w-1/5">
               Full Name
@@ -145,7 +145,7 @@ function UserTable({ users }: { users: any[] }) {
           </tr>
         </thead>
 
-        <tbody className="divide-y divide-gray-700 sticky top-0">
+        <tbody className="divide-y divide-gray-700">
           {users.map((user) => (
             <tr
               key={user.id}
@@ -183,8 +183,8 @@ function TripHistoryTable({ trips }: { trips: any[] }) {
       className="m-5 bg-[#ffcc66] rounded-lg overflow-y-auto"
       style={{ maxHeight: "calc(60vh - 10px)" }}
     >
-      <table className="min-w-full text-black table-fixed sticky top-0">
-        <thead>
+      <table className="min-w-full text-black table-fixed">
+        <thead className="sticky top-0">
           <tr>
             <th className="py-3 px-6 text-left text-sm font-bold rounded-tl-lg bg-white w-1/5">
               Email
@@ -207,7 +207,7 @@ function TripHistoryTable({ trips }: { trips: any[] }) {
           </tr>
         </thead>
 
-        <tbody className="divide-y divide-gray-700 sticky top-0">
+        <tbody className="divide-y divide-gray-700">
           {trips.map((trip_history) => (
             <tr
               key={trip_history.id}
@@ -249,8 +249,8 @@ function SavedRoutesTable({ saved }: { saved: any[] }) {
       className="m-5 bg-[#ffcc66] rounded-lg overflow-y-auto"
       style={{ maxHeight: "calc(60vh - 10px)" }}
     >
-      <table className="min-w-full text-black table-fixed sticky top-0">
-        <thead>
+      <table className="min-w-full text-black table-fixed">
+        <thead className="sticky top-0">
           <tr>
             <th className="py-3 px-6 text-left text-sm font-bold rounded-tl-lg bg-white w-1/5">
               Email
@@ -273,7 +273,7 @@ function SavedRoutesTable({ saved }: { saved: any[] }) {
           </tr>
         </thead>
 
-        <tbody className="divide-y divide-gray-700 sticky top-0">
+        <tbody className="divide-y divide-gray-700">
           {saved.map((saved_routes) => (
             <tr
               key={saved_routes.id}
@@ -315,8 +315,8 @@ function NewJeepneyRoutesTable({ newJ }: { newJ: any[] }) {
       className="m-5 bg-[#ffcc66] rounded-lg overflow-y-auto"
       style={{ maxHeight: "calc(60vh - 10px)" }}
     >
-      <table className="min-w-full text-black table-fixed sticky top-0">
-        <thead>
+      <table className="min-w-full text-black table-fixed">
+        <thead className="sticky top-0">
           <tr>
             <th className="py-3 px-6 text-left text-sm font-bold rounded-tl-lg bg-white w-1/5">
               Route Code
@@ -330,7 +330,7 @@ function NewJeepneyRoutesTable({ newJ }: { newJ: any[] }) {
           </tr>
         </thead>
 
-        <tbody className="divide-y divide-gray-700 sticky top-0">
+        <tbody className="divide-y divide-gray-700">
           {newJ.map((new_jeepney_routes) => (
             <tr
               key={new_jeepney_routes.id}
@@ -360,8 +360,8 @@ function JeepneyRoutesTable({ jeepR }: { jeepR: any[] }) {
       className="m-5 bg-[#ffcc66] rounded-lg overflow-y-auto"
       style={{ maxHeight: "calc(60vh - 10px)" }}
     >
-      <table className="min-w-full text-black table-fixed sticky top-0">
-        <thead>
+      <table className="min-w-full text-black table-fixed">
+        <thead className="sticky top-0">
           <tr>
             <th className="py-3 px-6 text-left text-sm font-bold rounded-tl-lg bg-white w-1/5">
               Route Code
@@ -381,7 +381,7 @@ function JeepneyRoutesTable({ jeepR }: { jeepR: any[] }) {
           </tr>
         </thead>
 
-        <tbody className="divide-y divide-gray-700 sticky top-0">
+        <tbody className="divide-y divide-gray-700">
           {jeepR.map((jeepney_routes) => (
             <tr
               key={jeepney_routes.id}
@@ -443,37 +443,28 @@ export default async function DashboardPage() {
     //   </footer>
     // </div>
 
-    <div className="p-8 min-h-screen">
-      <h1 className="text-2xl font-bold mb-6 text-center">
+    <div className="p-8 min-h-screen bg-[#2D2D2D] font-[lexend]">
+      <h1 className="text-[29px] font-bold font-[lexend] mb-6 text-center">
         Welcome to the Routewise Admin Dashboard
       </h1>
 
-      <div className="bg-[#404040] rounded-lg h-125">
-        <Toggle
-          // We render the table component on the server and pass the result
-          userTable={<UserTable users={users} />}
-          tripHistoryTable={<TripHistoryTable trips={trips} />}
-          savedRoutesTable={<SavedRoutesTable saved={saved} />}
-          newJeepneyRoutesTable={<NewJeepneyRoutesTable newJ={newJ} />}
-          jeepneyRoutesTable={<JeepneyRoutesTable jeepR={jeepR} />}
-        />
-      </div>
-
-      {users.length === 0 && (
-        <p className="mt-4 text-gray-400">No users found.</p>
-      )}
-      {trips.length === 0 && (
-        <p className="mt-4 text-gray-400">No data found.</p>
-      )}
-      {saved.length === 0 && (
-        <p className="mt-4 text-gray-400">No routes found.</p>
-      )}
-      {newJ.length === 0 && (
-        <p className="mt-4 text-gray-400">No routes found.</p>
-      )}
-      {jeepR.length === 0 && (
-        <p className="mt-4 text-gray-400">No routes found.</p>
-      )}
+      <main className="justify-center">
+        <div className="bg-[#404040] rounded-[20px] h-[450px] w-[1280px]">
+          <Toggle
+            // We render the table component on the server and pass the result
+            userTable={<UserTable users={users} />}
+            tripHistoryTable={<TripHistoryTable trips={trips} />}
+            savedRoutesTable={<SavedRoutesTable saved={saved} />}
+            newJeepneyRoutesTable={<NewJeepneyRoutesTable newJ={newJ} />}
+            jeepneyRoutesTable={<JeepneyRoutesTable jeepR={jeepR} />}
+            users={users}
+            trips={trips}
+            saved={saved}
+            newJ={newJ}
+            jeepR={jeepR}
+          />
+        </div>
+      </main>
     </div>
   );
 }
