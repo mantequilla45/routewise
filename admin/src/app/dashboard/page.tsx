@@ -448,8 +448,8 @@ export default async function DashboardPage() {
         Welcome to the Routewise Admin Dashboard
       </h1>
 
-      <main className="justify-center">
-        <div className="bg-[#404040] rounded-[20px] h-[450px] w-[1280px]">
+      <main className=" flex justify-center">
+        <div className="bg-[#404040] rounded-[20px] h-[450px] w-[1280px] shadow-lg">
           <Toggle
             // We render the table component on the server and pass the result
             userTable={<UserTable users={users} />}

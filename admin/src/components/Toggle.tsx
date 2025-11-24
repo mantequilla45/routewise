@@ -80,7 +80,7 @@ export default function Toggle({
 
   return (
     <div>
-      <div className="flex w-full">
+      <div className="flex w-full items-center justify-center">
         <button
           onClick={() => setActiveTable("users")}
           className={getButtonClasses("users")}
