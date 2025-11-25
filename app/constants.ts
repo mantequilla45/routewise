@@ -21,6 +21,10 @@ export const BASE_URL = process.env.EXPO_PUBLIC_BASE_URL || 'http://localhost:80
 export const APP_SCHEME = process.env.EXPO_PUBLIC_SCHEME || 'routewise://';
 export const JWT_SECRET = process.env.JWT_SECRET || 'development_secret_change_in_production';
 
+// Supabase Constants (Server-side only!)
+export const SUPABASE_URL = process.env.SUPABASE_URL || process.env.EXPO_PUBLIC_SUPABASE_URL;
+export const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
 // Cookie Settings
 export const COOKIE_OPTIONS = {
     httpOnly: true,
