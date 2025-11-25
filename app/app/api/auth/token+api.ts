@@ -1,4 +1,6 @@
 import { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI } from "@/constants";
+import { upsertUser } from "@/lib/supabase-admin";
+import * as jose from "jose";
 
 export async function POST(request: Request) {
     try {
@@ -34,6 +36,30 @@ export async function POST(request: Request) {
         }
 
         const tokens = await tokenResponse.json();
+        
+        // Decode the ID token to get user info
+        if (tokens.id_token) {
+            try {
+                const userInfo = jose.decodeJwt(tokens.id_token) as any;
+                
+                // Save or update user in Supabase
+                const { data: dbUser, error: dbError, isNewUser } = await upsertUser({
+                    google_id: userInfo.sub,
+                    email: userInfo.email,
+                    full_name: userInfo.name,
+                    picture: userInfo.picture,
+                });
+
+                if (dbError) {
+                    console.error("Failed to save user to Supabase:", dbError);
+                    // Continue with authentication even if database save fails
+                }
+
+                console.log(`User ${isNewUser ? 'created' : 'updated'}: ${userInfo.email}`);
+            } catch (decodeError) {
+                console.error("Failed to decode ID token:", decodeError);
+            }
+        }
         
         // Return the tokens to the client
         return Response.json({
