@@ -57,6 +57,11 @@ interface JeepneyRoutesData {
 
 async function getUsersData(): Promise<UserData[]> {
   const supabaseAdmin = createAdminClient();
+  
+  if (!supabaseAdmin) {
+    console.warn("Supabase client not available");
+    return [];
+  }
 
   const { data: users, error } = await supabaseAdmin
     .from("users")
@@ -70,6 +75,11 @@ async function getUsersData(): Promise<UserData[]> {
 }
 async function getTripHistoryData(): Promise<TripHistoryData[]> {
   const supabaseAdmin = createAdminClient();
+  
+  if (!supabaseAdmin) {
+    console.warn("Supabase client not available");
+    return [];
+  }
 
   const { data: trip, error } = await supabaseAdmin
     .from("trip_history")
@@ -83,6 +93,11 @@ async function getTripHistoryData(): Promise<TripHistoryData[]> {
 }
 async function getSavedRoutesData(): Promise<SavedRoutesData[]> {
   const supabaseAdmin = createAdminClient();
+  
+  if (!supabaseAdmin) {
+    console.warn("Supabase client not available");
+    return [];
+  }
 
   const { data: savedRoutes, error } = await supabaseAdmin
     .from("saved_routes")
@@ -95,6 +110,11 @@ async function getSavedRoutesData(): Promise<SavedRoutesData[]> {
 }
 async function getNewJeepneyRoutesData(): Promise<NewJeepneyRoutesData[]> {
   const supabaseAdmin = createAdminClient();
+  
+  if (!supabaseAdmin) {
+    console.warn("Supabase client not available");
+    return [];
+  }
 
   const { data: newJeepneyRoutes, error } = await supabaseAdmin
     .from("new_jeepney_routes")
@@ -107,6 +127,11 @@ async function getNewJeepneyRoutesData(): Promise<NewJeepneyRoutesData[]> {
 }
 async function getJeepneyRoutesData(): Promise<JeepneyRoutesData[]> {
   const supabaseAdmin = createAdminClient();
+  
+  if (!supabaseAdmin) {
+    console.warn("Supabase client not available");
+    return [];
+  }
 
   const { data: jeepneyRoutes, error } = await supabaseAdmin
     .from("jeepney_routes")
