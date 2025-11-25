@@ -2,6 +2,9 @@ import React from "react";
 import { createAdminClient } from "@/lib/supabase/admin";
 import Toggle from "@/components/Toggle";
 
+// Force dynamic rendering to avoid build-time data fetching
+export const dynamic = 'force-dynamic';
+
 interface UserData {
   id: string;
   full_name: string | null;
