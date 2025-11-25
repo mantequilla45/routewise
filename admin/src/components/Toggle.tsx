@@ -2,6 +2,57 @@
 
 import { useState } from "react";
 
+// Import types from dashboard page
+interface UserData {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  phone_number: string | null;
+  created_at: string;
+  commuter_type: string | null;
+}
+interface TripHistoryData {
+  id: string;
+  user_id: string;
+  start_location: string;
+  end_location: string;
+  start_lat: string;
+  end_lat: string;
+  start_lng: string;
+  end_lng: string;
+  jeepney_codes: string;
+  total_fare: string;
+  trip_date: string;
+}
+interface SavedRoutesData {
+  id: string;
+  user_id: string;
+  route_name: string;
+  start_location: string;
+  end_location: string;
+  start_lat: string;
+  end_lat: string;
+  start_lng: string;
+  end_lng: string;
+  jeepney_codes: string;
+  total_fare: string;
+  created_at: string;
+}
+interface NewJeepneyRoutesData {
+  id: string;
+  route_code: string;
+  start_point_name: string;
+  end_point_name: string;
+}
+interface JeepneyRoutesData {
+  id: string;
+  route_code: string;
+  name: string;
+  city: string | null;
+  jeepney_type: string | null;
+  length_m: string | null;
+}
+
 interface ToggleProps {
   userTable: React.ReactNode;
   tripHistoryTable: React.ReactNode;
@@ -9,11 +60,11 @@ interface ToggleProps {
   newJeepneyRoutesTable: React.ReactNode;
   jeepneyRoutesTable: React.ReactNode;
 
-  users: any[];
-  trips: any[];
-  saved: any[];
-  newJ: any[];
-  jeepR: any[];
+  users: UserData[];
+  trips: TripHistoryData[];
+  saved: SavedRoutesData[];
+  newJ: NewJeepneyRoutesData[];
+  jeepR: JeepneyRoutesData[];
 }
 
 type ActiveTableId =

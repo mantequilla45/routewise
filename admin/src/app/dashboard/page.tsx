@@ -1,6 +1,5 @@
 import React from "react";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server-client";
 import Toggle from "@/components/Toggle";
 
 interface UserData {
@@ -36,6 +35,7 @@ interface SavedRoutesData {
   end_lng: string;
   jeepney_codes: string;
   total_fare: string;
+  created_at: string;
 }
 interface NewJeepneyRoutesData {
   id: string;
@@ -49,6 +49,7 @@ interface JeepneyRoutesData {
   name: string;
   city: string | null;
   jeepney_type: string | null;
+  length_m: string | null;
 }
 
 async function getUsersData(): Promise<UserData[]> {
@@ -115,7 +116,7 @@ async function getJeepneyRoutesData(): Promise<JeepneyRoutesData[]> {
 }
 
 // Component to render the table
-function UserTable({ users }: { users: any[] }) {
+function UserTable({ users }: { users: UserData[] }) {
   return (
     <div
       className="m-5 bg-[#FFCC66] rounded-lg overflow-y-auto"
@@ -177,7 +178,7 @@ function UserTable({ users }: { users: any[] }) {
     </div>
   );
 }
-function TripHistoryTable({ trips }: { trips: any[] }) {
+function TripHistoryTable({ trips }: { trips: TripHistoryData[] }) {
   return (
     <div
       className="m-5 bg-[#ffcc66] rounded-lg overflow-y-auto"
@@ -243,7 +244,7 @@ function TripHistoryTable({ trips }: { trips: any[] }) {
     </div>
   );
 }
-function SavedRoutesTable({ saved }: { saved: any[] }) {
+function SavedRoutesTable({ saved }: { saved: SavedRoutesData[] }) {
   return (
     <div
       className="m-5 bg-[#ffcc66] rounded-lg overflow-y-auto"
@@ -309,7 +310,7 @@ function SavedRoutesTable({ saved }: { saved: any[] }) {
     </div>
   );
 }
-function NewJeepneyRoutesTable({ newJ }: { newJ: any[] }) {
+function NewJeepneyRoutesTable({ newJ }: { newJ: NewJeepneyRoutesData[] }) {
   return (
     <div
       className="m-5 bg-[#ffcc66] rounded-lg overflow-y-auto"
@@ -354,7 +355,7 @@ function NewJeepneyRoutesTable({ newJ }: { newJ: any[] }) {
     </div>
   );
 }
-function JeepneyRoutesTable({ jeepR }: { jeepR: any[] }) {
+function JeepneyRoutesTable({ jeepR }: { jeepR: JeepneyRoutesData[] }) {
   return (
     <div
       className="m-5 bg-[#ffcc66] rounded-lg overflow-y-auto"
