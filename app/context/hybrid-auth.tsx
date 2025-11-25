@@ -28,6 +28,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = React.useState<AuthUser | null>(null);
     const [isLoading, setIsLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
+    const [isProcessingAuth, setIsProcessingAuth] = React.useState(false);
+    const authProcessingRef = React.useRef(false);
 
     // Load session on mount
     React.useEffect(() => {
@@ -137,6 +139,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     const handleGoogleToken = async (googleAccessToken: string) => {
+        // Prevent duplicate processing
+        if (authProcessingRef.current) {
+            console.log('Auth already in progress, skipping duplicate call');
+            return;
+        }
+        
+        const requestId = Math.random().toString(36).substring(7);
+        console.log(`[${requestId}] Starting authentication process`);
+        
+        authProcessingRef.current = true;
+        setIsProcessingAuth(true);
+        
         try {
             // Get user info from Google
             const response = await fetch(
@@ -151,29 +165,64 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             }
             
             const googleUser = await response.json();
+            console.log(`[${requestId}] Google user info received:`, { email: googleUser.email, name: googleUser.name });
             
-            // First check if user exists
-            const { data: existingUser } = await supabase
+            // Google userinfo v2 returns 'id' not 'sub'
+            const googleId = googleUser.id || googleUser.sub;
+            
+            // First check if user exists (use maybeSingle to avoid error when no rows)
+            console.log(`[${requestId}] Searching for existing user with email:`, googleUser.email, 'Google ID:', googleId);
+            const { data: existingUser, error: searchError } = await supabase
                 .from('users')
                 .select('*')
-                .eq('email', googleUser.email)
-                .single();
+                .or(`email.eq.${googleUser.email},google_id.eq.${googleId}`)
+                .maybeSingle();
+            
+            if (searchError) {
+                console.error('Error searching for user:', searchError);
+            } else if (existingUser) {
+                console.log('Found existing user:', existingUser.email, 'with ID:', existingUser.id);
+            } else {
+                console.log('No existing user found, will create new user');
+            }
 
             let dbUser;
             if (existingUser) {
-                // Update existing user
+                // Update existing user - use ID instead of email for more reliable update
                 const { data, error } = await supabase
                     .from('users')
                     .update({
                         full_name: googleUser.name,
                         avatar_url: googleUser.picture,
+                        google_id: googleId, // Add Google ID
+                        picture: googleUser.picture, // Add picture field
+                        last_login: new Date().toISOString(), // Add last login
+                        login_count: (existingUser.login_count || 0) + 1, // Increment login count
+                        auth_provider: 'google', // Set auth provider
                         updated_at: new Date().toISOString(),
                     })
-                    .eq('email', googleUser.email)
+                    .eq('id', existingUser.id) // Use ID instead of email
                     .select()
-                    .single();
-                dbUser = data;
-                if (error) console.error('Error updating user:', error);
+                    .maybeSingle(); // Use maybeSingle to avoid error
+                
+                if (error) {
+                    console.error('Error updating user:', error);
+                    dbUser = existingUser; // Use existing user data as fallback
+                } else {
+                    console.log('User updated successfully:', googleUser.email);
+                    // If update succeeded but no data returned, use the existing user with updated fields
+                    dbUser = data || {
+                        ...existingUser,
+                        full_name: googleUser.name,
+                        avatar_url: googleUser.picture,
+                        google_id: googleId,
+                        picture: googleUser.picture,
+                        last_login: new Date().toISOString(),
+                        login_count: (existingUser.login_count || 0) + 1,
+                        auth_provider: 'google',
+                        updated_at: new Date().toISOString(),
+                    };
+                }
             } else {
                 // Create new user
                 const { data, error } = await supabase
@@ -182,19 +231,63 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                         email: googleUser.email,
                         full_name: googleUser.name,
                         avatar_url: googleUser.picture,
+                        google_id: googleId, // Add Google ID
+                        picture: googleUser.picture, // Add picture field
+                        last_login: new Date().toISOString(), // Add last login
+                        login_count: 1, // Set initial login count
+                        auth_provider: 'google', // Set auth provider
                         created_at: new Date().toISOString(),
                         updated_at: new Date().toISOString(),
                         is_admin: false,
                     })
                     .select()
-                    .single();
-                dbUser = data;
-                if (error) console.error('Error creating user:', error);
+                    .maybeSingle(); // Use maybeSingle to avoid error
+                
+                if (error) {
+                    console.error('Error creating user:', error);
+                    
+                    // If duplicate key error, try to fetch the existing user
+                    if (error.code === '23505') {
+                        console.log('User already exists, fetching existing user...');
+                        const { data: fetchedUser } = await supabase
+                            .from('users')
+                            .select('*')
+                            .eq('email', googleUser.email)
+                            .maybeSingle();
+                        
+                        if (fetchedUser) {
+                            dbUser = fetchedUser;
+                            console.log('Successfully fetched existing user');
+                        }
+                    }
+                } else {
+                    console.log('New user created:', googleUser.email);
+                    // If insert succeeded but no data returned, create a user object
+                    dbUser = data || {
+                        email: googleUser.email,
+                        full_name: googleUser.name,
+                        avatar_url: googleUser.picture,
+                        google_id: googleId,
+                        picture: googleUser.picture,
+                        last_login: new Date().toISOString(),
+                        login_count: 1,
+                        auth_provider: 'google',
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString(),
+                        is_admin: false,
+                    };
+                }
             }
 
             if (!dbUser) {
-                console.error('Could not save user to Supabase');
-                // Continue anyway - user is still authenticated via Google
+                console.log('Warning: Could not retrieve user data from Supabase, using Google data');
+                // Use Google data as fallback
+                dbUser = {
+                    email: googleUser.email,
+                    full_name: googleUser.name,
+                    avatar_url: googleUser.picture,
+                    google_id: googleId,
+                };
             }
 
             const userData: AuthUser = {
@@ -217,6 +310,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setError("Failed to complete sign in");
         } finally {
             setIsLoading(false);
+            // Reset the flag after a delay to allow for legitimate re-authentication
+            setTimeout(() => {
+                authProcessingRef.current = false;
+                setIsProcessingAuth(false);
+            }, 1000); // 1 second cooldown
         }
     };
 
