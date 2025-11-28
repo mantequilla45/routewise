@@ -35,15 +35,34 @@ export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{
 
             if (Array.isArray(routes) && routes.length > 0) {
                 setResults(routes);
-                const googlePolylineRoutes: GoogleMapsPolyline[] = routes.map(
-                    (r) => ({
-                        id: r.routeId,
-                        coordinates: r.latLng,
-                        color: '#33ff00ff',
+                
+                // Filter and transform routes for display on map
+                const validRoutes = routes.filter(r => 
+                    r.latLng && 
+                    r.latLng.length > 0 && 
+                    !r.shouldCrossRoad && 
+                    !r.routeId.endsWith('_CROSS')
+                );
+                
+                console.log(`Filtered ${routes.length} routes to ${validRoutes.length} valid polylines`);
+                
+                const googlePolylineRoutes: GoogleMapsPolyline[] = validRoutes.map((r, index) => {
+                    // Ensure coordinates are in the correct format
+                    const polyline: GoogleMapsPolyline = {
+                        id: `route_${index}`, // Simple numeric string ID
+                        coordinates: r.latLng.map(coord => ({
+                            latitude: coord.latitude,
+                            longitude: coord.longitude
+                        })),
+                        color: '#33ff00', // Green color without alpha
                         width: 16,
                         geodesic: true
-                    })
-                );
+                    };
+                    console.log(`Created polyline ${polyline.id} with ${polyline.coordinates.length} points`);
+                    return polyline;
+                });
+                
+                console.log('Setting routes:', googlePolylineRoutes.length);
                 setRoutes(googlePolylineRoutes);
             } else if (routes && "error" in routes) {
                 console.warn("Server error:", routes.error);
@@ -56,12 +75,19 @@ export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{
     };
 
     const onClear = () => {
-        setPointA(null);
-        setPointB(null);
-        setRoutes(null);
-        setResults(null);
-        setIsPinPlacementEnabled(false);
-        setWasSelectingFirstLocation(false);
+        // Clear all points and routes
+        console.log("Clearing map...");
+        setResults([]); // Clear route results first
+        setRoutes([]); // Clear polylines from map
+        
+        // Use a small delay to ensure routes are cleared before points
+        setTimeout(() => {
+            setPointA(null);
+            setPointB(null);
+            setIsPinPlacementEnabled(false);
+            setWasSelectingFirstLocation(false);
+            console.log("Map cleared - all points and routes removed");
+        }, 50);
     };
 
     return (
@@ -100,14 +126,14 @@ export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{
                                         <Text style={styles.pointInputText}
                                             numberOfLines={1}
                                             ellipsizeMode="tail">
-                                            {pointA ? latLongStringifier(pointA) : "Tap to select first location"}
+                                            {pointA ? latLongStringifier(pointA) : "Select starting point"}
                                         </Text>
                                     </View>
 
                                     <View style={[styles.pointInputBlock, { justifyContent: 'flex-end' }]}>
                                         <Text style={styles.pointPickerText}
                                             numberOfLines={1}>
-                                            Choose on Map
+                                            Select on Map
                                         </Text>
                                         <View style={styles.pointInputIconRight}>
                                             <Ionicons name={'globe-outline'} color={'black'} size={16} />
@@ -132,14 +158,14 @@ export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{
                                         <Text style={styles.pointInputText}
                                             numberOfLines={1}
                                             ellipsizeMode="tail">
-                                            {pointB ? latLongStringifier(pointB) : "Tap to select second location"}
+                                            {pointB ? latLongStringifier(pointB) : "Select destination"}
                                         </Text>
 
                                     </View>
                                     <View style={[styles.pointInputBlock, { justifyContent: 'flex-end' }]}>
                                         <Text style={styles.pointPickerText}
                                             numberOfLines={1}>
-                                            Choose on Map
+                                            Select on Map
                                         </Text>
                                         <View style={styles.pointInputIconRight}>
                                             <Ionicons name={'globe-outline'} color={'black'} size={16} />
@@ -165,9 +191,6 @@ export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{
                     >
                         {results?.map((route, index) => (
                             <RouteCard key={route.routeId || index} route={route} />
-                        ))}
-                        {results?.map((route, index) => (
-                            <RouteCard key={"dup-" + (route.routeId || index)} route={route} />
                         ))}
                     </ScrollView>
                 </View>

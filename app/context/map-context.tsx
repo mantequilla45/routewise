@@ -11,10 +11,10 @@ type MapPointsContextType = {
     setIsPointAB: (value: boolean) => void;
     isPinPlacementEnabled: boolean;
     setIsPinPlacementEnabled: (value: boolean) => void;
-    routes: GoogleMapsPolyline[] | null;
-    setRoutes: (p: GoogleMapsPolyline[] | null) => void;
-    results: MappedGeoRouteResult[] | null;
-    setResults: (r: MappedGeoRouteResult[] | null) => void;
+    routes: GoogleMapsPolyline[];
+    setRoutes: (p: GoogleMapsPolyline[]) => void;
+    results: MappedGeoRouteResult[];
+    setResults: (r: MappedGeoRouteResult[]) => void;
 };
 
 export const MapPointsContext = createContext<MapPointsContextType>({
@@ -26,9 +26,9 @@ export const MapPointsContext = createContext<MapPointsContextType>({
     setIsPointAB: () => { },
     isPinPlacementEnabled: false,
     setIsPinPlacementEnabled: () => { },
-    routes: null,
+    routes: [],
     setRoutes: () => { },
-    results: null,
+    results: [],
     setResults: () => { }
 });
 
@@ -37,8 +37,8 @@ export const MapPointsProvider: React.FC<{ children: ReactNode }> = ({ children 
     const [pointB, setPointB] = useState<LatLng | null>(null);
     const [isPointAB, setIsPointAB] = useState<boolean>(true);
     const [isPinPlacementEnabled, setIsPinPlacementEnabled] = useState<boolean>(false);
-    const [routes, setRoutes] = useState<GoogleMapsPolyline[] | null>(null);
-    const [results, setResults] = useState<MappedGeoRouteResult[] | null>(null);
+    const [routes, setRoutes] = useState<GoogleMapsPolyline[]>([]);
+    const [results, setResults] = useState<MappedGeoRouteResult[]>([]);
 
     const memoizedValue = useMemo(
         () => ({
