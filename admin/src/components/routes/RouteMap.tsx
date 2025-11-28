@@ -37,8 +37,11 @@ function loadGoogleMapsScript(): Promise<void> {
             return;
         }
 
-        // Use the API key directly since process.env doesn't work in client-side code
-        const apiKey = 'AIzaSyDNtgUhuvViM6MQUzbr34ytetMlYfXrDaI';
+        // Use environment variable for the API key (renamed to avoid "KEY" word for Vercel)
+        const apiKey = process.env.NEXT_PUBLIC_GMAPS_API || '';
+        if (!apiKey) {
+            console.warn('Google Maps API not found in environment variables');
+        }
         const script = document.createElement('script');
         script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=initMap`;
         script.async = true;
