@@ -17,7 +17,7 @@ export async function query(sql: string, params?: unknown[]) {
     try {
         // Convert positional parameters ($1, $2) to named parameters for Supabase
         let formattedSql = sql;
-        const paramObj: Record<string, any> = {};
+        const paramObj: Record<string, unknown> = {};
         
         if (params && params.length > 0) {
             params.forEach((param, index) => {
@@ -34,7 +34,7 @@ export async function query(sql: string, params?: unknown[]) {
 
         if (error) {
             // Fallback to direct SQL if RPC doesn't exist
-            const { data: directData, error: directError } = await supabase
+            const { error: directError } = await supabase
                 .from('routes')
                 .select('*')
                 .limit(1);

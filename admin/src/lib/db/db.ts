@@ -31,26 +31,27 @@ pool.on('connect', () => {
 
 export async function query(sql: string, params?: unknown[]) {
     const maxRetries = 3;
-    let lastError: any;
+    let lastError: Error | unknown;
     
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
             const res = await pool.query(sql, params);
             return res.rows;
-        } catch (error: any) {
+        } catch (error) {
             lastError = error;
+            const errorObj = error as { code?: string; message?: string; detail?: string };
             console.error(`Database query attempt ${attempt}/${maxRetries} failed:`, {
-                code: error.code,
-                message: error.message,
-                detail: error.detail
+                code: errorObj.code,
+                message: errorObj.message,
+                detail: errorObj.detail
             });
             
             // If it's a connection error and we have retries left, wait and retry
             if (attempt < maxRetries && (
-                error.code === 'ETIMEDOUT' || 
-                error.code === 'ECONNREFUSED' ||
-                error.code === 'ENOTFOUND' ||
-                error.message?.includes('Connection terminated')
+                errorObj.code === 'ETIMEDOUT' || 
+                errorObj.code === 'ECONNREFUSED' ||
+                errorObj.code === 'ENOTFOUND' ||
+                errorObj.message?.includes('Connection terminated')
             )) {
                 console.log(`Waiting ${attempt * 1000}ms before retry...`);
                 await new Promise(resolve => setTimeout(resolve, attempt * 1000));
