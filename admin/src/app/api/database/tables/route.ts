@@ -17,7 +17,7 @@ export async function GET() {
         const tables = await query(tablesQuery);
         
         // Get row counts and sample data for each table
-        const tableData: any = {};
+        const tableData: Record<string, unknown> = {};
         
         for (const table of tables) {
             const tableName = table.table_name;

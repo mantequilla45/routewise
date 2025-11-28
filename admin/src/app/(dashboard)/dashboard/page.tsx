@@ -9,8 +9,16 @@ export default function DashboardPage() {
         todayTrips: 0,
         revenue: 0
     });
-    const [recentRoutes, setRecentRoutes] = useState<any[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    interface RecentRoute {
+        id: string;
+        route_code: string;
+        created_at: string;
+        distance?: number;
+        start_point_name?: string;
+        end_point_name?: string;
+    }
+    const [recentRoutes, setRecentRoutes] = useState<RecentRoute[]>([]);
+    const [, setIsLoading] = useState(true);
 
     useEffect(() => {
         fetchDashboardData();
@@ -112,7 +120,7 @@ export default function DashboardPage() {
             {/* Page Header */}
             <div>
                 <h1 className="text-3xl font-bold text-gray-900">Dashboard Overview</h1>
-                <p className="text-gray-500 mt-2">Welcome back! Here's what's happening with your routes today.</p>
+                <p className="text-gray-500 mt-2">Welcome back! Here&apos;s what&apos;s happening with your routes today.</p>
             </div>
 
             {/* Stats Grid */}

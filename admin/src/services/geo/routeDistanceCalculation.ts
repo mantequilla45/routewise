@@ -36,11 +36,9 @@ export async function calculateRoute(latLngA: LatLng, latLngB: LatLng) {
     }
     
     // Fallback to original calculation if smart routing doesn't work
-    const direction = getMovementDirection(latLngA, latLngB);
     const rawResults = await calculateRouteDistances(
         snappedRoutesA,
-        snappedRoutesB,
-        [direction.horizontal, direction.vertical]
+        snappedRoutesB
     );
 
     if (!rawResults || rawResults.length === 0) {
@@ -144,8 +142,7 @@ function findMatchingRoutePairs(
 
 async function calculateRouteDistances(
     snappedRoutesA: RouteSnap[],
-    snappedRoutesB: RouteSnap[],
-    direction: [string, string]
+    snappedRoutesB: RouteSnap[]
 ) {
     const matchingPairs = findMatchingRoutePairs(snappedRoutesA, snappedRoutesB);
 
@@ -246,24 +243,6 @@ async function calculateRouteDistances(
     }
 
     return results;
-}
-
-function getMovementDirection(latLngA: LatLng, latLngB: LatLng) {
-    const dLat = latLngB.latitude - latLngA.latitude;
-    const dLon = latLngB.longitude - latLngA.longitude;
-
-    let horizontal: "forward" | "reverse" | "none";
-    let vertical: "forward" | "reverse" | "none";
-
-    if (dLon > 0) horizontal = "forward";
-    else if (dLon < 0) horizontal = "reverse";
-    else horizontal = "none";
-
-    if (dLat > 0) vertical = "forward";
-    else if (dLat < 0) vertical = "reverse";
-    else vertical = "none";
-
-    return { horizontal, vertical };
 }
 
 function parsePostgisGeoJson(segmentGeoJSON: string): LatLng[] {
