@@ -8,7 +8,7 @@ import { Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 
 import RouteCard from "./RouteCard";
 
 export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{ exit: () => void, setShowBottomSheet: (value: boolean) => void }>) {
-    const { setIsPointAB, setIsPinPlacementEnabled, pointA, pointB, setRoutes, results, setResults, isPinPlacementEnabled } = useContext(MapPointsContext)
+    const { setIsPointAB, setIsPinPlacementEnabled, pointA, pointB, setPointA, setPointB, setRoutes, results, setResults, isPinPlacementEnabled } = useContext(MapPointsContext)
     const [wasSelectingFirstLocation, setWasSelectingFirstLocation] = useState(false)
 
     // Auto-open second location selection after first location is selected
@@ -55,6 +55,15 @@ export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{
         }
     };
 
+    const onClear = () => {
+        setPointA(null);
+        setPointB(null);
+        setRoutes(null);
+        setResults(null);
+        setIsPinPlacementEnabled(false);
+        setWasSelectingFirstLocation(false);
+    };
+
     return (
         <Pressable onPress={() => setIsPinPlacementEnabled(false)}>
             <View
@@ -66,6 +75,12 @@ export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{
                          !pointB ? "Select your second location" : 
                          "Directions"}
                     </Text>
+                    {(pointA || pointB) && (
+                        <TouchableOpacity onPress={onClear} style={styles.clearButton}>
+                            <Ionicons name="refresh-outline" color="#007AFF" size={20} />
+                            <Text style={styles.clearButtonText}>Clear</Text>
+                        </TouchableOpacity>
+                    )}
                 </View>
 
                 <View style={styles.bottomSheetRow}>
@@ -173,6 +188,24 @@ const styles = StyleSheet.create({
         color: 'white',
         textAlign: 'left',
         fontSize: 24,
+        fontWeight: '600',
+        fontFamily: 'Lexend_500Medium',
+        flex: 1,
+    },
+
+    clearButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 16,
+        gap: 4,
+    },
+
+    clearButtonText: {
+        color: '#007AFF',
+        fontSize: 14,
         fontWeight: '600',
         fontFamily: 'Lexend_500Medium'
     },

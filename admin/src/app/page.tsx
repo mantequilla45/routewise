@@ -41,7 +41,7 @@ export default function LoginPage() {
       alert("Invalid email or password");
       return;
     }
-    router.push("/dashboard ");
+    router.push("/dashboard");
   };
 
   // Define conditional classes for the email input border
