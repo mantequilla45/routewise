@@ -8,8 +8,9 @@ import { Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 
 import RouteCard from "./RouteCard";
 
 export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{ exit: () => void, setShowBottomSheet: (value: boolean) => void }>) {
-    const { setIsPointAB, setIsPinPlacementEnabled, pointA, pointB, setPointA, setPointB, setRoutes, results, setResults, isPinPlacementEnabled } = useContext(MapPointsContext)
+    const { setIsPointAB, setIsPinPlacementEnabled, pointA, pointB, setPointA, setPointB, setRoutes, results, setResults, isPinPlacementEnabled, selectedRouteIndex, setSelectedRouteIndex } = useContext(MapPointsContext)
     const [wasSelectingFirstLocation, setWasSelectingFirstLocation] = useState(false)
+    const [allRoutes, setAllRoutes] = useState<GoogleMapsPolyline[]>([]); // Store all routes
 
     // Auto-open second location selection after first location is selected
     useEffect(() => {
@@ -23,6 +24,39 @@ export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{
             }, 100);
         }
     }, [pointA, isPinPlacementEnabled, wasSelectingFirstLocation]);
+
+    // Handle route selection
+    const handleRouteSelect = (index: number) => {
+        console.log(`Route card clicked: index ${index}, current selected: ${selectedRouteIndex}`);
+        console.log(`All routes length: ${allRoutes.length}, Results length: ${results.length}`);
+        
+        // Find the corresponding route in allRoutes based on the result index
+        const selectedResult = results[index];
+        if (!selectedResult) {
+            console.warn(`No result found at index ${index}`);
+            return;
+        }
+        
+        // Find the matching route in allRoutes (excluding cross-road routes)
+        const validResults = results.filter(r => 
+            r.latLng && 
+            r.latLng.length > 0 && 
+            !r.shouldCrossRoad && 
+            !r.routeId.endsWith('_CROSS')
+        );
+        
+        const routeIndexInAllRoutes = validResults.findIndex(r => r.routeId === selectedResult.routeId);
+        
+        if (routeIndexInAllRoutes !== -1 && routeIndexInAllRoutes < allRoutes.length) {
+            setSelectedRouteIndex(index);
+            setRoutes([allRoutes[routeIndexInAllRoutes]]);
+            console.log(`Selected route ${index}: ${selectedResult.routeId}, polyline index: ${routeIndexInAllRoutes}`);
+        } else if (selectedResult.shouldCrossRoad || selectedResult.routeId.endsWith('_CROSS')) {
+            console.log('Cross-road route selected - no polyline to show');
+            setSelectedRouteIndex(index);
+            setRoutes([]); // Clear routes for cross-road suggestions
+        }
+    };
 
     const onCalculate = async () => {
         try {
@@ -63,7 +97,16 @@ export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{
                 });
                 
                 console.log('Setting routes:', googlePolylineRoutes.length);
-                setRoutes(googlePolylineRoutes);
+                
+                // Store all routes but only display the first one initially
+                setAllRoutes(googlePolylineRoutes);
+                if (googlePolylineRoutes.length > 0) {
+                    setRoutes([googlePolylineRoutes[0]]); // Show only first route
+                    setSelectedRouteIndex(0); // Select first route by default
+                } else {
+                    setRoutes([]);
+                    setSelectedRouteIndex(null);
+                }
             } else if (routes && "error" in routes) {
                 console.warn("Server error:", routes.error);
             } else {
@@ -79,6 +122,8 @@ export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{
         console.log("Clearing map...");
         setResults([]); // Clear route results first
         setRoutes([]); // Clear polylines from map
+        setAllRoutes([]); // Clear stored routes
+        setSelectedRouteIndex(null); // Clear selection
         
         // Use a small delay to ensure routes are cleared before points
         setTimeout(() => {
@@ -91,10 +136,8 @@ export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{
     };
 
     return (
-        <Pressable onPress={() => setIsPinPlacementEnabled(false)}>
-            <View
-                onStartShouldSetResponder={() => true}
-            >
+        <View style={{ flex: 1 }}>
+            <View>
                 <View style={styles.bottomSheetTopRow}>
                     <Text style={styles.bottomSheetTitleText}>
                         {!pointA ? "Select your first location" : 
@@ -183,19 +226,37 @@ export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{
                     </TouchableOpacity>
                 </View>
 
-                <View style={styles.routeList}>
-                    <ScrollView
-                        style={{ flex: 1 }}  // Add this
-                        contentContainerStyle={styles.routeCard}
-                        showsVerticalScrollIndicator={true}  // Add this to debug
-                    >
-                        {results?.map((route, index) => (
-                            <RouteCard key={route.routeId || index} route={route} />
-                        ))}
-                    </ScrollView>
-                </View>
+                {results && results.length > 0 ? (
+                    <View style={styles.routeList}>
+                        <ScrollView
+                            style={{ flex: 1 }}
+                            contentContainerStyle={styles.routeCardContainer}
+                            showsVerticalScrollIndicator={true}
+                            nestedScrollEnabled={true}
+                            scrollEnabled={true}
+                        >
+                            {results.map((route, index) => {
+                                console.log(`Rendering route card ${index}: ${route.routeId}`);
+                                return (
+                                    <RouteCard 
+                                        key={`route-${index}-${route.routeId}`} 
+                                        route={route} 
+                                        isSelected={selectedRouteIndex === index}
+                                        onSelect={() => handleRouteSelect(index)}
+                                    />
+                                );
+                            })}
+                        </ScrollView>
+                    </View>
+                ) : (
+                    <View style={styles.routeList}>
+                        <Text style={{ color: '#666', textAlign: 'center', padding: 20 }}>
+                            {!pointA || !pointB ? 'Select both locations to see routes' : 'No routes found'}
+                        </Text>
+                    </View>
+                )}
             </View>
-        </Pressable>
+        </View>
     )
 }
 
@@ -334,13 +395,15 @@ const styles = StyleSheet.create({
     },
 
     routeList: {
-        minHeight: '80%',
+        marginTop: 12,
         marginBottom: 12,
         width: '100%',
+        minHeight: 200,
+        maxHeight: 400,
     },
 
-    routeCard: {
+    routeCardContainer: {
         paddingVertical: 10,
-        gap: 20,
+        gap: 15,
     }
 });

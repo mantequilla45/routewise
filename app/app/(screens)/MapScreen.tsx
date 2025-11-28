@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
     },
     arrowButton: {
         position: 'absolute',
-        bottom: 140,
+        bottom: 90,
         alignSelf: 'center',
         backgroundColor: '#FFCC66',
         width: 50,
@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
     },
     confirmLocationButton: {
         position: 'absolute',
-        bottom: 120,
+        bottom: 100,
         alignSelf: 'center',
         left: 20,
         right: 20,

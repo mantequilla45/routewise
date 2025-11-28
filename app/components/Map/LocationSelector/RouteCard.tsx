@@ -2,18 +2,24 @@ import { LOCATION_ICON } from "@/constants";
 import { MappedGeoRouteResult } from "@/types/GeoTypes";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 type RouteCardProps = {
     route: MappedGeoRouteResult;
+    isSelected?: boolean;
+    onSelect?: () => void;
 };
 
-export default function RouteCard({ route }: Readonly<RouteCardProps>) {
+export default function RouteCard({ route, isSelected = false, onSelect }: Readonly<RouteCardProps>) {
     const isCrossRoadSuggestion = route.shouldCrossRoad || route.routeId.endsWith('_CROSS');
     
     return (
-        <Pressable>
-            <View style={[styles.routeCard, isCrossRoadSuggestion && styles.crossRoadCard]}>
+        <TouchableOpacity onPress={onSelect} activeOpacity={0.7}>
+            <View style={[
+                styles.routeCard, 
+                isCrossRoadSuggestion && styles.crossRoadCard,
+                isSelected && styles.selectedCard
+            ]}>
                 <View style={styles.column1}>
                     <Text style={styles.routeCode}>
                         {isCrossRoadSuggestion ? '⚠️ Cross Road' : route.routeId}
@@ -47,7 +53,11 @@ export default function RouteCard({ route }: Readonly<RouteCardProps>) {
                         </View>
                     )}
                 </View>
-                <View style={styles.routeSave} />
+                {isSelected && (
+                    <View style={styles.selectedIndicator}>
+                        <Ionicons name="checkmark-circle" size={25} color="#4CAF50" />
+                    </View>
+                )}
 
                 {/*<View style={styles.routeCardInnerPadding}>
                 <View style={styles.routeCardType}>
@@ -70,7 +80,7 @@ export default function RouteCard({ route }: Readonly<RouteCardProps>) {
                 </View>
             </View> */}
             </View>
-        </Pressable>
+        </TouchableOpacity>
     );
 }
 
@@ -82,11 +92,22 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         padding: 25,
         gap: '5%',
+        position: 'relative',
     },
     crossRoadCard: {
         backgroundColor: "#FFE5E5",
         borderWidth: 2,
         borderColor: "#FF6B6B",
+    },
+    selectedCard: {
+        borderWidth: 3,
+        borderColor: "#4CAF50",
+        backgroundColor: "#E8F5E9",
+    },
+    selectedIndicator: {
+        position: 'absolute',
+        top: 10,
+        right: 10,
     },
     column1: {
         width: '75%',
