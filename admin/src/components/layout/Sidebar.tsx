@@ -1,14 +1,13 @@
 'use client';
 
-import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { ReactElement, useState } from 'react';
 
 interface NavItem {
     label: string;
     href: string;
-    icon: JSX.Element;
+    icon: ReactElement;
     badge?: number;
 }
 

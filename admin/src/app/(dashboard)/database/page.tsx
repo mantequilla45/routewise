@@ -12,7 +12,7 @@ interface ColumnInfo {
 interface TableData {
     columns: ColumnInfo[];
     rowCount: number;
-    data: any[];
+    data: Record<string, unknown>[];
     columnCount: number;
     error?: string;
 }
@@ -69,7 +69,7 @@ export default function DatabasePage() {
     const exportAllData = () => {
         if (!databaseInfo) return;
         
-        const allData: any = {};
+        const allData: Record<string, Record<string, unknown>[]> = {};
         for (const table of databaseInfo.tables) {
             allData[table] = databaseInfo.tableData[table].data;
         }
