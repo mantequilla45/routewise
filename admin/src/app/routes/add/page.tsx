@@ -1,0 +1,608 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
+import RoutesList from '@/components/routes/RoutesList';
+
+// Dynamically import map component to avoid SSR issues
+const AddRouteMap = dynamic(() => import('@/components/routes/AddRouteMap'), { 
+    ssr: false,
+    loading: () => <div className="h-96 bg-gray-100 animate-pulse rounded-lg flex items-center justify-center">Loading map...</div>
+});
+
+interface Coordinate {
+    lat: number;
+    lng: number;
+    label?: string;
+}
+
+export default function EnhancedAddRoutePage() {
+    const [activeTab, setActiveTab] = useState<'add' | 'list'>('add');
+    const [inputMethod, setInputMethod] = useState<'text' | 'map'>('text');
+    const [formData, setFormData] = useState({
+        route_code: '',
+        start_point_name: '',
+        end_point_name: '',
+        coordinates: '',
+        horizontal_or_vertical_road: true
+    });
+    
+    const [mapCoordinates, setMapCoordinates] = useState<Coordinate[]>([]);
+    const [status, setStatus] = useState({ type: '', message: '' });
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showPreview, setShowPreview] = useState(false);
+    const [selectedPointIndex, setSelectedPointIndex] = useState<number | null>(null);
+    const [insertMode, setInsertMode] = useState(false);
+
+    // Parse coordinates for map display
+    const getDisplayCoordinates = (): [number, number][] => {
+        if (inputMethod === 'map') {
+            return mapCoordinates.map(coord => [coord.lng, coord.lat]);
+        }
+        
+        try {
+            const lines = formData.coordinates.split('\n').filter(line => line.trim());
+            return lines.map(line => {
+                const [lon, lat] = line.split(',').map(n => parseFloat(n.trim()));
+                if (isNaN(lon) || isNaN(lat)) throw new Error('Invalid coordinates');
+                return [lon, lat];
+            });
+        } catch {
+            return [];
+        }
+    };
+
+    const handleSegmentClick = (afterIndex: number, lat: number, lng: number) => {
+        // Insert a new point after the specified index
+        const newPointIndex = afterIndex + 1;
+        
+        setMapCoordinates(prevCoords => {
+            const newPoint = { lat, lng, label: '' };
+            const updatedCoords = [
+                ...prevCoords.slice(0, newPointIndex),
+                newPoint,
+                ...prevCoords.slice(newPointIndex)
+            ];
+            // Re-label all points
+            return updatedCoords.map((coord, i) => ({
+                ...coord,
+                label: `Point ${i + 1}`
+            }));
+        });
+        
+        // Auto-select the newly inserted point
+        setSelectedPointIndex(newPointIndex);
+        
+        // Scroll to the new point
+        setTimeout(() => {
+            const pointsList = document.getElementById('points-list');
+            const newElement = document.querySelector(`#point-${newPointIndex}`);
+            if (pointsList && newElement) {
+                newElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }, 100);
+    };
+    
+    const handleMapClick = (lat: number, lng: number) => {
+        if (insertMode && selectedPointIndex !== null) {
+            // Insert new point after the selected point
+            setMapCoordinates(prevCoords => {
+                const newPoint = { lat, lng, label: '' };
+                const updatedCoords = [
+                    ...prevCoords.slice(0, selectedPointIndex + 1),
+                    newPoint,
+                    ...prevCoords.slice(selectedPointIndex + 1)
+                ];
+                // Re-label all points
+                return updatedCoords.map((coord, i) => ({
+                    ...coord,
+                    label: `Point ${i + 1}`
+                }));
+            });
+            
+            // Exit insert mode and deselect
+            setInsertMode(false);
+            setSelectedPointIndex(null);
+            
+            // Scroll to the new point
+            setTimeout(() => {
+                const pointsList = document.getElementById('points-list');
+                const newElement = document.querySelector(`#point-${selectedPointIndex + 1}`);
+                if (pointsList && newElement) {
+                    newElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }, 100);
+            
+        } else if (!insertMode && selectedPointIndex !== null) {
+            // Update existing point at its current position
+            setMapCoordinates(prevCoords => {
+                const updatedCoords = [...prevCoords];
+                updatedCoords[selectedPointIndex] = {
+                    ...updatedCoords[selectedPointIndex],
+                    lat,
+                    lng
+                };
+                return updatedCoords;
+            });
+            setSelectedPointIndex(null);
+        } else {
+            // Add new point at the end
+            const newIndex = mapCoordinates.length;
+            const newCoord = { lat, lng, label: `Point ${newIndex + 1}` };
+            setMapCoordinates([...mapCoordinates, newCoord]);
+            
+            // Auto-select the newly added point
+            setSelectedPointIndex(newIndex);
+            
+            // Auto-scroll the points list to the new point
+            setTimeout(() => {
+                const pointsList = document.getElementById('points-list');
+                const newElement = document.querySelector(`#point-${newIndex}`);
+                if (pointsList && newElement) {
+                    newElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }, 100);
+        }
+    };
+
+    const handlePointSelect = (index: number) => {
+        if (selectedPointIndex === index) {
+            // Deselect if clicking the same point
+            setSelectedPointIndex(null);
+        } else {
+            // Select the point
+            setSelectedPointIndex(index);
+            
+            // Scroll the selected point into view
+            setTimeout(() => {
+                const pointsList = document.getElementById('points-list');
+                const selectedElement = document.querySelector(`#point-${index}`);
+                if (pointsList && selectedElement) {
+                    // Calculate the position to scroll to
+                    const listRect = pointsList.getBoundingClientRect();
+                    const elementRect = selectedElement.getBoundingClientRect();
+                    
+                    // Check if element is outside the visible area
+                    if (elementRect.top < listRect.top || elementRect.bottom > listRect.bottom) {
+                        // Scroll the element into the center of the list
+                        selectedElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }
+            }, 50);
+        }
+    };
+
+    const removeMapCoordinate = (index: number) => {
+        setMapCoordinates(prev => {
+            const updated = prev.filter((_, i) => i !== index);
+            // Re-label points after removal
+            return updated.map((coord, i) => ({
+                ...coord,
+                label: `Point ${i + 1}`
+            }));
+        });
+        if (selectedPointIndex === index) {
+            setSelectedPointIndex(null);
+        } else if (selectedPointIndex !== null && selectedPointIndex > index) {
+            // Adjust selected index if it's after the removed point
+            setSelectedPointIndex(selectedPointIndex - 1);
+        }
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+        setStatus({ type: '', message: '' });
+
+        try {
+            let coordinates_forward: [number, number][];
+            
+            if (inputMethod === 'map') {
+                if (mapCoordinates.length < 2) {
+                    throw new Error('Please add at least 2 points on the map');
+                }
+                coordinates_forward = mapCoordinates.map(coord => [coord.lng, coord.lat]);
+            } else {
+                const coordPairs = formData.coordinates.split('\n').filter(line => line.trim());
+                if (coordPairs.length < 2) {
+                    throw new Error('Please enter at least 2 coordinate pairs');
+                }
+                coordinates_forward = coordPairs.map(pair => {
+                    const [lon, lat] = pair.split(',').map(n => parseFloat(n.trim()));
+                    if (isNaN(lon) || isNaN(lat)) {
+                        throw new Error(`Invalid coordinate: ${pair}`);
+                    }
+                    return [lon, lat];
+                });
+            }
+
+            const response = await fetch('/api/routes/add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ...formData,
+                    coordinates_forward,
+                    coordinates_reverse: null
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                setStatus({ 
+                    type: 'success', 
+                    message: `Route ${result.route.route_code} added successfully!` 
+                });
+                
+                // Reset form
+                setFormData({
+                    route_code: '',
+                    start_point_name: '',
+                    end_point_name: '',
+                    coordinates: '',
+                    horizontal_or_vertical_road: true
+                });
+                setMapCoordinates([]);
+                
+                // Switch to list view after successful add
+                setTimeout(() => {
+                    setActiveTab('list');
+                }, 2000);
+            } else {
+                throw new Error(result.error || 'Failed to add route');
+            }
+        } catch (error: any) {
+            setStatus({ 
+                type: 'error', 
+                message: error.message || 'An error occurred' 
+            });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const importFromGoogleMaps = () => {
+        const url = prompt('Paste Google Maps URL:');
+        if (url) {
+            // Extract coordinates from Google Maps URL (basic implementation)
+            const match = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+            if (match) {
+                const [_, lat, lng] = match;
+                if (inputMethod === 'map') {
+                    handleMapClick(parseFloat(lat), parseFloat(lng));
+                } else {
+                    setFormData({
+                        ...formData,
+                        coordinates: formData.coordinates + 
+                            (formData.coordinates ? '\n' : '') + 
+                            `${lng},${lat}`
+                    });
+                }
+            } else {
+                alert('Could not extract coordinates from URL');
+            }
+        }
+    };
+
+    return (
+        <div className="min-h-screen bg-gray-50 py-8">
+            <div className="container mx-auto px-4">
+                {/* Header */}
+                <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+                    <h1 className="text-3xl font-bold text-gray-900">Route Management</h1>
+                    <p className="text-gray-700 mt-2">Add and manage jeepney routes</p>
+                </div>
+
+                {/* Tab Navigation */}
+                <div className="bg-white rounded-lg shadow-md mb-6">
+                    <div className="flex border-b">
+                        <button
+                            onClick={() => setActiveTab('add')}
+                            className={`px-6 py-3 font-medium transition-colors ${
+                                activeTab === 'add'
+                                    ? 'text-blue-600 border-b-2 border-blue-600'
+                                    : 'text-gray-800 hover:text-gray-900'
+                            }`}
+                        >
+                            Add New Route
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('list')}
+                            className={`px-6 py-3 font-medium transition-colors ${
+                                activeTab === 'list'
+                                    ? 'text-blue-600 border-b-2 border-blue-600'
+                                    : 'text-gray-800 hover:text-gray-900'
+                            }`}
+                        >
+                            View All Routes
+                        </button>
+                    </div>
+                </div>
+
+                {/* Content */}
+                {activeTab === 'add' ? (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Form Section */}
+                        <div className="bg-white rounded-lg shadow-md p-6">
+                            <h2 className="text-xl font-bold text-black mb-4">Route Details</h2>
+                            
+                            <form onSubmit={handleSubmit} className="space-y-4">
+                                {/* Basic Information */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-semibold text-black mb-1">
+                                            Route Code*
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={formData.route_code}
+                                            onChange={e => setFormData({...formData, route_code: e.target.value})}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            placeholder="e.g., 01A"
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-semibold text-black mb-1">
+                                            Route Type
+                                        </label>
+                                        <select
+                                            value={formData.horizontal_or_vertical_road ? 'horizontal' : 'vertical'}
+                                            onChange={e => setFormData({
+                                                ...formData, 
+                                                horizontal_or_vertical_road: e.target.value === 'horizontal'
+                                            })}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        >
+                                            <option value="horizontal">Horizontal (E-W)</option>
+                                            <option value="vertical">Vertical (N-S)</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-semibold text-black mb-1">
+                                        Start Point*
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={formData.start_point_name}
+                                        onChange={e => setFormData({...formData, start_point_name: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        placeholder="e.g., IT Park"
+                                        required
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-semibold text-black mb-1">
+                                        End Point*
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={formData.end_point_name}
+                                        onChange={e => setFormData({...formData, end_point_name: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        placeholder="e.g., Ayala Center"
+                                        required
+                                    />
+                                </div>
+
+                                {/* Coordinate Input Method Toggle */}
+                                <div className="border-t pt-4">
+                                    <label className="block text-sm font-semibold text-black mb-2">
+                                        Input Method
+                                    </label>
+                                    <div className="flex space-x-4">
+                                        <button
+                                            type="button"
+                                            onClick={() => setInputMethod('text')}
+                                            className={`px-4 py-2 rounded-lg font-medium ${
+                                                inputMethod === 'text'
+                                                    ? 'bg-blue-500 text-white'
+                                                    : 'bg-gray-200 text-black hover:bg-gray-300'
+                                            }`}
+                                        >
+                                            Text Input
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setInputMethod('map')}
+                                            className={`px-4 py-2 rounded-lg ${
+                                                inputMethod === 'map'
+                                                    ? 'bg-blue-500 text-white'
+                                                    : 'bg-gray-200 text-gray-700'
+                                            }`}
+                                        >
+                                            Click on Map
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Coordinates Input */}
+                                {inputMethod === 'text' ? (
+                                    <div>
+                                        <label className="block text-sm font-semibold text-black mb-1">
+                                            Route Coordinates* (longitude,latitude)
+                                        </label>
+                                        <textarea
+                                            value={formData.coordinates}
+                                            onChange={e => setFormData({...formData, coordinates: e.target.value})}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                                            placeholder="123.8854,10.3157&#10;123.8900,10.3200&#10;123.9050,10.3180"
+                                            rows={6}
+                                            required={inputMethod === 'text'}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={importFromGoogleMaps}
+                                            className="mt-2 text-sm text-blue-600 hover:text-blue-800"
+                                        >
+                                            Import from Google Maps URL →
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <label className="block text-sm font-semibold text-black mb-1">
+                                            Added Points ({mapCoordinates.length})
+                                        </label>
+                                        <div 
+                                            id="points-list"
+                                            className="space-y-2 max-h-40 overflow-y-auto border border-gray-200 rounded-lg p-2"
+                                            style={{ scrollBehavior: 'smooth' }}
+                                        >
+                                            {mapCoordinates.map((coord, index) => (
+                                                <div 
+                                                    key={index} 
+                                                    id={`point-${index}`}
+                                                    className={`flex items-center justify-between text-sm p-2 rounded cursor-pointer transition-all ${
+                                                        selectedPointIndex === index 
+                                                            ? 'bg-yellow-100 border-2 border-yellow-400 shadow-md' 
+                                                            : 'bg-gray-50 hover:bg-gray-100 border border-gray-200'
+                                                    }`}
+                                                    onClick={() => handlePointSelect(index)}
+                                                    role="button"
+                                                    tabIndex={0}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter' || e.key === ' ') {
+                                                            e.preventDefault();
+                                                            handlePointSelect(index);
+                                                        }
+                                                    }}
+                                                >
+                                                    <span 
+                                                        className="text-gray-800 flex-1 select-none"
+                                                        style={{ pointerEvents: 'none' }}
+                                                    >
+                                                        {coord.label}: {coord.lat.toFixed(6)}, {coord.lng.toFixed(6)}
+                                                        {selectedPointIndex === index && !insertMode && (
+                                                            <span className="ml-2 text-yellow-600 font-medium">(Click map to move)</span>
+                                                        )}
+                                                        {selectedPointIndex === index && insertMode && (
+                                                            <span className="ml-2 text-green-600 font-medium">(Click map to add after)</span>
+                                                        )}
+                                                    </span>
+                                                    <div className="flex gap-1">
+                                                        {selectedPointIndex === index && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setInsertMode(!insertMode);
+                                                                }}
+                                                                className={`px-2 py-1 text-xs font-medium rounded ${
+                                                                    insertMode 
+                                                                        ? 'bg-green-500 text-white hover:bg-green-600' 
+                                                                        : 'bg-blue-500 text-white hover:bg-blue-600'
+                                                                }`}
+                                                                title={insertMode ? 'Exit insert mode' : 'Insert point after this'}
+                                                            >
+                                                                {insertMode ? 'Cancel' : 'Insert'}
+                                                            </button>
+                                                        )}
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                removeMapCoordinate(index);
+                                                                if (selectedPointIndex === index) {
+                                                                    setInsertMode(false);
+                                                                }
+                                                            }}
+                                                            className="text-red-600 hover:text-red-800 font-medium px-2 py-1"
+                                                        >
+                                                            Remove
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                            {mapCoordinates.length === 0 && (
+                                                <p className="text-gray-500 text-sm text-center py-4">Click on the map to add points</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Action Buttons */}
+                                <div className="flex space-x-4 pt-4">
+                                    <button
+                                        type="submit"
+                                        disabled={isSubmitting}
+                                        className={`flex-1 py-2 px-4 rounded-lg font-medium text-white transition-colors ${
+                                            isSubmitting
+                                                ? 'bg-gray-400 cursor-not-allowed'
+                                                : 'bg-blue-500 hover:bg-blue-600'
+                                        }`}
+                                    >
+                                        {isSubmitting ? 'Adding...' : 'Add Route'}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPreview(!showPreview)}
+                                        className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                                    >
+                                        {showPreview ? 'Hide' : 'Show'} Preview
+                                    </button>
+                                </div>
+
+                                {/* Status Message */}
+                                {status.message && (
+                                    <div className={`p-4 rounded-lg ${
+                                        status.type === 'error' 
+                                            ? 'bg-red-100 text-red-700' 
+                                            : 'bg-green-100 text-green-700'
+                                    }`}>
+                                        {status.message}
+                                    </div>
+                                )}
+                            </form>
+                        </div>
+
+                        {/* Map Section */}
+                        <div className="bg-white rounded-lg shadow-md p-6">
+                            <h2 className="text-xl font-bold text-black mb-4">
+                                {inputMethod === 'map' ? 'Click to Add Points' : 'Route Preview'}
+                            </h2>
+                            <AddRouteMap 
+                                coordinates={getDisplayCoordinates()}
+                                onMapClick={inputMethod === 'map' ? handleMapClick : undefined}
+                                enableClickToAdd={inputMethod === 'map'}
+                                height="500px"
+                                highlightedIndex={selectedPointIndex}
+                                onPointClick={handlePointSelect}
+                                onSegmentClick={inputMethod === 'map' ? handleSegmentClick : undefined}
+                            />
+                            
+                            {/* Map Instructions */}
+                            <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                                <h3 className="font-semibold text-blue-900 mb-2">
+                                    {inputMethod === 'map' ? 'How to add points:' : 'Tips:'}
+                                </h3>
+                                <ul className="text-sm text-blue-800 space-y-1">
+                                    {inputMethod === 'map' ? (
+                                        <>
+                                            <li>• Click on the map to add waypoints at the end</li>
+                                            <li>• Click on the red route line to insert points between existing ones</li>
+                                            <li>• Select a point to edit or move it</li>
+                                            <li>• Green marker = Start, Red marker = End</li>
+                                            <li>• Remove or insert points using the list above</li>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <li>• Right-click on Google Maps for coordinates</li>
+                                            <li>• Format: longitude,latitude (one per line)</li>
+                                            <li>• Add multiple points for accurate routes</li>
+                                            <li>• Preview updates automatically</li>
+                                        </>
+                                    )}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    <RoutesList />
+                )}
+            </div>
+        </div>
+    );
+}
