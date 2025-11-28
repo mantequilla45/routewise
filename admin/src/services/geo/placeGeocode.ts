@@ -1,7 +1,7 @@
 import { LatLng, MappedGeoRouteResult } from "@/types/GeoTypes";
 
 export async function geocodeRoute(latLng: LatLng): Promise<string> {
-    const apiKey = process.env.GOOGLE_MAPS_KEY;
+    const apiKey = process.env.NEXT_PUBLIC_GMAPS_API;
     const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latLng.latitude},${latLng.longitude}&key=${apiKey}`;
 
     const response = await fetch(url);
@@ -19,7 +19,7 @@ export async function geocodeRoute(latLng: LatLng): Promise<string> {
 }
 
 export async function getPlaceName(latLng: LatLng): Promise<string> {
-    const apiKey = process.env.GOOGLE_MAPS_KEY;
+    const apiKey = process.env.NEXT_PUBLIC_GMAPS_API;
     const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${latLng.latitude},${latLng.longitude}&radius=50&key=${apiKey}`;
 
     try {

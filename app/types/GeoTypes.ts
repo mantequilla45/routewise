@@ -10,4 +10,6 @@ export interface MappedGeoRouteResult {
   fare: number;
   startingPoint: string;
   endPoint: string;
+  shouldCrossRoad?: boolean;
+  message?: string;
 }

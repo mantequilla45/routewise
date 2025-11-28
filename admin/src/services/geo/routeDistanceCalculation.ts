@@ -1,5 +1,6 @@
 import { query } from "@/lib/db/db";
 import { CalculatedRoutes, LatLng, MappedGeoRouteResult, RouteSnap } from "@/types/GeoTypes";
+import { calculateSmartRoute } from "./bidirectionalRouteHandler";
 
 export async function calculateRoute(latLngA: LatLng, latLngB: LatLng) {
     const snappedRoutesA: RouteSnap[] = await findNearestRoutesPoints(latLngA);
@@ -9,8 +10,33 @@ export async function calculateRoute(latLngA: LatLng, latLngB: LatLng) {
         throw new Error("No routes found near one of the points");
     }
 
+    // First try the smart bidirectional route handler
+    const smartResults = await calculateSmartRoute(snappedRoutesA, snappedRoutesB);
+    
+    if (smartResults && smartResults.length > 0) {
+        // Process smart results
+        const results: MappedGeoRouteResult[] = smartResults.map(r => {
+            const geoJson = JSON.parse(r.segmentGeoJSON);
+            const isCrossRoad = r.routeId.endsWith('_CROSS');
+            
+            return {
+                routeId: r.routeId,
+                distanceMeters: r.distanceMeters,
+                latLng: parsePostgisGeoJson(r.segmentGeoJSON),
+                // Add a special property to indicate crossing is needed
+                ...(isCrossRoad && { 
+                    shouldCrossRoad: true,
+                    message: geoJson.properties?.message || "Cross to the other side of the road"
+                })
+            };
+        });
+        
+        console.log("Smart route results:", results);
+        return results;
+    }
+    
+    // Fallback to original calculation if smart routing doesn't work
     const direction = getMovementDirection(latLngA, latLngB);
-
     const rawResults = await calculateRouteDistances(
         snappedRoutesA,
         snappedRoutesB,
@@ -20,12 +46,12 @@ export async function calculateRoute(latLngA: LatLng, latLngB: LatLng) {
     if (!rawResults || rawResults.length === 0) {
         return [];
     }
+    
     const results: MappedGeoRouteResult[] = rawResults.map(r => ({
         routeId: r.routeId,
         distanceMeters: r.distanceMeters,
         latLng: parsePostgisGeoJson(r.segmentGeoJSON)
     }));
-
 
     console.log(results);
     return results;
@@ -128,74 +154,75 @@ async function calculateRouteDistances(
     const results: CalculatedRoutes[] = [];
 
     for (const [routeA, routeB] of matchingPairs) {
+        // Fixed SQL to ensure we only get the segment between points, not a loop
         const sql = `
+        WITH route_locations AS (
+            SELECT
+                id,
+                route_code,
+                horizontal_or_vertical_road,
+                geom_forward,
+                geom_reverse,
+                ST_LineLocatePoint(geom_forward, ST_SetSRID(ST_MakePoint($1, $2), 4326)) as loc_a_forward,
+                ST_LineLocatePoint(geom_forward, ST_SetSRID(ST_MakePoint($3, $4), 4326)) as loc_b_forward,
+                ST_LineLocatePoint(geom_reverse, ST_SetSRID(ST_MakePoint($1, $2), 4326)) as loc_a_reverse,
+                ST_LineLocatePoint(geom_reverse, ST_SetSRID(ST_MakePoint($3, $4), 4326)) as loc_b_reverse
+            FROM new_jeepney_routes
+            WHERE id = $5
+        )
         SELECT
-        ST_Length(
-            ST_LineSubstring(
+            -- Calculate the shorter segment (not going around the loop)
+            LEAST(
+                ST_Length(
+                    ST_LineSubstring(
+                        geom_forward,
+                        LEAST(loc_a_forward, loc_b_forward),
+                        GREATEST(loc_a_forward, loc_b_forward)
+                    )::geography
+                ),
+                ST_Length(
+                    ST_LineSubstring(
+                        geom_reverse,
+                        LEAST(loc_a_reverse, loc_b_reverse),
+                        GREATEST(loc_a_reverse, loc_b_reverse)
+                    )::geography
+                )
+            ) AS segment_length_meters,
+            
+            -- Get the geometry of the shorter segment
             CASE
-                WHEN horizontal_or_vertical_road = true AND $6 = 'horizontal' THEN geom_forward
-                WHEN horizontal_or_vertical_road = true AND $6 = 'reverse_horizontal' THEN geom_reverse
-                WHEN horizontal_or_vertical_road = false AND $6 = 'vertical' THEN geom_forward
-                WHEN horizontal_or_vertical_road = false AND $6 = 'reverse_vertical' THEN geom_reverse
-                ELSE geom_forward
-            END,
-            ST_LineLocatePoint(
-                CASE
-                WHEN horizontal_or_vertical_road = true AND $6 = 'horizontal' THEN geom_forward
-                WHEN horizontal_or_vertical_road = true AND $6 = 'reverse_horizontal' THEN geom_reverse
-                WHEN horizontal_or_vertical_road = false AND $6 = 'vertical' THEN geom_forward
-                WHEN horizontal_or_vertical_road = false AND $6 = 'reverse_vertical' THEN geom_reverse
-                ELSE geom_forward
-                END,
-                ST_SetSRID(ST_MakePoint($1, $2), 4326)
-            ),
-            ST_LineLocatePoint(
-                CASE
-                WHEN horizontal_or_vertical_road = true AND $6 = 'horizontal' THEN geom_forward
-                WHEN horizontal_or_vertical_road = true AND $6 = 'reverse_horizontal' THEN geom_reverse
-                WHEN horizontal_or_vertical_road = false AND $6 = 'vertical' THEN geom_forward
-                WHEN horizontal_or_vertical_road = false AND $6 = 'reverse_vertical' THEN geom_reverse
-                ELSE geom_forward
-                END,
-                ST_SetSRID(ST_MakePoint($3, $4), 4326)
-            )
-            )::geography
-        ) AS segment_length_meters,
-
-        ST_AsGeoJSON(
-            ST_LineSubstring(
-            CASE
-                WHEN horizontal_or_vertical_road = true AND $6 = 'horizontal' THEN geom_forward
-                WHEN horizontal_or_vertical_road = true AND $6 = 'reverse_horizontal' THEN geom_reverse
-                WHEN horizontal_or_vertical_road = false AND $6 = 'vertical' THEN geom_forward
-                WHEN horizontal_or_vertical_road = false AND $6 = 'reverse_vertical' THEN geom_reverse
-                ELSE geom_forward
-            END,
-            ST_LineLocatePoint(
-                CASE
-                WHEN horizontal_or_vertical_road = true AND $6 = 'horizontal' THEN geom_forward
-                WHEN horizontal_or_vertical_road = true AND $6 = 'reverse_horizontal' THEN geom_reverse
-                WHEN horizontal_or_vertical_road = false AND $6 = 'vertical' THEN geom_forward
-                WHEN horizontal_or_vertical_road = false AND $6 = 'reverse_vertical' THEN geom_reverse
-                ELSE geom_forward
-                END,
-                ST_SetSRID(ST_MakePoint($1, $2), 4326)
-            ),
-            ST_LineLocatePoint(
-                CASE
-                WHEN horizontal_or_vertical_road = true AND $6 = 'horizontal' THEN geom_forward
-                WHEN horizontal_or_vertical_road = true AND $6 = 'reverse_horizontal' THEN geom_reverse
-                WHEN horizontal_or_vertical_road = false AND $6 = 'vertical' THEN geom_forward
-                WHEN horizontal_or_vertical_road = false AND $6 = 'reverse_vertical' THEN geom_reverse
-                ELSE geom_forward
-                END,
-                ST_SetSRID(ST_MakePoint($3, $4), 4326)
-            )
-            )
-        ) AS segment_geojson
-
-        FROM new_jeepney_routes
-        WHERE id = $5;
+                WHEN ST_Length(
+                    ST_LineSubstring(
+                        geom_forward,
+                        LEAST(loc_a_forward, loc_b_forward),
+                        GREATEST(loc_a_forward, loc_b_forward)
+                    )::geography
+                ) <= ST_Length(
+                    ST_LineSubstring(
+                        geom_reverse,
+                        LEAST(loc_a_reverse, loc_b_reverse),
+                        GREATEST(loc_a_reverse, loc_b_reverse)
+                    )::geography
+                ) THEN
+                    ST_AsGeoJSON(
+                        CASE
+                            WHEN loc_a_forward <= loc_b_forward THEN
+                                ST_LineSubstring(geom_forward, loc_a_forward, loc_b_forward)
+                            ELSE
+                                ST_Reverse(ST_LineSubstring(geom_forward, loc_b_forward, loc_a_forward))
+                        END
+                    )
+                ELSE
+                    ST_AsGeoJSON(
+                        CASE
+                            WHEN loc_a_reverse <= loc_b_reverse THEN
+                                ST_LineSubstring(geom_reverse, loc_a_reverse, loc_b_reverse)
+                            ELSE
+                                ST_Reverse(ST_LineSubstring(geom_reverse, loc_b_reverse, loc_a_reverse))
+                        END
+                    )
+            END AS segment_geojson
+        FROM route_locations;
         `;
 
         const params = [
@@ -203,8 +230,7 @@ async function calculateRouteDistances(
             routeA.snapped_forward_lat,
             routeB.snapped_forward_lon,
             routeB.snapped_forward_lat,
-            routeA.id,
-            direction
+            routeA.id
         ];
 
         try {
