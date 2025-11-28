@@ -7,7 +7,7 @@ import { Platform, StyleSheet, Text } from 'react-native';
 
 export default function NativeMap() {
 
-  const { pointA, pointB, setPointA, setPointB, isPointAB, isPinPlacementEnabled, routes } = useContext(MapPointsContext);
+  const { pointA, pointB, setPointA, setPointB, isPointAB, isPinPlacementEnabled, setIsPinPlacementEnabled, routes } = useContext(MapPointsContext);
 
   const handleMapPress = (event: { coordinates: Coordinates }) => {
     console.log(isPinPlacementEnabled)
@@ -27,6 +27,9 @@ export default function NativeMap() {
     } else {
       setPointB(point);
     }
+    
+    // Disable pin placement after selecting a location
+    setIsPinPlacementEnabled(false);
   };
 
   const markers: GoogleMapsMarker[] = [];
