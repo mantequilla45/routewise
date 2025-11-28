@@ -46,10 +46,10 @@ export default function RouteVisualization({
         ? `https://www.openstreetmap.org/?mlat=${coordinates[0][1]}&mlon=${coordinates[0][0]}&zoom=14`
         : '#';
 
-    // Create Google Maps URL (for external viewing)
-    const googleMapsUrl = coordinates.length > 0
-        ? `https://www.google.com/maps/dir/${coordinates.map(c => `${c[1]},${c[0]}`).join('/')}`
-        : '#';
+    // Create Google Maps URL (for external viewing) - commented out for future use
+    // const googleMapsUrl = coordinates.length > 0
+    //     ? `https://www.google.com/maps/dir/${coordinates.map(c => `${c[1]},${c[0]}`).join('/')}`
+    //     : '#';
 
     return (
         <div className="space-y-4">

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db/db';
+import { RouteRecord } from '@/types/database';
 
 interface Params {
     params: Promise<{
@@ -58,12 +59,10 @@ export async function PUT(request: NextRequest, { params }: Params) {
                 horizontal_or_vertical_road,
                 id
             ]
-        );
+        ) as RouteRecord[];
 
-        // Check if result is an array (direct result) or has rows property
-        const rows = Array.isArray(result) ? result : result?.rows;
-        
-        if (!rows || rows.length === 0) {
+        // The query function returns rows directly as an array
+        if (!result || result.length === 0) {
             return NextResponse.json(
                 { success: false, error: 'Route not found' },
                 { status: 404 }
@@ -72,13 +71,14 @@ export async function PUT(request: NextRequest, { params }: Params) {
 
         return NextResponse.json({
             success: true,
-            route: rows[0]
+            route: result[0]
         });
 
-    } catch (error: any) {
+    } catch (error) {
         console.error('Error updating route:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to update route';
         return NextResponse.json(
-            { success: false, error: error.message || 'Failed to update route' },
+            { success: false, error: errorMessage },
             { status: 500 }
         );
     }

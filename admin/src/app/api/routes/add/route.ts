@@ -64,10 +64,11 @@ export async function POST(request: NextRequest) {
             route: result[0]
         });
 
-    } catch (error: any) {
+    } catch (error) {
         console.error('Error adding route:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         return NextResponse.json(
-            { error: 'Failed to add route', details: error.message },
+            { error: 'Failed to add route', details: errorMessage },
             { status: 500 }
         );
     }
@@ -95,10 +96,11 @@ export async function GET() {
             routes: routes
         });
 
-    } catch (error: any) {
+    } catch (error) {
         console.error('Error fetching routes:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         return NextResponse.json(
-            { error: 'Failed to fetch routes', details: error.message },
+            { error: 'Failed to fetch routes', details: errorMessage },
             { status: 500 }
         );
     }

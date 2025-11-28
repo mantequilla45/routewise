@@ -9,12 +9,7 @@ interface RouteMapProps {
     enableClickToAdd?: boolean;
 }
 
-declare global {
-    interface Window {
-        google: any;
-        initMap?: () => void;
-    }
-}
+// Google types are already declared in googleMapsLoader.ts
 
 let mapLoadPromise: Promise<void> | null = null;
 
@@ -50,10 +45,10 @@ function loadGoogleMapsScript(): Promise<void> {
         script.defer = true;
         
         // Create global callback
-        (window as any).initMap = () => {
+        (window as Window & { initMap?: () => void }).initMap = () => {
             console.log('Google Maps initialized via callback');
             resolve();
-            delete (window as any).initMap;
+            delete (window as Window & { initMap?: () => void }).initMap;
         };
         
         script.onerror = (error) => {
@@ -75,9 +70,9 @@ export default function RouteMap({
     enableClickToAdd = false 
 }: RouteMapProps) {
     const mapRef = useRef<HTMLDivElement>(null);
-    const [map, setMap] = useState<any>(null);
-    const [polyline, setPolyline] = useState<any>(null);
-    const [markers, setMarkers] = useState<any[]>([]);
+    const [map, setMap] = useState<google.maps.Map | null>(null);
+    const [polyline, setPolyline] = useState<google.maps.Polyline | null>(null);
+    const [markers, setMarkers] = useState<google.maps.Marker[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -101,7 +96,7 @@ export default function RouteMap({
                     console.log('Map created successfully');
 
                     if (enableClickToAdd && onMapClick) {
-                        newMap.addListener('click', (e: any) => {
+                        newMap.addListener('click', (e: google.maps.MapMouseEvent) => {
                             if (e.latLng) {
                                 onMapClick(e.latLng.lat(), e.latLng.lng());
                             }
@@ -154,7 +149,7 @@ export default function RouteMap({
             setPolyline(newPolyline);
 
             // Add markers for start and end
-            const newMarkers: any[] = [];
+            const newMarkers: google.maps.Marker[] = [];
             
             if (path.length > 0) {
                 // Start marker
@@ -202,6 +197,7 @@ export default function RouteMap({
                 map.fitBounds(bounds);
             }
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [coordinates, map]);
 
     if (error) {

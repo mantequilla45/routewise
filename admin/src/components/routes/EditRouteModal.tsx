@@ -51,6 +51,7 @@ export default function EditRouteModal({ routeId, isOpen, onClose, onUpdate }: E
             selectedPointRef.current = null;
             setInsertMode(false);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen, routeId]);
 
     const fetchRouteData = async () => {
@@ -330,8 +331,9 @@ export default function EditRouteModal({ routeId, isOpen, onClose, onUpdate }: E
             } else {
                 throw new Error(result.error || 'Failed to update route');
             }
-        } catch (error: any) {
-            setError(error.message || 'An error occurred');
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'An error occurred';
+            setError(errorMessage);
         } finally {
             setIsSubmitting(false);
         }

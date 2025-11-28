@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import RoutesList from '@/components/routes/RoutesList';
 
@@ -131,10 +131,8 @@ export default function EnhancedAddRoutePage() {
             const newCoord = { lat, lng, label: `Point ${newIndex + 1}` };
             setMapCoordinates([...mapCoordinates, newCoord]);
             
-            // Auto-select the newly added point
-            setSelectedPointIndex(newIndex);
-            
-            // Auto-scroll the points list to the new point
+            // Don't auto-select when adding new points at the end
+            // Only scroll to show the new point
             setTimeout(() => {
                 const pointsList = document.getElementById('points-list');
                 const newElement = document.querySelector(`#point-${newIndex}`);
@@ -251,10 +249,11 @@ export default function EnhancedAddRoutePage() {
             } else {
                 throw new Error(result.error || 'Failed to add route');
             }
-        } catch (error: any) {
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'An error occurred';
             setStatus({ 
                 type: 'error', 
-                message: error.message || 'An error occurred' 
+                message: errorMessage 
             });
         } finally {
             setIsSubmitting(false);
@@ -267,7 +266,7 @@ export default function EnhancedAddRoutePage() {
             // Extract coordinates from Google Maps URL (basic implementation)
             const match = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
             if (match) {
-                const [_, lat, lng] = match;
+                const [, lat, lng] = match;
                 if (inputMethod === 'map') {
                     handleMapClick(parseFloat(lat), parseFloat(lng));
                 } else {

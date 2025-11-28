@@ -8,14 +8,19 @@ const SimpleRouteMap = dynamic(() => import('./SimpleRouteMap'), {
     loading: () => <div className="h-96 bg-gray-100 animate-pulse rounded-lg flex items-center justify-center"><span>Loading map...</span></div>
 });
 
+interface GeoJSONGeometry {
+    type: string;
+    coordinates: number[][];
+}
+
 interface RouteDetails {
     id: string;
     route_code: string;
     start_point_name: string;
     end_point_name: string;
     horizontal_or_vertical_road: boolean;
-    forward_geojson?: any;
-    reverse_geojson?: any;
+    forward_geojson?: GeoJSONGeometry;
+    reverse_geojson?: GeoJSONGeometry;
 }
 
 interface RouteDetailsModalProps {
@@ -27,12 +32,6 @@ export default function RouteDetailsModal({ routeId, onClose }: RouteDetailsModa
     const [route, setRoute] = useState<RouteDetails | null>(null);
     const [loading, setLoading] = useState(true);
     const [coordinates, setCoordinates] = useState<[number, number][]>([]);
-
-    useEffect(() => {
-        if (routeId) {
-            fetchRouteDetails();
-        }
-    }, [routeId]);
 
     const fetchRouteDetails = async () => {
         if (!routeId) return;
@@ -69,6 +68,13 @@ export default function RouteDetailsModal({ routeId, onClose }: RouteDetailsModa
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        if (routeId) {
+            fetchRouteDetails();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [routeId]);
 
     if (!routeId) return null;
 

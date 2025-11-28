@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { googleMapsLoader } from '@/lib/maps/googleMapsLoader';
+import type { GoogleMapClickEvent, MapMarker, MapPolyline } from '@/types/google-maps';
 
 // Helper function to calculate distance from a point to a line segment
 function distanceToSegment(
@@ -68,9 +69,9 @@ export default function AddRouteMap({
     onSegmentClick
 }: AddRouteMapProps) {
     const mapRef = useRef<HTMLDivElement>(null);
-    const mapInstanceRef = useRef<any>(null);
-    const markersRef = useRef<any[]>([]);
-    const polylineRef = useRef<any>(null);
+    const mapInstanceRef = useRef<google.maps.Map | null>(null);
+    const markersRef = useRef<MapMarker[]>([]);
+    const polylineRef = useRef<MapPolyline | null>(null);
     const [isMapReady, setIsMapReady] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const previousCoordinatesLength = useRef(0);
@@ -78,7 +79,7 @@ export default function AddRouteMap({
 
     useEffect(() => {
         let mounted = true;
-        let clickListener: any = null;
+        let clickListener: google.maps.MapsEventListener | null = null;
 
         const initMap = async () => {
             try {
@@ -103,7 +104,7 @@ export default function AddRouteMap({
                     
                     // Add click listener if enabled
                     if (enableClickToAdd && onMapClick) {
-                        clickListener = map.addListener('click', (e: any) => {
+                        clickListener = map.addListener('click', (e: GoogleMapClickEvent) => {
                             if (e.latLng) {
                                 const lat = e.latLng.lat();
                                 const lng = e.latLng.lng();
@@ -148,16 +149,16 @@ export default function AddRouteMap({
                 polylineRef.current = null;
             }
         };
-    }, []); // Remove dependencies to prevent re-initialization
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Handle click listener updates separately
     useEffect(() => {
         if (!mapInstanceRef.current || !isMapReady) return;
         
-        let clickListener: any = null;
+        let clickListener: google.maps.MapsEventListener | null = null;
         
         if (enableClickToAdd && onMapClick) {
-            clickListener = mapInstanceRef.current.addListener('click', (e: any) => {
+            clickListener = mapInstanceRef.current.addListener('click', (e: GoogleMapClickEvent) => {
                 if (e.latLng) {
                     const lat = e.latLng.lat();
                     const lng = e.latLng.lng();
@@ -225,8 +226,8 @@ export default function AddRouteMap({
             });
             
             // Add click listener to polyline for inserting points
-            if (enableClickToAdd && onSegmentClick) {
-                polylineRef.current.addListener('click', (e: any) => {
+            if (enableClickToAdd && onSegmentClick && polylineRef.current) {
+                polylineRef.current.addListener('click', (e: GoogleMapClickEvent) => {
                     if (e.latLng) {
                         const clickedLat = e.latLng.lat();
                         const clickedLng = e.latLng.lng();
@@ -350,7 +351,7 @@ export default function AddRouteMap({
                 previousCoordinatesLength.current = coordinates.length;
             }
         }
-    }, [coordinates, isMapReady, highlightedIndex]); // Include highlightedIndex for re-render
+    }, [coordinates, isMapReady, highlightedIndex, enableClickToAdd, onPointClick, onSegmentClick]);
 
     if (error) {
         return (

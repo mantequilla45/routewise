@@ -38,10 +38,11 @@ export async function DELETE(request: NextRequest, { params }: Params) {
             deleted: result[0]
         });
 
-    } catch (error: any) {
+    } catch (error) {
         console.error('Error deleting route:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         return NextResponse.json(
-            { error: 'Failed to delete route', details: error.message },
+            { error: 'Failed to delete route', details: errorMessage },
             { status: 500 }
         );
     }
@@ -104,10 +105,11 @@ export async function GET(request: NextRequest, { params }: Params) {
         console.log('Sending response:', response);
         return NextResponse.json(response);
 
-    } catch (error: any) {
+    } catch (error) {
         console.error('Error fetching route:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         return NextResponse.json(
-            { error: 'Failed to fetch route', details: error.message },
+            { error: 'Failed to fetch route', details: errorMessage },
             { status: 500 }
         );
     }

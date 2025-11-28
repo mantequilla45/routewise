@@ -10,9 +10,9 @@ interface SimpleRouteMapProps {
 
 export default function SimpleRouteMap({ coordinates, height = '400px' }: SimpleRouteMapProps) {
     const mapRef = useRef<HTMLDivElement>(null);
-    const mapInstanceRef = useRef<any>(null);
-    const markersRef = useRef<any[]>([]);
-    const polylineRef = useRef<any>(null);
+    const mapInstanceRef = useRef<google.maps.Map | null>(null);
+    const markersRef = useRef<google.maps.Marker[]>([]);
+    const polylineRef = useRef<google.maps.Polyline | null>(null);
     const [isMapReady, setIsMapReady] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
