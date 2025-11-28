@@ -1,16 +1,28 @@
 import MapModalContent from '@/components/Map/LocationSelector/SelectorContent';
 import NativeMap from '@/components/Map/NativeMap';
 import SwipeModal from '@/components/SwipeModal';
-import { MapPointsProvider } from '@/context/map-context';
+import { MapPointsContext, MapPointsProvider } from '@/context/map-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack } from 'expo-router';
-import { useRef, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { PanResponder, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 function MapScreenContent() {
-
+    const { isPinPlacementEnabled, setIsPinPlacementEnabled } = useContext(MapPointsContext);
     const [showBottomSheet, setShowBottomSheet] = useState(true)
+    const [prevPinPlacement, setPrevPinPlacement] = useState(false)
+
+    // Auto-reopen modal after location selection
+    useEffect(() => {
+        if (prevPinPlacement && !isPinPlacementEnabled) {
+            // Pin placement just finished, reopen the modal
+            setTimeout(() => {
+                setShowBottomSheet(true);
+            }, 300);
+        }
+        setPrevPinPlacement(isPinPlacementEnabled);
+    }, [isPinPlacementEnabled, prevPinPlacement]);
 
     const panResponder = useRef(
         PanResponder.create({

@@ -3,12 +3,26 @@ import { MapPointsContext } from "@/context/map-context";
 import { latLongStringifier } from "@/lib/util/latLngStringifier";
 import { Ionicons } from "@expo/vector-icons";
 import { GoogleMapsPolyline } from "expo-maps/build/google/GoogleMaps.types";
-import { useContext } from "react";
+import { useContext, useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import RouteCard from "./RouteCard";
 
 export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{ exit: () => void, setShowBottomSheet: (value: boolean) => void }>) {
-    const { setIsPointAB, setIsPinPlacementEnabled, pointA, pointB, setRoutes, results, setResults } = useContext(MapPointsContext)
+    const { setIsPointAB, setIsPinPlacementEnabled, pointA, pointB, setRoutes, results, setResults, isPinPlacementEnabled } = useContext(MapPointsContext)
+    const [wasSelectingFirstLocation, setWasSelectingFirstLocation] = useState(false)
+
+    // Auto-open second location selection after first location is selected
+    useEffect(() => {
+        if (wasSelectingFirstLocation && pointA && !isPinPlacementEnabled) {
+            // First location was just selected, now open second location selection
+            setWasSelectingFirstLocation(false);
+            setTimeout(() => {
+                setIsPinPlacementEnabled(true);
+                setIsPointAB(false);
+                setShowBottomSheet(false);
+            }, 100);
+        }
+    }, [pointA, isPinPlacementEnabled, wasSelectingFirstLocation]);
 
     const onCalculate = async () => {
         try {
@@ -47,7 +61,11 @@ export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{
                 onStartShouldSetResponder={() => true}
             >
                 <View style={styles.bottomSheetTopRow}>
-                    <Text style={styles.bottomSheetTitleText}>Directions</Text>
+                    <Text style={styles.bottomSheetTitleText}>
+                        {!pointA ? "Select your first location" : 
+                         !pointB ? "Select your second location" : 
+                         "Directions"}
+                    </Text>
                 </View>
 
                 <View style={styles.bottomSheetRow}>
@@ -56,6 +74,7 @@ export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{
                             <TouchableOpacity onPress={() => {
                                 setIsPinPlacementEnabled(true);
                                 setIsPointAB(true);
+                                setWasSelectingFirstLocation(true);
                                 setShowBottomSheet(false);
                             }}>
                                 <View style={styles.pointInputRow}>
@@ -66,7 +85,7 @@ export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{
                                         <Text style={styles.pointInputText}
                                             numberOfLines={1}
                                             ellipsizeMode="tail">
-                                            {latLongStringifier(pointA)}
+                                            {pointA ? latLongStringifier(pointA) : "Tap to select first location"}
                                         </Text>
                                     </View>
 
@@ -98,7 +117,7 @@ export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{
                                         <Text style={styles.pointInputText}
                                             numberOfLines={1}
                                             ellipsizeMode="tail">
-                                            {latLongStringifier(pointB)}
+                                            {pointB ? latLongStringifier(pointB) : "Tap to select second location"}
                                         </Text>
 
                                     </View>
