@@ -112,11 +112,11 @@ export default function RouteDetailsModal({ routeId, onClose }: RouteDetailsModa
                                 </p>
                             </div>
                             <div>
-                                <label className="text-sm font-semibold text-gray-600">Start Point</label>
+                                <label className="text-sm font-semibold text-gray-600">Primary Terminal</label>
                                 <p className="text-lg text-black">{route.start_point_name}</p>
                             </div>
                             <div>
-                                <label className="text-sm font-semibold text-gray-600">End Point</label>
+                                <label className="text-sm font-semibold text-gray-600">Secondary Terminal</label>
                                 <p className="text-lg text-black">{route.end_point_name}</p>
                             </div>
                         </div>

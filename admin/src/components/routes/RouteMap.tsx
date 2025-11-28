@@ -137,9 +137,12 @@ export default function RouteMap({
                 lng: coord[0]
             }));
 
+            // Create closed loop by adding first point at the end if we have at least 2 points
+            const closedPath = path.length >= 2 ? [...path, path[0]] : path;
+            
             // Draw polyline
             const newPolyline = new window.google.maps.Polyline({
-                path,
+                path: closedPath,
                 geodesic: true,
                 strokeColor: '#FF6B6B',
                 strokeOpacity: 1.0,
@@ -148,44 +151,26 @@ export default function RouteMap({
             });
             setPolyline(newPolyline);
 
-            // Add markers for start and end
+            // Add uniform markers for all points (no start/end distinction)
             const newMarkers: google.maps.Marker[] = [];
             
             if (path.length > 0) {
-                // Start marker
-                newMarkers.push(new window.google.maps.Marker({
-                    position: path[0],
-                    map,
-                    title: 'Start',
-                    icon: 'http://maps.google.com/mapfiles/ms/icons/green-dot.png'
-                }));
-
-                // End marker
-                if (path.length > 1) {
+                // Add markers for all points with uniform style
+                path.forEach((point, index) => {
                     newMarkers.push(new window.google.maps.Marker({
-                        position: path[path.length - 1],
+                        position: point,
                         map,
-                        title: 'End',
-                        icon: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png'
-                    }));
-                }
-
-                // Intermediate points
-                for (let i = 1; i < path.length - 1; i++) {
-                    newMarkers.push(new window.google.maps.Marker({
-                        position: path[i],
-                        map,
-                        title: `Point ${i}`,
+                        title: `Point ${index + 1}`,
                         icon: {
                             path: window.google.maps.SymbolPath.CIRCLE,
                             scale: 6,
-                            fillColor: '#4285F4',
+                            fillColor: '#FF6B6B',
                             fillOpacity: 1,
                             strokeColor: 'white',
                             strokeWeight: 2
                         }
                     }));
-                }
+                });
             }
             
             setMarkers(newMarkers);

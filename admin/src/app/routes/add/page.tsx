@@ -70,7 +70,7 @@ export default function EnhancedAddRoutePage() {
             }));
         });
         
-        // Auto-select the newly inserted point
+        // Auto-select the newly inserted point (this is intentional for insertions)
         setSelectedPointIndex(newPointIndex);
         
         // Scroll to the new point
@@ -361,7 +361,7 @@ export default function EnhancedAddRoutePage() {
 
                                 <div>
                                     <label className="block text-sm font-semibold text-black mb-1">
-                                        Start Point*
+                                        Primary Terminal / Landmark 1*
                                     </label>
                                     <input
                                         type="text"
@@ -375,7 +375,7 @@ export default function EnhancedAddRoutePage() {
 
                                 <div>
                                     <label className="block text-sm font-semibold text-black mb-1">
-                                        End Point*
+                                        Secondary Terminal / Landmark 2*
                                     </label>
                                     <input
                                         type="text"

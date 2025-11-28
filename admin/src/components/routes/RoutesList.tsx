@@ -86,8 +86,8 @@ export default function RoutesList({ onRouteSelect }: { onRouteSelect?: (route: 
                     <thead>
                         <tr className="border-b bg-gray-50">
                             <th className="text-left p-2 text-black font-semibold">Code</th>
-                            <th className="text-left p-2 text-black font-semibold">Start</th>
-                            <th className="text-left p-2 text-black font-semibold">End</th>
+                            <th className="text-left p-2 text-black font-semibold">Terminal 1</th>
+                            <th className="text-left p-2 text-black font-semibold">Terminal 2</th>
                             <th className="text-left p-2 text-black font-semibold">Type</th>
                             <th className="text-left p-2 text-black font-semibold">Actions</th>
                         </tr>

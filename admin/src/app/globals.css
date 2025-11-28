@@ -23,3 +23,19 @@ body {
   color: var(--foreground);
   font-family: var(--font-lexend), system-ui, -apple-system, sans-serif;
 }
+
+/* Animation for success message */
+@keyframes fade-in-down {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.animate-fade-in-down {
+  animation: fade-in-down 0.3s ease-out;
+}

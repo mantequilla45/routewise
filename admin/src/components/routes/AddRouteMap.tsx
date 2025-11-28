@@ -214,9 +214,12 @@ export default function AddRouteMap({
                 lng: coord[0]
             }));
             
+            // Create closed loop by adding first point at the end if we have at least 2 points
+            const closedPath = path.length >= 2 ? [...path, path[0]] : path;
+            
             // Draw polyline with click handling for inserting points
             polylineRef.current = new window.google.maps.Polyline({
-                path: path,
+                path: closedPath,
                 geodesic: true,
                 strokeColor: '#FF6B6B',
                 strokeOpacity: 1.0,
@@ -236,9 +239,12 @@ export default function AddRouteMap({
                         let minDistance = Infinity;
                         let insertAfterIndex = 0;
                         
-                        for (let i = 0; i < path.length - 1; i++) {
+                        // Check all segments including the closing segment (last to first)
+                        const segmentsToCheck = path.length >= 2 ? path.length : path.length - 1;
+                        
+                        for (let i = 0; i < segmentsToCheck; i++) {
                             const segmentStart = path[i];
-                            const segmentEnd = path[i + 1];
+                            const segmentEnd = i === path.length - 1 ? path[0] : path[i + 1]; // Close the loop
                             
                             // Calculate distance from click point to this segment
                             const distance = distanceToSegment(
@@ -269,7 +275,7 @@ export default function AddRouteMap({
                     let icon;
                     let zIndex = 100;
                     
-                    // Determine icon based on position and highlight status
+                    // Determine icon based on highlight status only (no start/end distinction)
                     if (index === highlightedIndex) {
                         // Highlighted point - make it stand out
                         icon = {
@@ -281,24 +287,12 @@ export default function AddRouteMap({
                             strokeWeight: 3
                         };
                         zIndex = 200; // Bring to front
-                    } else if (index === 0) {
-                        // Start marker
-                        icon = {
-                            url: 'http://maps.google.com/mapfiles/ms/icons/green-dot.png',
-                            scaledSize: new window.google.maps.Size(32, 32)
-                        };
-                    } else if (index === path.length - 1) {
-                        // End marker
-                        icon = {
-                            url: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png',
-                            scaledSize: new window.google.maps.Size(32, 32)
-                        };
                     } else {
-                        // Intermediate points
+                        // All regular points use the same style
                         icon = {
                             path: window.google.maps.SymbolPath.CIRCLE,
-                            scale: 6,
-                            fillColor: '#4285F4',
+                            scale: 7,
+                            fillColor: '#FF6B6B',
                             fillOpacity: 1,
                             strokeColor: 'white',
                             strokeWeight: 2
