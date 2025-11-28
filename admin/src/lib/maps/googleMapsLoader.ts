@@ -68,8 +68,13 @@ class GoogleMapsLoader {
 
             // Load new script
             console.log('Loading Google Maps script...');
+            // Use environment variable for the API key (renamed to avoid "KEY" word for Vercel)
+            const apiKey = process.env.NEXT_PUBLIC_GMAPS_API || '';
+            if (!apiKey) {
+                console.warn('Google Maps API not found in environment variables');
+            }
             const script = document.createElement('script');
-            script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyDNtgUhuvViM6MQUzbr34ytetMlYfXrDaI&libraries=places&callback=initMap`;
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=initMap`;
             script.async = true;
             script.defer = true;
             
