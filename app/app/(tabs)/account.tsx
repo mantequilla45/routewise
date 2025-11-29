@@ -324,7 +324,7 @@ const styles = StyleSheet.create({
     profileContainer: {
         flex: 1,
         backgroundColor: '#f5f5f5',
-        marginTop: 50,
+        marginTop: 50
     },
     profileHeader: {
         backgroundColor: '#fff',
