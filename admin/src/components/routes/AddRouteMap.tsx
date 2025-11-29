@@ -311,10 +311,12 @@ export default function AddRouteMap({
                 
                 // Create markers for all points
                 path.forEach((point, index) => {
-                    let markerOptions: any = {
+                    const markerOptions: google.maps.MarkerOptions = {
                         position: point,
                         map: map,
-                        cursor: enableClickToAdd ? 'pointer' : 'default'
+                        cursor: enableClickToAdd ? 'pointer' : 'default',
+                        title: '',
+                        zIndex: 100
                     };
                     
                     // Determine icon and label based on position and highlight status
