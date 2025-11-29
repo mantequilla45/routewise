@@ -242,6 +242,7 @@ const styles = StyleSheet.create({
         borderColor: '#585756',    // default black border, change if you want
         borderRadius: 8,        // 8px corner radius
         height: 40,             // optional: keeps the box nicely sized
+        color: 'white',
     },
     passwordWrapper: {
         flexDirection: 'row',      // input and eye icon in a row
