@@ -171,66 +171,61 @@ export default function ContributeRoutePage() {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-            <div className="container py-8 pb-0 min-w-[100vw]">
+            <div className="container py-6 pb-0 min-w-[90vw] mx-auto">
                 {/* Header */}
-                <div className="p-8 flex items-center gap-4">
-                    <img
-                        src="/routewise.svg"
-                        alt="Routewise Logo"
-                        className="h-16 w-auto"
-                    />
+                <div className="p-6 sm:p-8 flex items-center gap-6">
                     <div>
-                        <h1 className="text-4xl font-bold text-gray-900 mb-2">Contribute a Route</h1>
-                        <p className="text-lg text-gray-600">Help map jeepney routes in your community</p>
+                        <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-gray-900 mb-2">Contribute a Route</h1>
+                        <p className="text-base sm:text-lg lg:text-xl text-gray-600">Help map jeepney routes in your community</p>
                     </div>
                 </div>
 
                 {/* Main Content */}
-                <div className="flex lg:flex-row flex-col gap-6 w-full">
+                <div className="flex lg:flex-row flex-col gap-6 xl:gap-8 w-full">
                     {/* Form Section */}
-                    <div className="bg-white rounded-lg shadow-lg p-6 w-1/3">
-                        <h2 className="text-2xl font-bold text-gray-900 mb-6">Route Information</h2>
+                    <div className="bg-white rounded-xl shadow-lg p-6 lg:p-8 w-full lg:w-1/3 min-w-0">
+                        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6">Route Information</h2>
 
-                        <form onSubmit={handleSubmit} className="space-y-4">
+                        <form onSubmit={handleSubmit} className="space-y-5 lg:space-y-6">
                             {/* Route Code */}
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                                <label className="block text-sm sm:text-base font-semibold text-gray-700 mb-2">
                                     Route Code* (e.g., 01A, 23B)
                                 </label>
                                 <input
                                     type="text"
                                     value={formData.route_code}
                                     onChange={e => setFormData({ ...formData, route_code: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="w-full px-4 py-3 text-sm sm:text-base border border-gray-300 rounded-lg text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                                     placeholder="Enter route code"
                                     required
                                 />
                             </div>
 
                             {/* Contributor Info */}
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-1">
+                                    <label className="block text-sm sm:text-base font-semibold text-gray-700 mb-2">
                                         Your Name*
                                     </label>
                                     <input
                                         type="text"
                                         value={formData.contributor_name}
                                         onChange={e => setFormData({ ...formData, contributor_name: e.target.value })}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="w-full px-4 py-3 text-sm sm:text-base border border-gray-300 rounded-lg text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                                         placeholder="Your name"
                                         required
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-1">
+                                    <label className="block text-sm sm:text-base font-semibold text-gray-700 mb-2">
                                         Email (optional)
                                     </label>
                                     <input
                                         type="email"
                                         value={formData.contributor_email}
                                         onChange={e => setFormData({ ...formData, contributor_email: e.target.value })}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="w-full px-4 py-3 text-sm sm:text-base border border-gray-300 rounded-lg text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                                         placeholder="your@email.com"
                                     />
                                 </div>
@@ -355,10 +350,10 @@ export default function ContributeRoutePage() {
                     </div>
 
                     {/* Map Section */}
-                    <div className="bg-white rounded-lg shadow-lg p-6 w-2/3">
-                        <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-2xl font-bold text-gray-900">Draw Route on Map</h2>
-                            <div className="flex items-center gap-3">
+                    <div className="bg-white rounded-xl shadow-lg p-6 lg:p-8 w-full lg:w-2/3 min-w-0">
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                            <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Draw Route on Map</h2>
+                            <div className="flex items-center gap-4">
                                 <label className="flex items-center cursor-pointer">
                                     <input
                                         type="checkbox"
@@ -400,11 +395,11 @@ export default function ContributeRoutePage() {
                         />
 
                         {/* Map Instructions */}
-                        <div className="mt-6 flex flex-row gap-6">
+                        <div className="mt-6 lg:mt-8 flex flex-col lg:flex-row gap-4 lg:gap-6">
                             {/* Legend */}
-                            <div className="p-3 bg-gray-50 rounded-lg border border-gray-200 w-full">
-                                <h4 className="font-semibold text-gray-900 mb-2 text-sm">Map Legend</h4>
-                                <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 w-1/3">
+                                <h4 className="font-semibold text-gray-900 mb-3 text-sm sm:text-base">Map Legend</h4>
+                                <div className="flex flex-col gap-5 text-xs sm:text-sm">
                                     <div className="flex items-center gap-2">
                                         <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center text-white font-bold text-[10px]">✕</div>
                                         <span className="text-gray-700">Start Point</span>
@@ -425,14 +420,14 @@ export default function ContributeRoutePage() {
                             </div>
 
                             {/* Instructions */}
-                            <div className="p-3 bg-blue-50 rounded-lg border border-blue-200 w-full">
-                                <h4 className="font-semibold text-blue-900 mb-2 text-sm flex items-center">
-                                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200 w-2/3">
+                                <h4 className="font-semibold text-blue-900 mb-3 text-sm sm:text-base flex items-center">
+                                    <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
                                     How to Map a Route
                                 </h4>
-                                <div className="space-y-2 text-xs text-blue-800">
+                                <div className="space-y-3 text-xs sm:text-sm text-blue-800">
                                     <div>
                                         <p className="font-semibold mb-1">Adding Points:</p>
                                         <ul className="ml-3 space-y-0.5">
@@ -446,7 +441,7 @@ export default function ContributeRoutePage() {
                                         <ul className="ml-3 space-y-0.5">
                                             <li>• Select point from list → Click map to move</li>
                                             <li>• Click "Insert" button → Add point after selected</li>
-                                            <li>• Click "✕" button → Remove point</li>
+                                            <li>• Click "Remove" button → Remove point</li>
                                         </ul>
                                     </div>
                                     <div>
@@ -468,33 +463,33 @@ export default function ContributeRoutePage() {
             </div>
 
             {/* Footer */}
-            <footer className="mt-12 bg-white/80 border-t border-gray-200">
-                <div className="container min-w-[100vw] px-12 py-12">
-                    <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                            <div className="text-left">
+            <footer className="mt-16 bg-white/90 backdrop-blur-sm border-t border-gray-200">
+                <div className="container min-w-[100vw] px-4 sm:px-6 lg:px-20 py-8 lg:py-12">
+                    <div className="flex flex-col lg:flex-row items-center justify-between gap-6 lg:gap-8">
+                        <div className="flex items-center gap-4">
+                            <div className="text-center lg:text-left">
                                 <img
                                     src="/routewise.svg"
                                     alt="Routewise"
-                                    className="h-10 w-auto opacity-80"
+                                    className="h-10 sm:h-12 w-auto opacity-90"
                                 />
-                                <p className="text-xs text-gray-600">Mapping the future of public transport</p>
+                                <p className="text-xs sm:text-sm text-gray-600">Mapping the future of public transport</p>
                             </div>
                         </div>
 
-                        <div className="text-center md:text-right">
-                            <p className="text-sm text-gray-700 font-medium mb-1">
+                        <div className="text-center lg:text-right">
+                            <p className="text-sm sm:text-base text-gray-700 font-medium mb-2">
                                 🛡️ All contributions are reviewed before publication
                             </p>
-                            <p className="text-xs text-gray-600">
+                            <p className="text-xs sm:text-sm text-gray-600 max-w-md">
                                 Thank you for helping improve public transportation in your community
                             </p>
                         </div>
                     </div>
 
-                    <div className="mt-4 pt-4 border-t border-gray-200 text-center">
-                        <p className="text-xs text-gray-500">
-                            © {new Date().getFullYear()} Routewise
+                    <div className="mt-6 lg:mt-8 pt-4 lg:pt-6 border-t border-gray-200 text-center">
+                        <p className="text-xs sm:text-sm text-gray-500">
+                            © {new Date().getFullYear()} Routewise. Your contribution makes a difference.
                         </p>
                     </div>
                 </div>
