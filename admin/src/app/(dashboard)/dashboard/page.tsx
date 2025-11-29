@@ -223,12 +223,12 @@ export default function DashboardPage() {
         {/* Right Column */}
         <div className="h-full">
           {/* Recent Activity */}
-          <div className="bg-[#3A3A3A] rounded-2xl shadow-sm p-6 min-h-[400px]">
+          <div className="bg-[#3A3A3A] rounded-2xl shadow-sm p-6 h-full">
             <h2 className="text-lg font-semibold text-white mb-6">
               Recent Routes
             </h2>
             <div className="flex flex-col h-full justify-between">
-              <div className="space-y-4 max-h-96 overflow-y-auto">
+              <div className="space-y-4 max-h-96 flex-1 overflow-y-auto">
                 {recentRoutes.length > 0 ? (
                   recentRoutes.map((route, index) => (
                     <div
