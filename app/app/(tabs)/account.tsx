@@ -2,7 +2,8 @@ import Button from "@/components/Button";
 import LoginModal from "@/components/LoginModal";
 import { Image } from "expo-image";
 import { useState, useEffect, useRef } from "react";
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, ActivityIndicator, TextInput } from "react-native";
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, ActivityIndicator, TextInput, Modal } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/context/hybrid-auth";
 import { supabase } from "@/lib/supabase-client";
 import * as SecureStore from 'expo-secure-store';
@@ -27,6 +28,9 @@ export default function Account() {
     const [commuterValue, setCommuterValue] = useState<string>((user as any)?.commuter || '');
     const [isSavingCommuter, setIsSavingCommuter] = useState<boolean>(false);
     const commuterInputRef = useRef<any>(null);
+    const [isEditingSection, setIsEditingSection] = useState<boolean>(false);
+    const [isCommuterModalVisible, setIsCommuterModalVisible] = useState<boolean>(false);
+    const commuterOptions = ['Regular', 'Student', 'PWD', 'Senior'];
 
     const openModal = () => {
         setIsModalVisible(true);
@@ -38,6 +42,25 @@ export default function Account() {
 
     const handleSignOut = async () => {
         await signOut();
+    };
+
+    const handleSaveAll = async () => {
+        const originalName = (user as any)?.name || '';
+        const originalCommuter = (user as any)?.commuter || '';
+        
+        // Save name if it changed
+        if (nameValue !== originalName) {
+            await saveName(nameValue);
+        }
+        
+        // Save commuter if it changed
+        if (commuterValue !== originalCommuter) {
+            await saveCommuter(commuterValue);
+        }
+        
+        setIsEditingName(false);
+        setIsEditingCommuter(false);
+        setIsEditingSection(false);
     };
 
     // Keep local nameValue in sync when user changes externally
@@ -54,11 +77,8 @@ export default function Account() {
 
     // Debounced auto-save when typing stops
     useEffect(() => {
-        if (!isEditingName) return;
-        const t = setTimeout(() => {
-            saveName(nameValue);
-        }, 1000);
-        return () => clearTimeout(t);
+        if (!isEditingName || !isEditingSection) return;
+        // No auto-save - only save on button click
     }, [nameValue]);
 
     // Keep local commuterValue in sync when user changes externally
@@ -75,11 +95,8 @@ export default function Account() {
 
     // Debounced auto-save for commuter when typing stops
     useEffect(() => {
-        if (!isEditingCommuter) return;
-        const t = setTimeout(() => {
-            saveCommuter(commuterValue);
-        }, 1000);
-        return () => clearTimeout(t);
+        if (!isEditingCommuter || !isEditingSection) return;
+        // No auto-save - only save on button click
     }, [commuterValue]);
 
     async function saveName(newName: string) {
@@ -214,14 +231,20 @@ export default function Account() {
                 </View>
 
                 <View style={styles.profileSection}>
-                    <Text style={styles.sectionTitle}>Account Information</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 15 }}>
+                        <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Account Information</Text>
+                        <TouchableOpacity onPress={() => isEditingSection ? handleSaveAll() : setIsEditingSection(true)} style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 4 }}>
+                            <Ionicons name="pencil" size={16} color="#4CAF50" />
+                            <Text style={{ marginLeft: 4, fontSize: 12, color: '#4CAF50', fontFamily: 'Lexend_600SemiBold' }}>{isEditingSection ? 'Save' : 'Edit'}</Text>
+                        </TouchableOpacity>
+                    </View>
                     <View style={styles.infoRow}>
                         <Text style={styles.infoLabel}>Email</Text>
                         <Text style={styles.infoValue}>{user.email}</Text>
                     </View>
-                    <View style={styles.infoRow}>
+                    <View style={[styles.infoRow, isEditingSection && styles.infoRowActive]}>
                         <Text style={styles.infoLabel}>Name</Text>
-                        {isEditingName ? (
+                        {isEditingSection && isEditingName ? (
                             <TextInput
                                 ref={nameInputRef}
                                 value={nameValue}
@@ -231,40 +254,73 @@ export default function Account() {
                                 style={[styles.infoValue, styles.nameInput]}
                                 returnKeyType="done"
                             />
-                        ) : (
+                        ) : isEditingSection ? (
                             <TouchableOpacity onPress={() => setIsEditingName(true)} style={{ flex: 1, alignItems: 'flex-end' }}>
                                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                                     <Text style={styles.infoValue}>{nameValue || 'Not provided'}</Text>
                                     {isSavingName && <ActivityIndicator size="small" style={{ marginLeft: 8 }} />}
                                 </View>
                             </TouchableOpacity>
+                        ) : (
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <Text style={styles.infoValue}>{nameValue || 'Not provided'}</Text>
+                                {isSavingName && <ActivityIndicator size="small" style={{ marginLeft: 8 }} />}
+                            </View>
                         )}
                     </View>
                     <View style={styles.infoRow}>
                         <Text style={styles.infoLabel}>Email Verified</Text>
                         <Text style={styles.infoValue}>{isVerified ? 'Yes' : 'No'}</Text>
                     </View>
-                    <View style={styles.infoRow}>
+                    <View style={[styles.infoRow, isEditingSection && styles.infoRowActive]}>
                         <Text style={styles.infoLabel}>Commuter Type</Text>
-                        {isEditingCommuter ? (
-                            <TextInput
-                                ref={commuterInputRef}
-                                value={commuterValue}
-                                onChangeText={setCommuterValue}
-                                onBlur={() => { setIsEditingCommuter(false); saveCommuter(commuterValue); }}
-                                onSubmitEditing={() => { setIsEditingCommuter(false); saveCommuter(commuterValue); }}
-                                style={[styles.infoValue, styles.nameInput]}
-                                returnKeyType="done"
-                            />
-                        ) : (
-                            <TouchableOpacity onPress={() => setIsEditingCommuter(true)} style={{ flex: 1, alignItems: 'flex-end' }}>
+                        {isEditingSection ? (
+                            <TouchableOpacity onPress={() => setIsCommuterModalVisible(true)} style={{ flex: 1, alignItems: 'flex-end' }}>
                                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                                     <Text style={styles.infoValue}>{commuterValue || 'Not provided'}</Text>
                                     {isSavingCommuter && <ActivityIndicator size="small" style={{ marginLeft: 8 }} />}
                                 </View>
                             </TouchableOpacity>
+                        ) : (
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <Text style={styles.infoValue}>{commuterValue || 'Not provided'}</Text>
+                                {isSavingCommuter && <ActivityIndicator size="small" style={{ marginLeft: 8 }} />}
+                            </View>
                         )}
                     </View>
+
+                    <Modal
+                        visible={isCommuterModalVisible}
+                        transparent={true}
+                        animationType="fade"
+                        onRequestClose={() => setIsCommuterModalVisible(false)}
+                    >
+                        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' }}>
+                            <View style={{ backgroundColor: '#fff', borderRadius: 12, padding: 20, width: '80%' }}>
+                                <Text style={{ fontSize: 18, fontFamily: 'Lexend_600SemiBold', marginBottom: 20, textAlign: 'center' }}>Select Commuter Type</Text>
+                                {commuterOptions.map((option) => (
+                                    <TouchableOpacity
+                                        key={option}
+                                        onPress={() => {
+                                            setCommuterValue(option);
+                                            setIsCommuterModalVisible(false);
+                                        }}
+                                        style={{ paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' }}
+                                    >
+                                        <Text style={{ fontSize: 16, fontFamily: 'Lexend_400Regular', color: commuterValue === option ? '#4CAF50' : '#333' }}>
+                                            {option}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))}
+                                <TouchableOpacity
+                                    onPress={() => setIsCommuterModalVisible(false)}
+                                    style={{ paddingVertical: 12, marginTop: 12 }}
+                                >
+                                    <Text style={{ fontSize: 16, fontFamily: 'Lexend_600SemiBold', color: '#f44336', textAlign: 'center' }}>Cancel</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </Modal>
                 </View>
 
                 <View style={styles.actionSection}>
@@ -393,6 +449,11 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
         borderBottomWidth: 1,
         borderBottomColor: '#f0f0f0',
+    },
+    infoRowActive: {
+        backgroundColor: '#f0f8f0',
+        borderBottomColor: '#4CAF50',
+        borderBottomWidth: 2,
     },
     infoLabel: {
         fontSize: 14,
