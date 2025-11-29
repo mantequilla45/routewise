@@ -74,8 +74,12 @@ export default function Account() {
                     <View style={styles.infoRow}>
                         <Text style={styles.infoLabel}>Email Verified</Text>
                         <Text style={styles.infoValue}>
-                            {user.email_verified ? 'Yes' : 'No'}
+                            
                         </Text>
+                    </View>
+                    <View style={styles.infoRow}>
+                        <Text style={styles.infoLabel}>Commuter Type</Text>
+                        <Text style={styles.infoValue}>{user.name || 'Not provided'}</Text>
                     </View>
                 </View>
 
