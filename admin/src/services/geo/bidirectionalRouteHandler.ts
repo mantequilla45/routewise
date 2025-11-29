@@ -47,7 +47,6 @@ export async function analyzeBidirectionalRoute(
             SELECT
                 id,
                 route_code,
-                horizontal_or_vertical_road,
                 
                 -- Forward direction calculation
                 ST_LineLocatePoint(geom_forward, ST_SetSRID(ST_MakePoint($1, $2), 4326)) as loc_a_forward,
@@ -85,7 +84,6 @@ export async function analyzeBidirectionalRoute(
             route_code,
             forward_segment_distance,
             forward_segment_geojson,
-            horizontal_or_vertical_road,
             loc_a_forward,
             loc_b_forward
         FROM distance_calc;
