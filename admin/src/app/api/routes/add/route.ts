@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
             .join(', ')})`;
 
         const sql = `
-            INSERT INTO new_jeepney_routes (
+            INSERT INTO jeepney_routes (
                 route_code,
                 start_point_name,
                 end_point_name,
@@ -69,7 +69,7 @@ export async function GET() {
                 start_point_name,
                 end_point_name,
                 ST_AsGeoJSON(geom_forward)::json as forward_geojson
-            FROM new_jeepney_routes
+            FROM jeepney_routes
             ORDER BY route_code;
         `;
 

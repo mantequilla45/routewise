@@ -19,7 +19,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
         }
 
         const sql = `
-            DELETE FROM new_jeepney_routes
+            DELETE FROM jeepney_routes
             WHERE id = $1
             RETURNING id, route_code;
         `;
@@ -68,7 +68,7 @@ export async function GET(request: NextRequest, { params }: Params) {
                 start_point_name,
                 end_point_name,
                 ST_AsGeoJSON(geom_forward)::json as forward_geojson
-            FROM new_jeepney_routes
+            FROM jeepney_routes
             WHERE id = $1;
         `;
 

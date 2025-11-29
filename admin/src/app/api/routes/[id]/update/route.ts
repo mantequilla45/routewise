@@ -35,7 +35,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
 
         // Update the route with exact columns from the table
         const updateQuery = `
-            UPDATE new_jeepney_routes
+            UPDATE jeepney_routes
             SET 
                 route_code = $1,
                 start_point_name = $2,

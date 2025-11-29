@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import RoutesList from '@/components/routes/RoutesList';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 
 // Dynamically import map component to avoid SSR issues
 const AddRouteMap = dynamic(() => import('@/components/routes/AddRouteMap'), { 
@@ -16,39 +17,51 @@ interface Coordinate {
     label?: string;
 }
 
+interface Contribution {
+    id: string;
+    route_code: string;
+    contributor_name: string;
+    contributor_email?: string;
+    forward_geojson: {
+        type: string;
+        coordinates: [number, number][];
+    };
+    status: string;
+    created_at: string;
+    review_notes?: string;
+}
+
 export default function EnhancedAddRoutePage() {
-    const [activeTab, setActiveTab] = useState<'add' | 'list'>('add');
-    const [inputMethod, setInputMethod] = useState<'text' | 'map'>('text');
+    const [activeTab, setActiveTab] = useState<'add' | 'list' | 'review'>('add');
+    const [contributions, setContributions] = useState<Contribution[]>([]);
+    const [loadingContributions, setLoadingContributions] = useState(false);
+    const [selectedContribution, setSelectedContribution] = useState<Contribution | null>(null);
+    const [reviewAction, setReviewAction] = useState<'approve' | 'reject' | null>(null);
+    const [reviewNotes, setReviewNotes] = useState('');
     const [formData, setFormData] = useState({
-        route_code: '',
-        start_point_name: '',
-        end_point_name: '',
-        coordinates: ''
+        route_code: ''
     });
     
     const [mapCoordinates, setMapCoordinates] = useState<Coordinate[]>([]);
     const [status, setStatus] = useState({ type: '', message: '' });
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [showPreview, setShowPreview] = useState(false);
     const [selectedPointIndex, setSelectedPointIndex] = useState<number | null>(null);
     const [insertMode, setInsertMode] = useState(false);
+    const [showPointNumbers, setShowPointNumbers] = useState(true);
+    const [hidePOIs, setHidePOIs] = useState(false);
+    const [showCloseLoopModal, setShowCloseLoopModal] = useState(false);
+    const [editingContributionId, setEditingContributionId] = useState<string | null>(null);
+    const [contributionCoordinates, setContributionCoordinates] = useState<Coordinate[]>([]);
+    const [selectedContribPointIndex, setSelectedContribPointIndex] = useState<number | null>(null);
+
+    useEffect(() => {
+        // Fetch contributions on component mount to show badge count
+        fetchContributions();
+    }, []);
 
     // Parse coordinates for map display
     const getDisplayCoordinates = (): [number, number][] => {
-        if (inputMethod === 'map') {
-            return mapCoordinates.map(coord => [coord.lng, coord.lat]);
-        }
-        
-        try {
-            const lines = formData.coordinates.split('\n').filter(line => line.trim());
-            return lines.map(line => {
-                const [lon, lat] = line.split(',').map(n => parseFloat(n.trim()));
-                if (isNaN(lon) || isNaN(lat)) throw new Error('Invalid coordinates');
-                return [lon, lat];
-            });
-        } catch {
-            return [];
-        }
+        return mapCoordinates.map(coord => [coord.lng, coord.lat]);
     };
 
     const handleSegmentClick = (afterIndex: number, lat: number, lng: number) => {
@@ -114,35 +127,44 @@ export default function EnhancedAddRoutePage() {
             
         } else if (!insertMode && selectedPointIndex !== null) {
             // Update existing point at its current position
-            console.log(`Updating point ${selectedPointIndex} to new position: ${lat}, ${lng}`);
             setMapCoordinates(prevCoords => {
-                const updatedCoords = [...prevCoords];
-                updatedCoords[selectedPointIndex] = {
-                    ...updatedCoords[selectedPointIndex],
-                    lat,
-                    lng
-                };
-                console.log('Updated coordinates:', updatedCoords);
-                return updatedCoords;
+                if (!prevCoords || prevCoords.length === 0 || selectedPointIndex >= prevCoords.length) {
+                    return prevCoords;
+                }
+                
+                return prevCoords.map((coord, index) => {
+                    if (index === selectedPointIndex) {
+                        // Update this point with new lat/lng, keeping the label
+                        return {
+                            ...coord,
+                            lat,
+                            lng
+                        };
+                    }
+                    return coord;
+                });
             });
             // Keep the point selected after editing to avoid confusion
             // User can click elsewhere or press Escape to deselect
             // setSelectedPointIndex(null);
         } else {
+            // Check if this is a closed loop
+            const isClosedLoop = mapCoordinates.length > 2 && 
+                Math.abs(mapCoordinates[0].lat - mapCoordinates[mapCoordinates.length - 1].lat) < 0.000001 &&
+                Math.abs(mapCoordinates[0].lng - mapCoordinates[mapCoordinates.length - 1].lng) < 0.000001;
+            
+            if (isClosedLoop) {
+                // Don't allow adding points at the end for closed loops
+                alert("This route is a closed loop. You can only add points between existing segments.\n\nTo add a point:\n1. Select an existing point\n2. Click 'Insert' button\n3. Click on the map where you want the new point");
+                return;
+            }
+            
             // Add new point at the end
             const newIndex = mapCoordinates.length;
             const newCoord = { lat, lng, label: `Point ${newIndex + 1}` };
             setMapCoordinates([...mapCoordinates, newCoord]);
             
             // Don't auto-select when adding new points at the end
-            // Only scroll to show the new point
-            setTimeout(() => {
-                const pointsList = document.getElementById('points-list');
-                const newElement = document.querySelector(`#point-${newIndex}`);
-                if (pointsList && newElement) {
-                    newElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-            }, 100);
         }
     };
 
@@ -155,23 +177,6 @@ export default function EnhancedAddRoutePage() {
             // Select the point
             setSelectedPointIndex(index);
             setInsertMode(false); // Reset insert mode when selecting a different point
-            
-            // Scroll the selected point into view
-            setTimeout(() => {
-                const pointsList = document.getElementById('points-list');
-                const selectedElement = document.querySelector(`#point-${index}`);
-                if (pointsList && selectedElement) {
-                    // Calculate the position to scroll to
-                    const listRect = pointsList.getBoundingClientRect();
-                    const elementRect = selectedElement.getBoundingClientRect();
-                    
-                    // Check if element is outside the visible area
-                    if (elementRect.top < listRect.top || elementRect.bottom > listRect.bottom) {
-                        // Scroll the element into the center of the list
-                        selectedElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }
-                }
-            }, 50);
         }
     };
 
@@ -198,32 +203,18 @@ export default function EnhancedAddRoutePage() {
         setStatus({ type: '', message: '' });
 
         try {
-            let coordinates_forward: [number, number][];
-            
-            if (inputMethod === 'map') {
-                if (mapCoordinates.length < 2) {
-                    throw new Error('Please add at least 2 points on the map');
-                }
-                coordinates_forward = mapCoordinates.map(coord => [coord.lng, coord.lat]);
-            } else {
-                const coordPairs = formData.coordinates.split('\n').filter(line => line.trim());
-                if (coordPairs.length < 2) {
-                    throw new Error('Please enter at least 2 coordinate pairs');
-                }
-                coordinates_forward = coordPairs.map(pair => {
-                    const [lon, lat] = pair.split(',').map(n => parseFloat(n.trim()));
-                    if (isNaN(lon) || isNaN(lat)) {
-                        throw new Error(`Invalid coordinate: ${pair}`);
-                    }
-                    return [lon, lat];
-                });
+            if (mapCoordinates.length < 2) {
+                throw new Error('Please add at least 2 points on the map');
             }
+            const coordinates_forward: [number, number][] = mapCoordinates.map(coord => [coord.lng, coord.lat]);
 
             const response = await fetch('/api/routes/add', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    ...formData,
+                    route_code: formData.route_code,
+                    start_point_name: 'Terminal A',
+                    end_point_name: 'Terminal B',
                     coordinates_forward
                 })
             });
@@ -238,10 +229,7 @@ export default function EnhancedAddRoutePage() {
                 
                 // Reset form
                 setFormData({
-                    route_code: '',
-                    start_point_name: '',
-                    end_point_name: '',
-                    coordinates: ''
+                    route_code: ''
                 });
                 setMapCoordinates([]);
                 
@@ -263,32 +251,90 @@ export default function EnhancedAddRoutePage() {
         }
     };
 
-    const importFromGoogleMaps = () => {
-        const url = prompt('Paste Google Maps URL:');
-        if (url) {
-            // Extract coordinates from Google Maps URL (basic implementation)
-            const match = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
-            if (match) {
-                const [, lat, lng] = match;
-                if (inputMethod === 'map') {
-                    handleMapClick(parseFloat(lat), parseFloat(lng));
-                } else {
-                    setFormData({
-                        ...formData,
-                        coordinates: formData.coordinates + 
-                            (formData.coordinates ? '\n' : '') + 
-                            `${lng},${lat}`
-                    });
-                }
-            } else {
-                alert('Could not extract coordinates from URL');
+
+    const fetchContributions = async () => {
+        setLoadingContributions(true);
+        try {
+            const response = await fetch('/api/routes/contribute?status=pending');
+            const data = await response.json();
+            if (data.success) {
+                setContributions(data.contributions);
             }
+        } catch (error) {
+            console.error('Error fetching contributions:', error);
+        } finally {
+            setLoadingContributions(false);
+        }
+    };
+
+    const handleApproveContribution = async (contribution: Contribution) => {
+        try {
+            // First, add the route to the main routes table
+            const response = await fetch('/api/routes/add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    route_code: contribution.route_code,
+                    start_point_name: 'Terminal A',
+                    end_point_name: 'Terminal B',
+                    coordinates_forward: contribution.forward_geojson.coordinates
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // Update contribution status to approved
+                await fetch(`/api/routes/contribute/${contribution.id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        status: 'approved',
+                        review_notes: reviewNotes,
+                        transferred_route_id: result.route.id
+                    })
+                });
+
+                // Refresh contributions list
+                fetchContributions();
+                setSelectedContribution(null);
+                setReviewAction(null);
+                setReviewNotes('');
+                
+                alert(`Route ${contribution.route_code} has been approved and added to the system!`);
+            }
+        } catch (error) {
+            console.error('Error approving contribution:', error);
+            alert('Failed to approve contribution');
+        }
+    };
+
+    const handleRejectContribution = async (contribution: Contribution) => {
+        try {
+            await fetch(`/api/routes/contribute/${contribution.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    status: 'rejected',
+                    review_notes: reviewNotes
+                })
+            });
+
+            fetchContributions();
+            setSelectedContribution(null);
+            setReviewAction(null);
+            setReviewNotes('');
+            
+            alert(`Route ${contribution.route_code} has been rejected.`);
+        } catch (error) {
+            console.error('Error rejecting contribution:', error);
+            alert('Failed to reject contribution');
         }
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 py-8">
-            <div className="container mx-auto px-4">
+        <div className="min-h-screen bg-gray-50">
+            <div className="container">
                 {/* Header */}
                 <div className="bg-white rounded-lg shadow-md p-6 mb-6">
                     <h1 className="text-3xl font-bold text-gray-900">Route Management</h1>
@@ -318,6 +364,26 @@ export default function EnhancedAddRoutePage() {
                         >
                             View All Routes
                         </button>
+                        <button
+                            onClick={() => {
+                                setActiveTab('review');
+                                if (activeTab !== 'review') {
+                                    fetchContributions();
+                                }
+                            }}
+                            className={`px-6 py-3 font-medium transition-colors relative ${
+                                activeTab === 'review'
+                                    ? 'text-blue-600 border-b-2 border-blue-600'
+                                    : 'text-gray-800 hover:text-gray-900'
+                            }`}
+                        >
+                            Review Contributions
+                            {contributions.filter(c => c.status === 'pending').length > 0 && (
+                                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                                    {contributions.filter(c => c.status === 'pending').length}
+                                </span>
+                            )}
+                        </button>
                     </div>
                 </div>
 
@@ -346,95 +412,21 @@ export default function EnhancedAddRoutePage() {
                                     </div>
                                 </div>
 
-                                <div>
-                                    <label className="block text-sm font-semibold text-black mb-1">
-                                        Primary Terminal / Landmark 1*
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={formData.start_point_name}
-                                        onChange={e => setFormData({...formData, start_point_name: e.target.value})}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        placeholder="e.g., IT Park"
-                                        required
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-semibold text-black mb-1">
-                                        Secondary Terminal / Landmark 2*
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={formData.end_point_name}
-                                        onChange={e => setFormData({...formData, end_point_name: e.target.value})}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        placeholder="e.g., Ayala Center"
-                                        required
-                                    />
-                                </div>
-
-                                {/* Coordinate Input Method Toggle */}
-                                <div className="border-t pt-4">
-                                    <label className="block text-sm font-semibold text-black mb-2">
-                                        Input Method
-                                    </label>
-                                    <div className="flex space-x-4">
-                                        <button
-                                            type="button"
-                                            onClick={() => setInputMethod('text')}
-                                            className={`px-4 py-2 rounded-lg font-medium ${
-                                                inputMethod === 'text'
-                                                    ? 'bg-blue-500 text-white'
-                                                    : 'bg-gray-200 text-black hover:bg-gray-300'
-                                            }`}
-                                        >
-                                            Text Input
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => setInputMethod('map')}
-                                            className={`px-4 py-2 rounded-lg ${
-                                                inputMethod === 'map'
-                                                    ? 'bg-blue-500 text-white'
-                                                    : 'bg-gray-200 text-gray-700'
-                                            }`}
-                                        >
-                                            Click on Map
-                                        </button>
-                                    </div>
-                                </div>
 
                                 {/* Coordinates Input */}
-                                {inputMethod === 'text' ? (
-                                    <div>
-                                        <label className="block text-sm font-semibold text-black mb-1">
-                                            Route Coordinates* (longitude,latitude)
-                                        </label>
-                                        <textarea
-                                            value={formData.coordinates}
-                                            onChange={e => setFormData({...formData, coordinates: e.target.value})}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
-                                            placeholder="123.8854,10.3157&#10;123.8900,10.3200&#10;123.9050,10.3180"
-                                            rows={6}
-                                            required={inputMethod === 'text'}
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={importFromGoogleMaps}
-                                            className="mt-2 text-sm text-blue-600 hover:text-blue-800"
-                                        >
-                                            Import from Google Maps URL →
-                                        </button>
-                                    </div>
-                                ) : (
+                                <div className="border-t pt-4">
                                     <div>
                                         <label className="block text-sm font-semibold text-black mb-1">
                                             Added Points ({mapCoordinates.length})
+                                            {mapCoordinates.length > 2 && 
+                                             Math.abs(mapCoordinates[0].lat - mapCoordinates[mapCoordinates.length - 1].lat) < 0.000001 &&
+                                             Math.abs(mapCoordinates[0].lng - mapCoordinates[mapCoordinates.length - 1].lng) < 0.000001 && (
+                                                <span className="ml-2 text-purple-600 text-xs font-medium">🔄 Closed Loop - Use Insert to add points</span>
+                                            )}
                                         </label>
                                         <div 
                                             id="points-list"
-                                            className="space-y-2 max-h-40 overflow-y-auto border border-gray-200 rounded-lg p-2"
+                                            className="space-y-2 h-64 overflow-y-auto border border-gray-200 rounded-lg p-2"
                                             style={{ scrollBehavior: 'smooth' }}
                                         >
                                             {mapCoordinates.map((coord, index) => (
@@ -507,38 +499,35 @@ export default function EnhancedAddRoutePage() {
                                             )}
                                         </div>
                                         
-                                        {/* Loop Close Button */}
-                                        {mapCoordinates.length >= 2 && (
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    // Add the first point at the end to close the loop
-                                                    const firstPoint = mapCoordinates[0];
-                                                    const lastIndex = mapCoordinates.length;
-                                                    const closingPoint = {
-                                                        ...firstPoint,
-                                                        label: `Point ${lastIndex + 1} (Loop Close)`
-                                                    };
-                                                    setMapCoordinates([...mapCoordinates, closingPoint]);
-                                                }}
-                                                className="mt-2 w-full bg-purple-500 text-white px-3 py-2 rounded-md hover:bg-purple-600 transition-colors text-sm font-medium"
-                                                disabled={mapCoordinates.length < 2 || 
-                                                    (mapCoordinates.length > 2 && 
-                                                     mapCoordinates[mapCoordinates.length - 1].lat === mapCoordinates[0].lat &&
-                                                     mapCoordinates[mapCoordinates.length - 1].lng === mapCoordinates[0].lng)}
-                                            >
-                                                {mapCoordinates.length > 2 && 
-                                                 mapCoordinates[mapCoordinates.length - 1].lat === mapCoordinates[0].lat &&
-                                                 mapCoordinates[mapCoordinates.length - 1].lng === mapCoordinates[0].lng
-                                                    ? '✓ Loop Closed'
-                                                    : '🔄 Close Loop (Connect End to Start)'}
-                                            </button>
-                                        )}
                                     </div>
-                                )}
+                                </div>
 
                                 {/* Action Buttons */}
                                 <div className="flex space-x-4 pt-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowCloseLoopModal(true)}
+                                        className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                                            mapCoordinates.length < 2
+                                                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                                : (mapCoordinates.length > 2 && 
+                                                   mapCoordinates[mapCoordinates.length - 1].lat === mapCoordinates[0].lat &&
+                                                   mapCoordinates[mapCoordinates.length - 1].lng === mapCoordinates[0].lng)
+                                                    ? 'bg-green-500 text-white cursor-not-allowed'
+                                                    : 'bg-purple-500 text-white hover:bg-purple-600'
+                                        }`}
+                                        disabled={mapCoordinates.length < 2 || 
+                                            (mapCoordinates.length > 2 && 
+                                             mapCoordinates[mapCoordinates.length - 1].lat === mapCoordinates[0].lat &&
+                                             mapCoordinates[mapCoordinates.length - 1].lng === mapCoordinates[0].lng)}
+                                        title={mapCoordinates.length < 2 ? 'Need at least 2 points to close loop' : ''}
+                                    >
+                                        {(mapCoordinates.length > 2 && 
+                                          mapCoordinates[mapCoordinates.length - 1].lat === mapCoordinates[0].lat &&
+                                          mapCoordinates[mapCoordinates.length - 1].lng === mapCoordinates[0].lng)
+                                            ? '✓ Loop Closed'
+                                            : 'Close Loop'}
+                                    </button>
                                     <button
                                         type="submit"
                                         disabled={isSubmitting}
@@ -549,13 +538,6 @@ export default function EnhancedAddRoutePage() {
                                         }`}
                                     >
                                         {isSubmitting ? 'Adding...' : 'Add Route'}
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowPreview(!showPreview)}
-                                        className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-                                    >
-                                        {showPreview ? 'Hide' : 'Show'} Preview
                                     </button>
                                 </div>
 
@@ -572,53 +554,442 @@ export default function EnhancedAddRoutePage() {
                             </form>
                         </div>
 
-                        {/* Map Section */}
-                        <div className="bg-white rounded-lg shadow-md p-6">
-                            <h2 className="text-xl font-bold text-black mb-4">
-                                {inputMethod === 'map' ? 'Click to Add Points' : 'Route Preview'}
-                            </h2>
+                        {/* Map Section - Route Preview */}
+                        <div className="bg-white rounded-lg shadow-md p-6 border-2 border-blue-200">
+                            <div className="flex justify-between items-center mb-4">
+                                <div>
+                                    <h2 className="text-xl font-bold text-black">Route Preview</h2>
+                                    <p className="text-sm text-gray-600 mt-1">Click on the map to add/edit route points</p>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                    <label className="flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={showPointNumbers}
+                                            onChange={e => setShowPointNumbers(e.target.checked)}
+                                            className="sr-only"
+                                        />
+                                        <div className="relative">
+                                            <div className={`block w-10 h-6 rounded-full ${showPointNumbers ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
+                                            <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition ${showPointNumbers ? 'transform translate-x-4' : ''}`}></div>
+                                        </div>
+                                        <span className="ml-2 text-sm font-medium text-gray-700">Numbers</span>
+                                    </label>
+                                    <label className="flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={hidePOIs}
+                                            onChange={e => setHidePOIs(e.target.checked)}
+                                            className="sr-only"
+                                        />
+                                        <div className="relative">
+                                            <div className={`block w-10 h-6 rounded-full ${hidePOIs ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
+                                            <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition ${hidePOIs ? 'transform translate-x-4' : ''}`}></div>
+                                        </div>
+                                        <span className="ml-2 text-sm font-medium text-gray-700">Hide Places</span>
+                                    </label>
+                                </div>
+                            </div>
+                            {/* Edit Mode Indicator */}
+                            {selectedPointIndex !== null && (
+                                <div className="mb-4 p-3 bg-yellow-50 border border-yellow-300 rounded-lg flex items-center">
+                                    <svg className="w-5 h-5 text-yellow-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                    <span className="text-yellow-800 font-medium">Editing Point {selectedPointIndex + 1} - Click on the map to move this point</span>
+                                </div>
+                            )}
+                            
                             <AddRouteMap 
                                 coordinates={getDisplayCoordinates()}
-                                onMapClick={inputMethod === 'map' ? handleMapClick : undefined}
-                                enableClickToAdd={inputMethod === 'map'}
+                                onMapClick={handleMapClick}
+                                enableClickToAdd={true}
                                 height="500px"
                                 highlightedIndex={selectedPointIndex}
                                 onPointClick={handlePointSelect}
-                                onSegmentClick={inputMethod === 'map' ? handleSegmentClick : undefined}
+                                onSegmentClick={handleSegmentClick}
+                                showPointNumbers={showPointNumbers}
+                                hidePOIs={hidePOIs}
                             />
                             
                             {/* Map Instructions */}
-                            <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-                                <h3 className="font-semibold text-blue-900 mb-2">
-                                    {inputMethod === 'map' ? 'How to add points:' : 'Tips:'}
-                                </h3>
-                                <ul className="text-sm text-blue-800 space-y-1">
-                                    {inputMethod === 'map' ? (
-                                        <>
-                                            <li className="font-bold text-red-700">⚠️ IMPORTANT: Pin order defines jeepney travel direction!</li>
-                                            <li>• <span className="text-green-700 font-semibold">GREEN marker (START)</span> = Where jeepney begins its route</li>
-                                            <li>• <span className="text-red-700 font-semibold">RED marker (END)</span> = Where jeepney ends its route</li>
-                                            <li>• Arrows show the direction jeepney will travel</li>
-                                            <li>• Click on the map to add waypoints at the end</li>
-                                            <li>• Click on the route line to insert points between</li>
-                                            <li>• Follow the actual jeepney route direction</li>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <li>• Right-click on Google Maps for coordinates</li>
-                                            <li>• Format: longitude,latitude (one per line)</li>
-                                            <li>• Add multiple points for accurate routes</li>
-                                            <li>• Preview updates automatically</li>
-                                        </>
-                                    )}
-                                </ul>
+                            <div className="mt-4 space-y-3">
+                                {/* Legend */}
+                                <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                    <h4 className="font-semibold text-gray-900 mb-2 text-sm">Map Legend</h4>
+                                    <div className="grid grid-cols-2 gap-2 text-xs">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center text-white font-bold text-[10px]">✕</div>
+                                            <span className="text-gray-700">Start Point</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center text-white font-bold text-[10px]">O</div>
+                                            <span className="text-gray-700">End Point</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-[10px]">•</div>
+                                            <span className="text-gray-700">Waypoints</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-5 h-1 rounded" style={{ backgroundColor: '#FF6B6B' }}></div>
+                                            <span className="text-gray-700">Route Path</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Instructions */}
+                                <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                                    <h4 className="font-semibold text-blue-900 mb-2 text-sm flex items-center">
+                                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        How to Map a Route
+                                    </h4>
+                                    <div className="space-y-2 text-xs text-blue-800">
+                                        <div>
+                                            <p className="font-semibold mb-1">Adding Points:</p>
+                                            <ul className="ml-3 space-y-0.5">
+                                                <li>• Click anywhere on map → Add waypoint at end</li>
+                                                <li>• Click on blue line → Insert between points</li>
+                                                <li>• Minimum 2 points required</li>
+                                            </ul>
+                                        </div>
+                                        <div>
+                                            <p className="font-semibold mb-1">Editing Points:</p>
+                                            <ul className="ml-3 space-y-0.5">
+                                                <li>• Select point from list → Click map to move</li>
+                                                <li>• Click &quot;Insert&quot; button → Add point after selected</li>
+                                                <li>• Click &quot;✕&quot; button → Remove point</li>
+                                            </ul>
+                                        </div>
+                                        <div>
+                                            <p className="font-semibold mb-1">Final Step:</p>
+                                            <ul className="ml-3 space-y-0.5">
+                                                <li>• After placing all pins → Click &quot;Close Loop&quot; button</li>
+                                                <li>• This connects the end point back to start</li>
+                                            </ul>
+                                        </div>
+                                        <div className="mt-2 p-2 bg-yellow-50 rounded border border-yellow-300">
+                                            <p className="text-yellow-800 font-semibold">⚠️ Important: Pin order defines travel direction!</p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                ) : (
+                ) : activeTab === 'list' ? (
                     <RoutesList />
-                )}
+                ) : activeTab === 'review' ? (
+                    <div className="bg-white rounded-lg shadow-md p-6">
+                        <h2 className="text-2xl font-bold text-gray-900 mb-6">Pending Route Contributions</h2>
+                        
+                        {loadingContributions ? (
+                            <div className="text-center py-8">
+                                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                                <p className="mt-2 text-gray-600">Loading contributions...</p>
+                            </div>
+                        ) : contributions.filter(c => c.status === 'pending').length === 0 ? (
+                            <div className="text-center py-8">
+                                <p className="text-gray-600">No pending contributions to review</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                {contributions.filter(c => c.status === 'pending').map(contribution => {
+                                    const isReviewing = selectedContribution?.id === contribution.id;
+                                    const isEditing = isReviewing && editingContributionId === contribution.id;
+                                    
+                                    return (
+                                    <div key={contribution.id} className="border rounded-lg p-4 hover:bg-gray-50">
+                                        <div className="flex justify-between items-start mb-4">
+                                            <div>
+                                                <h3 className="text-lg font-semibold text-gray-900">
+                                                    Route {contribution.route_code}
+                                                </h3>
+                                                <p className="text-sm text-gray-600">
+                                                    Contributed by: {contribution.contributor_name}
+                                                    {contribution.contributor_email && ` (${contribution.contributor_email})`}
+                                                </p>
+                                                <p className="text-xs text-gray-500">
+                                                    Submitted: {new Date(contribution.created_at).toLocaleString()}
+                                                </p>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                {!isReviewing ? (
+                                                    <button
+                                                        onClick={() => {
+                                                            setSelectedContribution(contribution);
+                                                            setEditingContributionId(null);
+                                                            setContributionCoordinates(contribution.forward_geojson?.coordinates?.map((coord: [number, number], index: number) => ({
+                                                                lat: coord[1],
+                                                                lng: coord[0],
+                                                                label: `Point ${index + 1}`
+                                                            })) || []);
+                                                            setReviewAction(null);
+                                                        }}
+                                                        className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
+                                                    >
+                                                        Review
+                                                    </button>
+                                                ) : (
+                                                    <>
+                                                        {!isEditing && (
+                                                            <button
+                                                                onClick={() => setEditingContributionId(contribution.id)}
+                                                                className="px-3 py-1 text-sm bg-yellow-500 text-white rounded hover:bg-yellow-600"
+                                                            >
+                                                                Edit
+                                                            </button>
+                                                        )}
+                                                        {isEditing && (
+                                                            <button
+                                                                onClick={() => setEditingContributionId(null)}
+                                                                className="px-3 py-1 text-sm bg-green-500 text-white rounded hover:bg-green-600"
+                                                            >
+                                                                Done Editing
+                                                            </button>
+                                                        )}
+                                                        <button
+                                                            onClick={() => {
+                                                                setSelectedContribution(null);
+                                                                setEditingContributionId(null);
+                                                                setContributionCoordinates([]);
+                                                            }}
+                                                            className="px-3 py-1 text-sm bg-gray-500 text-white rounded hover:bg-gray-600"
+                                                        >
+                                                            Close
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                        
+                                        {/* Show review details if selected */}
+                                        {isReviewing && (
+                                            <div className="mt-4 border-t pt-4">
+                                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                                    {/* Left side - Details and Controls */}
+                                                    <div className="space-y-4">
+                                                        <div className="bg-gray-50 p-4 rounded-lg">
+                                                            <h4 className="font-semibold mb-3 text-lg">Route Details</h4>
+                                                            <div className="space-y-3">
+                                                                <div className="text-sm space-y-2">
+                                                                    <p className="flex justify-between">
+                                                                        <strong>Route Code:</strong> 
+                                                                        <span className="text-blue-600 font-medium">{contribution.route_code}</span>
+                                                                    </p>
+                                                                    <p className="flex justify-between">
+                                                                        <strong>Total Points:</strong> 
+                                                                        <span>{contributionCoordinates.length}</span>
+                                                                    </p>
+                                                                    <p className="flex justify-between">
+                                                                        <strong>Route Type:</strong> 
+                                                                        <span>{contribution.forward_geojson.type}</span>
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Editing Controls */}
+                                                        {isEditing && (
+                                                            <div className="bg-white p-4 rounded-lg border">
+                                                                <h4 className="font-semibold mb-3">Edit Route Points</h4>
+                                                                <div className="h-64 overflow-y-auto border border-gray-200 rounded-lg p-2 space-y-2">
+                                                                    {contributionCoordinates.map((coord, index) => (
+                                                                        <div 
+                                                                            key={index}
+                                                                            className={`flex items-center justify-between text-sm p-2 rounded cursor-pointer transition-all ${
+                                                                                selectedContribPointIndex === index 
+                                                                                    ? 'bg-yellow-100 border-2 border-yellow-400 shadow-md' 
+                                                                                    : 'bg-gray-50 hover:bg-gray-100 border border-gray-200'
+                                                                            }`}
+                                                                            onClick={() => setSelectedContribPointIndex(index)}
+                                                                        >
+                                                                            <span className="text-gray-800 flex-1">
+                                                                                {coord.label}: {coord.lat.toFixed(6)}, {coord.lng.toFixed(6)}
+                                                                            </span>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    const newCoords = contributionCoordinates.filter((_, i) => i !== index);
+                                                                                    setContributionCoordinates(newCoords);
+                                                                                }}
+                                                                                className="text-red-500 hover:text-red-700 px-2"
+                                                                            >
+                                                                                ✕
+                                                                            </button>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                                {contributionCoordinates.length === 0 && (
+                                                                    <p className="text-gray-500 text-sm mt-2">Click on the map to add route points</p>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                        
+                                                        {/* Action Buttons */}
+                                                        {!reviewAction && (
+                                                            <div className="flex gap-2">
+                                                                <button
+                                                                    onClick={() => setReviewAction('approve')}
+                                                                    className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+                                                                >
+                                                                    Approve
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => setReviewAction('reject')}
+                                                                    className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                                                                >
+                                                                    Reject
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                        
+                                                        {reviewAction && (
+                                                            <div className="bg-white p-4 rounded-lg border">
+                                                                <label className="block text-sm font-semibold mb-1">
+                                                                    Review Notes:
+                                                                </label>
+                                                                <textarea
+                                                                    value={reviewNotes}
+                                                                    onChange={e => setReviewNotes(e.target.value)}
+                                                                    className="w-full px-3 py-2 border rounded text-sm"
+                                                                    rows={3}
+                                                                    placeholder={reviewAction === 'approve' ? 'Optional approval notes...' : 'Please provide rejection reason...'}
+                                                                    required={reviewAction === 'reject'}
+                                                                />
+                                                                <div className="flex gap-2 mt-2">
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            // Update contribution with edited coordinates before approval
+                                                                            const updatedContribution = {
+                                                                                ...contribution,
+                                                                                forward_geojson: {
+                                                                                    ...contribution.forward_geojson,
+                                                                                    coordinates: contributionCoordinates.map(coord => [coord.lng, coord.lat] as [number, number])
+                                                                                }
+                                                                            };
+                                                                            if (reviewAction === 'approve') {
+                                                                                handleApproveContribution(updatedContribution);
+                                                                            } else {
+                                                                                handleRejectContribution(updatedContribution);
+                                                                            }
+                                                                        }}
+                                                                        className={`px-4 py-2 text-white rounded ${
+                                                                            reviewAction === 'approve' 
+                                                                                ? 'bg-green-500 hover:bg-green-600' 
+                                                                                : 'bg-red-500 hover:bg-red-600'
+                                                                        }`}
+                                                                    >
+                                                                        Confirm {reviewAction === 'approve' ? 'Approval' : 'Rejection'}
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            setReviewAction(null);
+                                                                            setReviewNotes('');
+                                                                        }}
+                                                                        className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500"
+                                                                    >
+                                                                        Cancel
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Right side - Map */}
+                                                    <div className="bg-gray-50 p-4 rounded-lg">
+                                                        <h4 className="font-semibold mb-3 text-lg flex items-center">
+                                                            <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                                                            </svg>
+                                                            Route Preview {isEditing && '(Editing)'}
+                                                        </h4>
+                                                        <div className="h-96 border-2 border-blue-200 rounded-lg overflow-hidden">
+                                                            <AddRouteMap
+                                                                coordinates={contributionCoordinates.map(coord => [coord.lng, coord.lat] as [number, number])}
+                                                                height="384px"
+                                                                enableClickToAdd={isEditing}
+                                                                showPointNumbers={true}
+                                                                hidePOIs={false}
+                                                                highlightedIndex={isEditing ? selectedContribPointIndex : null}
+                                                                onMapClick={isEditing ? (lat: number, lng: number) => {
+                                                                    if (selectedContribPointIndex !== null) {
+                                                                        // Update existing point
+                                                                        const newCoords = [...contributionCoordinates];
+                                                                        newCoords[selectedContribPointIndex] = {
+                                                                            ...newCoords[selectedContribPointIndex],
+                                                                            lat,
+                                                                            lng
+                                                                        };
+                                                                        setContributionCoordinates(newCoords);
+                                                                        setSelectedContribPointIndex(null);
+                                                                    } else {
+                                                                        // Add new point
+                                                                        const newPoint = {
+                                                                            lat,
+                                                                            lng,
+                                                                            label: `Point ${contributionCoordinates.length + 1}`
+                                                                        };
+                                                                        setContributionCoordinates([...contributionCoordinates, newPoint]);
+                                                                    }
+                                                                } : undefined}
+                                                                onPointClick={isEditing ? (index: number) => {
+                                                                    setSelectedContribPointIndex(index);
+                                                                } : undefined}
+                                                                onSegmentClick={isEditing ? (afterIndex: number, lat: number, lng: number) => {
+                                                                    const newPoint = {
+                                                                        lat,
+                                                                        lng,
+                                                                        label: `Point ${afterIndex + 2}`
+                                                                    };
+                                                                    const newCoords = [...contributionCoordinates];
+                                                                    newCoords.splice(afterIndex + 1, 0, newPoint);
+                                                                    // Update labels
+                                                                    newCoords.forEach((coord, i) => {
+                                                                        coord.label = `Point ${i + 1}`;
+                                                                    });
+                                                                    setContributionCoordinates(newCoords);
+                                                                } : undefined}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                ) : null}
             </div>
+            
+            {/* Close Loop Confirmation Modal */}
+            <ConfirmModal
+                isOpen={showCloseLoopModal}
+                onClose={() => setShowCloseLoopModal(false)}
+                onConfirm={() => {
+                    const firstPoint = mapCoordinates[0];
+                    const lastIndex = mapCoordinates.length;
+                    const closingPoint = {
+                        ...firstPoint,
+                        label: `Point ${lastIndex + 1} (Loop Close)`
+                    };
+                    setMapCoordinates([...mapCoordinates, closingPoint]);
+                }}
+                title="⚠️ Closing the Loop"
+                message={`Once you close the loop:
+• You can only add points between existing segments
+• You cannot add points at the end of the route
+• The route will form a continuous loop
+
+Are you sure you want to close the loop?`}
+                confirmText="Yes, Close Loop"
+                cancelText="Cancel"
+                confirmButtonClass="bg-purple-600 hover:bg-purple-700"
+            />
         </div>
     );
 }
