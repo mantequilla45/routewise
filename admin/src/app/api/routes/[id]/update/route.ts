@@ -42,7 +42,6 @@ export async function PUT(request: NextRequest, { params }: Params) {
                 start_point_name = $2,
                 end_point_name = $3,
                 geom_forward = ST_GeomFromText($4, 4326),
-                geom_reverse = ST_GeomFromText($4, 4326),
                 horizontal_or_vertical_road = $5
             WHERE id = $6::uuid
             RETURNING id, route_code, start_point_name, end_point_name, horizontal_or_vertical_road,

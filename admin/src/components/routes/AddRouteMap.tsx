@@ -234,7 +234,11 @@ export default function AddRouteMap({
                 return;
             }
             
-            // Don't create closed loop - jeepney routes are not loops
+            // Check if this is a closed loop (first and last points are the same)
+            const isClosedLoop = path.length > 2 && 
+                path[0].lat === path[path.length - 1].lat && 
+                path[0].lng === path[path.length - 1].lng;
+            
             const routePath = [...path];
             
             // Draw polyline with click handling for inserting points
@@ -307,10 +311,12 @@ export default function AddRouteMap({
                 
                 // Create markers for all points
                 path.forEach((point, index) => {
-                    let markerOptions: any = {
+                    const markerOptions: google.maps.MarkerOptions = {
                         position: point,
                         map: map,
-                        cursor: enableClickToAdd ? 'pointer' : 'default'
+                        cursor: enableClickToAdd ? 'pointer' : 'default',
+                        title: '',
+                        zIndex: 100
                     };
                     
                     // Determine icon and label based on position and highlight status
@@ -329,8 +335,8 @@ export default function AddRouteMap({
                         };
                         markerOptions.title = 'Starting Point';
                         markerOptions.zIndex = 200;
-                    } else if (index === path.length - 1 && path.length > 1) {
-                        // Last point - End point with red marker
+                    } else if (index === path.length - 1 && path.length > 1 && !isClosedLoop) {
+                        // Last point - End point with red marker (only if not a closed loop)
                         console.log(`Marker ${index}: END (last point of ${path.length} total)`);
                         markerOptions.icon = {
                             url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
@@ -344,6 +350,21 @@ export default function AddRouteMap({
                         };
                         markerOptions.title = 'End Point';
                         markerOptions.zIndex = 200;
+                    } else if (isClosedLoop && index === path.length - 1) {
+                        // Loop closing point - show as special marker
+                        console.log(`Marker ${index}: LOOP CLOSE (connects back to start)`);
+                        markerOptions.icon = {
+                            url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                                <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                                    <circle cx="20" cy="20" r="16" fill="#9333EA" stroke="white" stroke-width="3"/>
+                                    <text x="20" y="25" font-family="Arial" font-size="12" font-weight="bold" fill="white" text-anchor="middle">LOOP</text>
+                                </svg>
+                            `),
+                            scaledSize: new window.google.maps.Size(40, 40),
+                            anchor: new window.google.maps.Point(20, 20)
+                        };
+                        markerOptions.title = 'Loop Close Point';
+                        markerOptions.zIndex = 190;
                     } else if (index === highlightedIndex) {
                         // Highlighted middle point
                         markerOptions.icon = {

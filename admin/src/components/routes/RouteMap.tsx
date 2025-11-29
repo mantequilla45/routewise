@@ -139,9 +139,6 @@ export default function RouteMap({
                 lat: coord[1],
                 lng: coord[0]
             }));
-
-            // Create closed loop by adding first point at the end if we have at least 2 points
-            const closedPath = path.length >= 2 ? [...path, path[0]] : path;
             
             // Draw polyline with direction arrows
             const newPolyline = new window.google.maps.Polyline({

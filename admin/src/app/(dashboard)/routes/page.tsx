@@ -348,7 +348,10 @@ export default function EnhancedAddRoutePage() {
                                     </div>
                                     <div>
                                         <label className="block text-sm font-semibold text-black mb-1">
-                                            Route Type
+                                            Route Direction
+                                            <span className="text-xs font-normal text-gray-600 ml-1">
+                                                (General orientation)
+                                            </span>
                                         </label>
                                         <select
                                             value={formData.horizontal_or_vertical_road ? 'horizontal' : 'vertical'}
@@ -358,9 +361,12 @@ export default function EnhancedAddRoutePage() {
                                             })}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         >
-                                            <option value="horizontal">Horizontal (E-W)</option>
-                                            <option value="vertical">Vertical (N-S)</option>
+                                            <option value="horizontal">East-West Route (Horizontal)</option>
+                                            <option value="vertical">North-South Route (Vertical)</option>
                                         </select>
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            Helps categorize routes by their primary direction of travel
+                                        </p>
                                     </div>
                                 </div>
 
@@ -524,6 +530,34 @@ export default function EnhancedAddRoutePage() {
                                                 <p className="text-gray-500 text-sm text-center py-4">Click on the map to add points</p>
                                             )}
                                         </div>
+                                        
+                                        {/* Loop Close Button */}
+                                        {mapCoordinates.length >= 2 && (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    // Add the first point at the end to close the loop
+                                                    const firstPoint = mapCoordinates[0];
+                                                    const lastIndex = mapCoordinates.length;
+                                                    const closingPoint = {
+                                                        ...firstPoint,
+                                                        label: `Point ${lastIndex + 1} (Loop Close)`
+                                                    };
+                                                    setMapCoordinates([...mapCoordinates, closingPoint]);
+                                                }}
+                                                className="mt-2 w-full bg-purple-500 text-white px-3 py-2 rounded-md hover:bg-purple-600 transition-colors text-sm font-medium"
+                                                disabled={mapCoordinates.length < 2 || 
+                                                    (mapCoordinates.length > 2 && 
+                                                     mapCoordinates[mapCoordinates.length - 1].lat === mapCoordinates[0].lat &&
+                                                     mapCoordinates[mapCoordinates.length - 1].lng === mapCoordinates[0].lng)}
+                                            >
+                                                {mapCoordinates.length > 2 && 
+                                                 mapCoordinates[mapCoordinates.length - 1].lat === mapCoordinates[0].lat &&
+                                                 mapCoordinates[mapCoordinates.length - 1].lng === mapCoordinates[0].lng
+                                                    ? '✓ Loop Closed'
+                                                    : '🔄 Close Loop (Connect End to Start)'}
+                                            </button>
+                                        )}
                                     </div>
                                 )}
 
