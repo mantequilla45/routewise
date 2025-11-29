@@ -17,8 +17,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
             route_code,
             start_point_name,
             end_point_name,
-            coordinates_forward,
-            horizontal_or_vertical_road
+            coordinates_forward
         } = body;
 
         // Validate required fields
@@ -41,10 +40,9 @@ export async function PUT(request: NextRequest, { params }: Params) {
                 route_code = $1,
                 start_point_name = $2,
                 end_point_name = $3,
-                geom_forward = ST_GeomFromText($4, 4326),
-                horizontal_or_vertical_road = $5
-            WHERE id = $6::uuid
-            RETURNING id, route_code, start_point_name, end_point_name, horizontal_or_vertical_road,
+                geom_forward = ST_GeomFromText($4, 4326)
+            WHERE id = $5::uuid
+            RETURNING id, route_code, start_point_name, end_point_name,
                      ST_AsGeoJSON(geom_forward)::json as forward_geojson
         `;
 
@@ -55,7 +53,6 @@ export async function PUT(request: NextRequest, { params }: Params) {
                 start_point_name,
                 end_point_name,
                 forwardLineString,
-                horizontal_or_vertical_road,
                 id
             ]
         ) as RouteRecord[];

@@ -23,8 +23,7 @@ export default function EnhancedAddRoutePage() {
         route_code: '',
         start_point_name: '',
         end_point_name: '',
-        coordinates: '',
-        horizontal_or_vertical_road: true
+        coordinates: ''
     });
     
     const [mapCoordinates, setMapCoordinates] = useState<Coordinate[]>([]);
@@ -242,8 +241,7 @@ export default function EnhancedAddRoutePage() {
                     route_code: '',
                     start_point_name: '',
                     end_point_name: '',
-                    coordinates: '',
-                    horizontal_or_vertical_road: true
+                    coordinates: ''
                 });
                 setMapCoordinates([]);
                 
@@ -345,28 +343,6 @@ export default function EnhancedAddRoutePage() {
                                             placeholder="e.g., 01A"
                                             required
                                         />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-semibold text-black mb-1">
-                                            Route Direction
-                                            <span className="text-xs font-normal text-gray-600 ml-1">
-                                                (General orientation)
-                                            </span>
-                                        </label>
-                                        <select
-                                            value={formData.horizontal_or_vertical_road ? 'horizontal' : 'vertical'}
-                                            onChange={e => setFormData({
-                                                ...formData, 
-                                                horizontal_or_vertical_road: e.target.value === 'horizontal'
-                                            })}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        >
-                                            <option value="horizontal">East-West Route (Horizontal)</option>
-                                            <option value="vertical">North-South Route (Vertical)</option>
-                                        </select>
-                                        <p className="text-xs text-gray-500 mt-1">
-                                            Helps categorize routes by their primary direction of travel
-                                        </p>
                                     </div>
                                 </div>
 

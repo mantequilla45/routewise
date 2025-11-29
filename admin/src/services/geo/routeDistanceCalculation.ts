@@ -144,7 +144,6 @@ async function calculateRouteDistances(
             SELECT
                 id,
                 route_code,
-                horizontal_or_vertical_road,
                 geom_forward,
                 ST_LineLocatePoint(geom_forward, ST_SetSRID(ST_MakePoint($1, $2), 4326)) as loc_a,
                 ST_LineLocatePoint(geom_forward, ST_SetSRID(ST_MakePoint($3, $4), 4326)) as loc_b

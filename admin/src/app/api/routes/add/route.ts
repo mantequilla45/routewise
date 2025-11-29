@@ -8,8 +8,7 @@ export async function POST(request: NextRequest) {
             route_code,
             start_point_name,
             end_point_name,
-            coordinates_forward,
-            horizontal_or_vertical_road
+            coordinates_forward
         } = body;
 
         // Validate required fields
@@ -30,14 +29,12 @@ export async function POST(request: NextRequest) {
                 route_code,
                 start_point_name,
                 end_point_name,
-                geom_forward,
-                horizontal_or_vertical_road
+                geom_forward
             ) VALUES (
                 $1,
                 $2,
                 $3,
-                ST_GeomFromText($4, 4326),
-                $5
+                ST_GeomFromText($4, 4326)
             ) RETURNING id, route_code, start_point_name, end_point_name;
         `;
 
@@ -45,8 +42,7 @@ export async function POST(request: NextRequest) {
             route_code,
             start_point_name,
             end_point_name,
-            forwardLineString,
-            horizontal_or_vertical_road ?? true
+            forwardLineString
         ]);
 
         return NextResponse.json({
@@ -72,7 +68,6 @@ export async function GET() {
                 route_code,
                 start_point_name,
                 end_point_name,
-                horizontal_or_vertical_road,
                 ST_AsGeoJSON(geom_forward)::json as forward_geojson
             FROM new_jeepney_routes
             ORDER BY route_code;
