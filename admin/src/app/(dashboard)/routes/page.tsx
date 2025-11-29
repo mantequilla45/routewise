@@ -18,10 +18,8 @@ interface Coordinate {
 
 export default function EnhancedAddRoutePage() {
     const [activeTab, setActiveTab] = useState<'add' | 'list'>('add');
-    const [inputMethod, setInputMethod] = useState<'text' | 'map'>('text');
     const [formData, setFormData] = useState({
-        route_code: '',
-        coordinates: ''
+        route_code: ''
     });
     
     const [mapCoordinates, setMapCoordinates] = useState<Coordinate[]>([]);
@@ -35,20 +33,7 @@ export default function EnhancedAddRoutePage() {
 
     // Parse coordinates for map display
     const getDisplayCoordinates = (): [number, number][] => {
-        if (inputMethod === 'map') {
-            return mapCoordinates.map(coord => [coord.lng, coord.lat]);
-        }
-        
-        try {
-            const lines = formData.coordinates.split('\n').filter(line => line.trim());
-            return lines.map(line => {
-                const [lon, lat] = line.split(',').map(n => parseFloat(n.trim()));
-                if (isNaN(lon) || isNaN(lat)) throw new Error('Invalid coordinates');
-                return [lon, lat];
-            });
-        } catch {
-            return [];
-        }
+        return mapCoordinates.map(coord => [coord.lng, coord.lat]);
     };
 
     const handleSegmentClick = (afterIndex: number, lat: number, lng: number) => {
@@ -209,26 +194,10 @@ export default function EnhancedAddRoutePage() {
         setStatus({ type: '', message: '' });
 
         try {
-            let coordinates_forward: [number, number][];
-            
-            if (inputMethod === 'map') {
-                if (mapCoordinates.length < 2) {
-                    throw new Error('Please add at least 2 points on the map');
-                }
-                coordinates_forward = mapCoordinates.map(coord => [coord.lng, coord.lat]);
-            } else {
-                const coordPairs = formData.coordinates.split('\n').filter(line => line.trim());
-                if (coordPairs.length < 2) {
-                    throw new Error('Please enter at least 2 coordinate pairs');
-                }
-                coordinates_forward = coordPairs.map(pair => {
-                    const [lon, lat] = pair.split(',').map(n => parseFloat(n.trim()));
-                    if (isNaN(lon) || isNaN(lat)) {
-                        throw new Error(`Invalid coordinate: ${pair}`);
-                    }
-                    return [lon, lat];
-                });
+            if (mapCoordinates.length < 2) {
+                throw new Error('Please add at least 2 points on the map');
             }
+            const coordinates_forward: [number, number][] = mapCoordinates.map(coord => [coord.lng, coord.lat]);
 
             const response = await fetch('/api/routes/add', {
                 method: 'POST',
@@ -251,8 +220,7 @@ export default function EnhancedAddRoutePage() {
                 
                 // Reset form
                 setFormData({
-                    route_code: '',
-                    coordinates: ''
+                    route_code: ''
                 });
                 setMapCoordinates([]);
                 
@@ -281,16 +249,7 @@ export default function EnhancedAddRoutePage() {
             const match = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
             if (match) {
                 const [, lat, lng] = match;
-                if (inputMethod === 'map') {
-                    handleMapClick(parseFloat(lat), parseFloat(lng));
-                } else {
-                    setFormData({
-                        ...formData,
-                        coordinates: formData.coordinates + 
-                            (formData.coordinates ? '\n' : '') + 
-                            `${lng},${lat}`
-                    });
-                }
+                handleMapClick(parseFloat(lat), parseFloat(lng));
             } else {
                 alert('Could not extract coordinates from URL');
             }
@@ -358,60 +317,8 @@ export default function EnhancedAddRoutePage() {
                                 </div>
 
 
-                                {/* Coordinate Input Method Toggle */}
-                                <div className="border-t pt-4">
-                                    <label className="block text-sm font-semibold text-black mb-2">
-                                        Input Method
-                                    </label>
-                                    <div className="flex space-x-4">
-                                        <button
-                                            type="button"
-                                            onClick={() => setInputMethod('text')}
-                                            className={`px-4 py-2 rounded-lg font-medium ${
-                                                inputMethod === 'text'
-                                                    ? 'bg-blue-500 text-white'
-                                                    : 'bg-gray-200 text-black hover:bg-gray-300'
-                                            }`}
-                                        >
-                                            Text Input
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => setInputMethod('map')}
-                                            className={`px-4 py-2 rounded-lg ${
-                                                inputMethod === 'map'
-                                                    ? 'bg-blue-500 text-white'
-                                                    : 'bg-gray-200 text-gray-700'
-                                            }`}
-                                        >
-                                            Click on Map
-                                        </button>
-                                    </div>
-                                </div>
-
                                 {/* Coordinates Input */}
-                                {inputMethod === 'text' ? (
-                                    <div>
-                                        <label className="block text-sm font-semibold text-black mb-1">
-                                            Route Coordinates* (longitude,latitude)
-                                        </label>
-                                        <textarea
-                                            value={formData.coordinates}
-                                            onChange={e => setFormData({...formData, coordinates: e.target.value})}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
-                                            placeholder="123.8854,10.3157&#10;123.8900,10.3200&#10;123.9050,10.3180"
-                                            rows={6}
-                                            required={inputMethod === 'text'}
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={importFromGoogleMaps}
-                                            className="mt-2 text-sm text-blue-600 hover:text-blue-800"
-                                        >
-                                            Import from Google Maps URL →
-                                        </button>
-                                    </div>
-                                ) : (
+                                <div className="border-t pt-4">
                                     <div>
                                         <label className="block text-sm font-semibold text-black mb-1">
                                             Added Points ({mapCoordinates.length})
@@ -536,7 +443,7 @@ export default function EnhancedAddRoutePage() {
                                             </button>
                                         )}
                                     </div>
-                                )}
+                                </div>
 
                                 {/* Action Buttons */}
                                 <div className="flex space-x-4 pt-4">
@@ -576,9 +483,7 @@ export default function EnhancedAddRoutePage() {
                         {/* Map Section */}
                         <div className="bg-white rounded-lg shadow-md p-6">
                             <div className="flex justify-between items-center mb-4">
-                                <h2 className="text-xl font-bold text-black">
-                                    {inputMethod === 'map' ? 'Click to Add Points' : 'Route Preview'}
-                                </h2>
+                                <h2 className="text-xl font-bold text-black">Click to Add Points</h2>
                                 <div className="flex items-center gap-4">
                                     <label className="flex items-center cursor-pointer">
                                         <input
@@ -610,23 +515,20 @@ export default function EnhancedAddRoutePage() {
                             </div>
                             <AddRouteMap 
                                 coordinates={getDisplayCoordinates()}
-                                onMapClick={inputMethod === 'map' ? handleMapClick : undefined}
-                                enableClickToAdd={inputMethod === 'map'}
+                                onMapClick={handleMapClick}
+                                enableClickToAdd={true}
                                 height="500px"
                                 highlightedIndex={selectedPointIndex}
                                 onPointClick={handlePointSelect}
-                                onSegmentClick={inputMethod === 'map' ? handleSegmentClick : undefined}
+                                onSegmentClick={handleSegmentClick}
                                 showPointNumbers={showPointNumbers}
                                 hidePOIs={hidePOIs}
                             />
                             
                             {/* Map Instructions */}
                             <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-                                <h3 className="font-semibold text-blue-900 mb-2">
-                                    {inputMethod === 'map' ? 'How to add points:' : 'Tips:'}
-                                </h3>
+                                <h3 className="font-semibold text-blue-900 mb-2">How to add points:</h3>
                                 <ul className="text-sm text-blue-800 space-y-1">
-                                    {inputMethod === 'map' ? (
                                         <>
                                             <li className="font-bold text-red-700">⚠️ IMPORTANT: Pin order defines jeepney travel direction!</li>
                                             <li>• <span className="text-green-700 font-semibold">GREEN marker (START)</span> = Where jeepney begins its route</li>
@@ -636,14 +538,6 @@ export default function EnhancedAddRoutePage() {
                                             <li>• Click on the route line to insert points between</li>
                                             <li>• Follow the actual jeepney route direction</li>
                                         </>
-                                    ) : (
-                                        <>
-                                            <li>• Right-click on Google Maps for coordinates</li>
-                                            <li>• Format: longitude,latitude (one per line)</li>
-                                            <li>• Add multiple points for accurate routes</li>
-                                            <li>• Preview updates automatically</li>
-                                        </>
-                                    )}
                                 </ul>
                             </div>
                         </div>

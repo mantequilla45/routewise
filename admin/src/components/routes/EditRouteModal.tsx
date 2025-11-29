@@ -27,8 +27,6 @@ export default function EditRouteModal({ routeId, isOpen, onClose, onUpdate }: E
     });
     
     const [mapCoordinates, setMapCoordinates] = useState<Coordinate[]>([]);
-    const [inputMethod, setInputMethod] = useState<'text' | 'map'>('map');
-    const [textCoordinates, setTextCoordinates] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -80,12 +78,6 @@ export default function EditRouteModal({ routeId, isOpen, onClose, onUpdate }: E
                         label: `Point ${index + 1}`
                     }));
                     setMapCoordinates(mapCoords);
-                    
-                    // Set text coordinates
-                    const textCoords = coords.map((coord: [number, number]) => 
-                        `${coord[0]},${coord[1]}`
-                    ).join('\n');
-                    setTextCoordinates(textCoords);
                 }
             }
         } catch (error) {
@@ -305,21 +297,7 @@ export default function EditRouteModal({ routeId, isOpen, onClose, onUpdate }: E
     };
 
     const getDisplayCoordinates = (): [number, number][] => {
-        if (inputMethod === 'map') {
-            return (mapCoordinates || []).map(coord => [coord.lng, coord.lat]);
-        }
-        
-        try {
-            if (!textCoordinates) return [];
-            const lines = textCoordinates.split('\n').filter(line => line.trim());
-            return lines.map(line => {
-                const [lon, lat] = line.split(',').map(n => parseFloat(n.trim()));
-                if (isNaN(lon) || isNaN(lat)) throw new Error('Invalid coordinates');
-                return [lon, lat];
-            });
-        } catch {
-            return [];
-        }
+        return (mapCoordinates || []).map(coord => [coord.lng, coord.lat]);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -328,26 +306,10 @@ export default function EditRouteModal({ routeId, isOpen, onClose, onUpdate }: E
         setError(null);
 
         try {
-            let coordinates_forward: [number, number][];
-            
-            if (inputMethod === 'map') {
-                if (!mapCoordinates || mapCoordinates.length < 2) {
-                    throw new Error('Please add at least 2 points on the map');
-                }
-                coordinates_forward = mapCoordinates.map(coord => [coord.lng, coord.lat]);
-            } else {
-                const coordPairs = (textCoordinates || '').split('\n').filter(line => line.trim());
-                if (!coordPairs || coordPairs.length < 2) {
-                    throw new Error('Please enter at least 2 coordinate pairs');
-                }
-                coordinates_forward = coordPairs.map(pair => {
-                    const [lon, lat] = pair.split(',').map(n => parseFloat(n.trim()));
-                    if (isNaN(lon) || isNaN(lat)) {
-                        throw new Error(`Invalid coordinate: ${pair}`);
-                    }
-                    return [lon, lat];
-                });
+            if (!mapCoordinates || mapCoordinates.length < 2) {
+                throw new Error('Please add at least 2 points on the map');
             }
+            const coordinates_forward: [number, number][] = mapCoordinates.map(coord => [coord.lng, coord.lat]);
 
             const response = await fetch(`/api/routes/${routeId}/update`, {
                 method: 'PUT',
@@ -419,52 +381,7 @@ export default function EditRouteModal({ routeId, isOpen, onClose, onUpdate }: E
                                 </div>
 
 
-                                {/* Input Method Toggle */}
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                        Coordinate Input Method
-                                    </label>
-                                    <div className="flex space-x-4">
-                                        <button
-                                            type="button"
-                                            onClick={() => setInputMethod('map')}
-                                            className={`px-4 py-2 rounded-lg font-medium ${
-                                                inputMethod === 'map'
-                                                    ? 'bg-blue-500 text-white'
-                                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                            }`}
-                                        >
-                                            Click on Map
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => setInputMethod('text')}
-                                            className={`px-4 py-2 rounded-lg font-medium ${
-                                                inputMethod === 'text'
-                                                    ? 'bg-blue-500 text-white'
-                                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                            }`}
-                                        >
-                                            Text Input
-                                        </button>
-                                    </div>
-                                </div>
-
                                 {/* Coordinates Input */}
-                                {inputMethod === 'text' ? (
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-1">
-                                            Route Coordinates (longitude,latitude)
-                                        </label>
-                                        <textarea
-                                            value={textCoordinates}
-                                            onChange={e => setTextCoordinates(e.target.value)}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
-                                            rows={6}
-                                            placeholder="123.8854,10.3157&#10;123.8900,10.3200"
-                                        />
-                                    </div>
-                                ) : (
                                     <div>
                                         <label className="block text-sm font-semibold text-gray-700 mb-1">
                                             Added Points ({mapCoordinates?.length || 0})
@@ -553,15 +470,12 @@ export default function EditRouteModal({ routeId, isOpen, onClose, onUpdate }: E
                                             )}
                                         </div>
                                     </div>
-                                )}
                             </div>
 
                             {/* Right Column - Map */}
                             <div>
                                 <div className="flex justify-between items-center mb-2">
-                                    <h3 className="text-lg font-semibold text-gray-700">
-                                        {inputMethod === 'map' ? 'Click to Edit Points' : 'Route Preview'}
-                                    </h3>
+                                    <h3 className="text-lg font-semibold text-gray-700">Click to Edit Points</h3>
                                     <div className="flex items-center gap-3">
                                         <label className="flex items-center cursor-pointer">
                                             <input
@@ -593,12 +507,12 @@ export default function EditRouteModal({ routeId, isOpen, onClose, onUpdate }: E
                                 </div>
                                 <AddRouteMap 
                                     coordinates={getDisplayCoordinates()}
-                                    onMapClick={inputMethod === 'map' ? handleMapClick : undefined}
-                                    enableClickToAdd={inputMethod === 'map'}
+                                    onMapClick={handleMapClick}
+                                    enableClickToAdd={true}
                                     height="400px"
                                     highlightedIndex={selectedPointIndex}
                                     onPointClick={handlePointSelect}
-                                    onSegmentClick={inputMethod === 'map' ? handleSegmentClick : undefined}
+                                    onSegmentClick={handleSegmentClick}
                                     showPointNumbers={showPointNumbers}
                                     hidePOIs={hidePOIs}
                                 />
