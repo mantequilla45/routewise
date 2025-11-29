@@ -14,7 +14,7 @@ async function removeReverseColumn() {
         const columnCheck = await query(`
             SELECT column_name 
             FROM information_schema.columns 
-            WHERE table_name = 'new_jeepney_routes' 
+            WHERE table_name = 'jeepney_routes' 
             AND column_name = 'geom_reverse';
         `);
         
@@ -28,7 +28,7 @@ async function removeReverseColumn() {
         // 2. Drop the column
         console.log('2. Dropping geom_reverse column...');
         await query(`
-            ALTER TABLE new_jeepney_routes 
+            ALTER TABLE jeepney_routes 
             DROP COLUMN IF EXISTS geom_reverse;
         `);
         console.log('✓ Column removed successfully\n');
@@ -41,7 +41,7 @@ async function removeReverseColumn() {
                 data_type, 
                 is_nullable
             FROM information_schema.columns
-            WHERE table_name = 'new_jeepney_routes'
+            WHERE table_name = 'jeepney_routes'
             ORDER BY ordinal_position;
         `);
         
@@ -55,7 +55,7 @@ async function removeReverseColumn() {
     } catch (error) {
         console.error('❌ Migration failed:', error);
         console.log('\nIf you want to manually remove the column, run this SQL:');
-        console.log('ALTER TABLE new_jeepney_routes DROP COLUMN IF EXISTS geom_reverse;');
+        console.log('ALTER TABLE jeepney_routes DROP COLUMN IF EXISTS geom_reverse;');
     }
     
     process.exit(0);

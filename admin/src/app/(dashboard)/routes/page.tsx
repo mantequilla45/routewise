@@ -59,7 +59,7 @@ export default function EnhancedAddRoutePage() {
         fetchContributions();
     }, []);
 
-    // Parse coordinates for map display
+    // Parse coordinates for map display - create a deep copy to prevent mutation
     const getDisplayCoordinates = (): [number, number][] => {
         return mapCoordinates.map(coord => [coord.lng, coord.lat]);
     };
@@ -332,6 +332,122 @@ export default function EnhancedAddRoutePage() {
         }
     };
 
+    const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        try {
+            setStatus({ type: 'info', message: 'Processing file...' });
+            
+            const fileContent = await readFileAsText(file);
+            let coordinates: Coordinate[] = [];
+
+            if (file.name.endsWith('.kml')) {
+                coordinates = parseKML(fileContent);
+            } else if (file.name.endsWith('.kmz')) {
+                // For KMZ, we'd need to extract and parse - for now, show error
+                setStatus({ type: 'error', message: 'KMZ files are not yet supported. Please convert to KML first.' });
+                return;
+            }
+
+            if (coordinates.length === 0) {
+                setStatus({ type: 'error', message: 'No valid coordinates found in the file.' });
+                return;
+            }
+
+            // Clear existing points and add new ones
+            setMapCoordinates(coordinates);
+            setSelectedPointIndex(null);
+            setStatus({ type: 'success', message: `Successfully loaded ${coordinates.length} points from ${file.name}` });
+
+        } catch (error) {
+            console.error('Error processing file:', error);
+            setStatus({ type: 'error', message: 'Error processing file. Please check the file format.' });
+        }
+    };
+
+    const readFileAsText = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const result = e.target?.result;
+                if (typeof result === 'string') {
+                    resolve(result);
+                } else {
+                    reject(new Error('Failed to read file as text'));
+                }
+            };
+            reader.onerror = () => reject(new Error('Failed to read file'));
+            reader.readAsText(file);
+        });
+    };
+
+    const parseKML = (kmlContent: string): Coordinate[] => {
+        try {
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(kmlContent, 'text/xml');
+            
+            // Check for parsing errors
+            const parserError = xmlDoc.querySelector('parsererror');
+            if (parserError) {
+                throw new Error('Invalid KML format');
+            }
+
+            const coordinates: Coordinate[] = [];
+            
+            // Look for coordinates in LineString elements
+            const lineStrings = xmlDoc.querySelectorAll('LineString coordinates, Polygon coordinates');
+            
+            lineStrings.forEach((coordElement) => {
+                const coordText = coordElement.textContent?.trim();
+                if (!coordText) return;
+                
+                // KML coordinates are in format: longitude,latitude,altitude (altitude is optional)
+                const coordPairs = coordText.split(/\s+/).filter(pair => pair.length > 0);
+                
+                coordPairs.forEach((pair) => {
+                    const [lng, lat] = pair.split(',');
+                    const longitude = parseFloat(lng);
+                    const latitude = parseFloat(lat);
+                    
+                    if (!isNaN(longitude) && !isNaN(latitude)) {
+                        coordinates.push({
+                            lat: latitude,
+                            lng: longitude,
+                            label: `Point ${coordinates.length + 1}`
+                        });
+                    }
+                });
+            });
+
+            // If no LineString coordinates found, look for Point coordinates
+            if (coordinates.length === 0) {
+                const points = xmlDoc.querySelectorAll('Point coordinates');
+                points.forEach((coordElement) => {
+                    const coordText = coordElement.textContent?.trim();
+                    if (!coordText) return;
+                    
+                    const [lng, lat] = coordText.split(',');
+                    const longitude = parseFloat(lng);
+                    const latitude = parseFloat(lat);
+                    
+                    if (!isNaN(longitude) && !isNaN(latitude)) {
+                        coordinates.push({
+                            lat: latitude,
+                            lng: longitude,
+                            label: `Point ${coordinates.length + 1}`
+                        });
+                    }
+                });
+            }
+
+            return coordinates;
+        } catch (error) {
+            console.error('Error parsing KML:', error);
+            throw new Error('Failed to parse KML file');
+        }
+    };
+
     return (
         <div className="min-h-screen bg-gray-50">
             <div className="container">
@@ -409,6 +525,40 @@ export default function EnhancedAddRoutePage() {
                                             placeholder="e.g., 01A"
                                             required
                                         />
+                                    </div>
+
+                                    {/* KML/KMZ Upload */}
+                                    <div>
+                                        <label className="block text-sm font-semibold text-black mb-1">
+                                            Import Route from KML/KMZ (Optional)
+                                        </label>
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="file"
+                                                accept=".kml,.kmz"
+                                                onChange={handleFileUpload}
+                                                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                                                id="kml-upload"
+                                            />
+                                            {mapCoordinates.length > 0 && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setMapCoordinates([]);
+                                                        setSelectedPointIndex(null);
+                                                        // Reset file input
+                                                        const fileInput = document.getElementById('kml-upload') as HTMLInputElement;
+                                                        if (fileInput) fileInput.value = '';
+                                                    }}
+                                                    className="px-3 py-2 text-xs bg-gray-500 text-white rounded-lg hover:bg-gray-600"
+                                                >
+                                                    Clear
+                                                </button>
+                                            )}
+                                        </div>
+                                        <p className="text-xs text-gray-600 mt-1">
+                                            Upload a KML or KMZ file to automatically load route coordinates
+                                        </p>
                                     </div>
                                 </div>
 
