@@ -23,7 +23,7 @@ export async function geocodeRoute(latLng: LatLng): Promise<string> {
             const result = data.results[0];
             // Try to get neighborhood or locality for cleaner display
             const component = result.address_components?.find(
-                (c: any) => c.types.includes('neighborhood') || 
+                (c: { types: string[]; long_name: string }) => c.types.includes('neighborhood') || 
                            c.types.includes('locality') || 
                            c.types.includes('sublocality')
             );
@@ -52,7 +52,7 @@ export async function getPlaceNamesForRoutes(routes: MappedGeoRouteResult[]): Pr
             try {
                 route.startingPoint = await getPlaceName(route.latLng[0]);
                 route.endPoint = await getPlaceName(route.latLng.at(-1)!);
-            } catch (err) {
+            } catch {
                 console.warn(`Using fallback names for route ${route.routeId}`);
                 route.startingPoint = route.startingPoint ?? "Start Location";
                 route.endPoint = route.endPoint ?? "End Location";

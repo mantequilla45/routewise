@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import dynamic from 'next/dynamic';
+import Image from 'next/image';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 
 // Dynamically import map component to avoid SSR issues
@@ -440,14 +441,14 @@ export default function ContributeRoutePage() {
                                         <p className="font-semibold mb-1">Editing Points:</p>
                                         <ul className="ml-3 space-y-0.5">
                                             <li>• Select point from list → Click map to move</li>
-                                            <li>• Click "Insert" button → Add point after selected</li>
-                                            <li>• Click "Remove" button → Remove point</li>
+                                            <li>• Click &quot;Insert&quot; button → Add point after selected</li>
+                                            <li>• Click &quot;Remove&quot; button → Remove point</li>
                                         </ul>
                                     </div>
                                     <div>
                                         <p className="font-semibold mb-1">Final Step:</p>
                                         <ul className="ml-3 space-y-0.5">
-                                            <li>• After placing all pins → Click "Close Loop" button</li>
+                                            <li>• After placing all pins → Click &quot;Close Loop&quot; button</li>
                                             <li>• This connects the end point back to start</li>
                                         </ul>
                                     </div>
@@ -468,9 +469,11 @@ export default function ContributeRoutePage() {
                     <div className="flex flex-col lg:flex-row items-center justify-between gap-6 lg:gap-8">
                         <div className="flex items-center gap-4">
                             <div className="text-center lg:text-left">
-                                <img
+                                <Image
                                     src="/routewise.svg"
                                     alt="Routewise"
+                                    width={48}
+                                    height={48}
                                     className="h-10 sm:h-12 w-auto opacity-90"
                                 />
                                 <p className="text-xs sm:text-sm text-gray-600">Mapping the future of public transport</p>

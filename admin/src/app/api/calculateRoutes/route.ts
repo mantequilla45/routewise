@@ -33,7 +33,7 @@ export async function POST(request: Request) {
         const routesWithGeo = await getPlaceNamesForRoutes(routesWithFare);
 
         // Include warning if some routes were skipped
-        const response: any = routesWithGeo;
+        const response: typeof routesWithGeo & { warning?: string } = routesWithGeo;
         if (routeResult.skippedRoutes && routeResult.skippedRoutes.length > 0) {
             response.warning = `Note: Route(s) ${routeResult.skippedRoutes.join(', ')} go in the opposite direction and were excluded.`;
         }

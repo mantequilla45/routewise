@@ -20,7 +20,7 @@ export default function ContributeLandingPage() {
                             Contribute a Route
                         </h2>
                         <p className="text-gray-600 mb-6">
-                            Know a jeepney route that's not on our map? Help us by contributing route information.
+                            Know a jeepney route that&apos;s not on our map? Help us by contributing route information.
                         </p>
                         <Link
                             href="/contribute/routes"

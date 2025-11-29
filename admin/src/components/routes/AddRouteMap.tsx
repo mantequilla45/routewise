@@ -241,8 +241,9 @@ export default function AddRouteMap({
                     }
                     
                     // Check if it's an object with lat/lng properties
-                    if (typeof coord === 'object' && 'lat' in coord && 'lng' in coord) {
-                        if (!isFinite(coord.lat) || !isFinite(coord.lng)) {
+                    if (typeof coord === 'object' && coord && 'lat' in coord && 'lng' in coord) {
+                        const latLngCoord = coord as { lat: number; lng: number };
+                        if (!isFinite(latLngCoord.lat) || !isFinite(latLngCoord.lng)) {
                             console.warn('Non-finite coordinate values:', coord);
                             return false;
                         }
@@ -264,8 +265,9 @@ export default function AddRouteMap({
                 })
                 .map(coord => {
                     // Convert to Google Maps format
-                    if (typeof coord === 'object' && 'lat' in coord && 'lng' in coord) {
-                        return { lat: coord.lat, lng: coord.lng };
+                    if (typeof coord === 'object' && coord && 'lat' in coord && 'lng' in coord) {
+                        const latLngCoord = coord as { lat: number; lng: number };
+                        return { lat: latLngCoord.lat, lng: latLngCoord.lng };
                     } else if (Array.isArray(coord)) {
                         return { lat: coord[1], lng: coord[0] };
                     }

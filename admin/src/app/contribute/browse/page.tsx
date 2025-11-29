@@ -36,7 +36,7 @@ export default function ViewRoutesPage() {
             const data = await response.json();
             if (data.success) {
                 // Filter out contribution routes
-                const publicRoutes = data.routes.filter((route: any) => 
+                const publicRoutes = data.routes.filter((route: { route_code?: string }) => 
                     !route.route_code?.startsWith('CONTRIB_')
                 );
                 setRoutes(publicRoutes);
@@ -154,7 +154,7 @@ export default function ViewRoutesPage() {
                 {/* Footer */}
                 <div className="text-center mt-12 text-gray-600">
                     <p className="text-sm">
-                        Can't find a route you know? 
+                        Can&apos;t find a route you know? 
                         <Link href="/contribute/routes" className="ml-1 text-blue-600 hover:underline">
                             Contribute it here
                         </Link>

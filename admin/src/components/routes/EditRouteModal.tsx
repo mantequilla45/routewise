@@ -392,7 +392,7 @@ export default function EditRouteModal({ routeId, isOpen, onClose, onUpdate }: E
                                             )}
                                         </label>
                                         <div className="mb-2 text-xs text-gray-600">
-                                            💡 Tip: Select a point and click "Insert" to add a new point after it. For closed loops, new points are added before the closing point.
+                                            💡 Tip: Select a point and click &quot;Insert&quot; to add a new point after it. For closed loops, new points are added before the closing point.
                                         </div>
                                         <div 
                                             id="edit-points-list"

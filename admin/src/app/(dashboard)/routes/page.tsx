@@ -51,7 +51,7 @@ export default function EnhancedAddRoutePage() {
     const [hidePOIs, setHidePOIs] = useState(false);
     const [showCloseLoopModal, setShowCloseLoopModal] = useState(false);
     const [editingContributionId, setEditingContributionId] = useState<string | null>(null);
-    const [contributionCoordinates, setContributionCoordinates] = useState<MapCoordinate[]>([]);
+    const [contributionCoordinates, setContributionCoordinates] = useState<Coordinate[]>([]);
     const [selectedContribPointIndex, setSelectedContribPointIndex] = useState<number | null>(null);
 
     useEffect(() => {
@@ -251,19 +251,6 @@ export default function EnhancedAddRoutePage() {
         }
     };
 
-    const importFromGoogleMaps = () => {
-        const url = prompt('Paste Google Maps URL:');
-        if (url) {
-            // Extract coordinates from Google Maps URL (basic implementation)
-            const match = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
-            if (match) {
-                const [, lat, lng] = match;
-                handleMapClick(parseFloat(lat), parseFloat(lng));
-            } else {
-                alert('Could not extract coordinates from URL');
-            }
-        }
-    };
 
     const fetchContributions = async () => {
         setLoadingContributions(true);
@@ -671,14 +658,14 @@ export default function EnhancedAddRoutePage() {
                                             <p className="font-semibold mb-1">Editing Points:</p>
                                             <ul className="ml-3 space-y-0.5">
                                                 <li>• Select point from list → Click map to move</li>
-                                                <li>• Click "Insert" button → Add point after selected</li>
-                                                <li>• Click "✕" button → Remove point</li>
+                                                <li>• Click &quot;Insert&quot; button → Add point after selected</li>
+                                                <li>• Click &quot;✕&quot; button → Remove point</li>
                                             </ul>
                                         </div>
                                         <div>
                                             <p className="font-semibold mb-1">Final Step:</p>
                                             <ul className="ml-3 space-y-0.5">
-                                                <li>• After placing all pins → Click "Close Loop" button</li>
+                                                <li>• After placing all pins → Click &quot;Close Loop&quot; button</li>
                                                 <li>• This connects the end point back to start</li>
                                             </ul>
                                         </div>
@@ -879,7 +866,7 @@ export default function EnhancedAddRoutePage() {
                                                                                 ...contribution,
                                                                                 forward_geojson: {
                                                                                     ...contribution.forward_geojson,
-                                                                                    coordinates: contributionCoordinates.map(coord => [coord.lng, coord.lat])
+                                                                                    coordinates: contributionCoordinates.map(coord => [coord.lng, coord.lat] as [number, number])
                                                                                 }
                                                                             };
                                                                             if (reviewAction === 'approve') {
@@ -920,7 +907,7 @@ export default function EnhancedAddRoutePage() {
                                                         </h4>
                                                         <div className="h-96 border-2 border-blue-200 rounded-lg overflow-hidden">
                                                             <AddRouteMap
-                                                                coordinates={contributionCoordinates}
+                                                                coordinates={contributionCoordinates.map(coord => [coord.lng, coord.lat] as [number, number])}
                                                                 height="384px"
                                                                 enableClickToAdd={isEditing}
                                                                 showPointNumbers={true}
