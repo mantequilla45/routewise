@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import dynamic from 'next/dynamic';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 
 // Dynamically import map component to avoid SSR issues
 const AddRouteMap = dynamic(() => import('@/components/routes/AddRouteMap'), { 
@@ -29,6 +30,7 @@ export default function ContributeRoutePage() {
     const [insertMode, setInsertMode] = useState(false);
     const [showPointNumbers, setShowPointNumbers] = useState(true);
     const [hidePOIs, setHidePOIs] = useState(false);
+    const [showCloseLoopModal, setShowCloseLoopModal] = useState(false);
 
     // Parse coordinates for map display
     const getDisplayCoordinates = (): [number, number][] => {
@@ -52,14 +54,6 @@ export default function ContributeRoutePage() {
         });
         
         setSelectedPointIndex(newPointIndex);
-        
-        setTimeout(() => {
-            const pointsList = document.getElementById('points-list');
-            const newElement = document.querySelector(`#point-${newPointIndex}`);
-            if (pointsList && newElement) {
-                newElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-        }, 100);
     };
     
     const handleMapClick = (lat: number, lng: number) => {
@@ -247,7 +241,7 @@ export default function ContributeRoutePage() {
                                 </label>
                                 <div 
                                     id="points-list"
-                                    className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-2"
+                                    className="space-y-2 h-64 overflow-y-auto border border-gray-200 rounded-lg p-2"
                                 >
                                     {mapCoordinates.map((coord, index) => (
                                         <div 
@@ -303,20 +297,47 @@ export default function ContributeRoutePage() {
                                         <p className="text-gray-500 text-sm text-center py-4">Click on the map to add points</p>
                                     )}
                                 </div>
+                                
                             </div>
 
-                            {/* Submit Button */}
-                            <button
-                                type="submit"
-                                disabled={isSubmitting || mapCoordinates.length < 2}
-                                className={`w-full py-3 px-4 rounded-lg font-semibold text-white transition-all ${
-                                    isSubmitting || mapCoordinates.length < 2
-                                        ? 'bg-gray-400 cursor-not-allowed'
-                                        : 'bg-blue-600 hover:bg-blue-700 transform hover:scale-105'
-                                }`}
-                            >
-                                {isSubmitting ? 'Submitting...' : 'Submit Route for Review'}
-                            </button>
+                            {/* Action Buttons */}
+                            <div className="flex space-x-3 mt-4">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowCloseLoopModal(true)}
+                                    className={`px-4 py-3 rounded-lg font-semibold transition-all ${
+                                        mapCoordinates.length < 2
+                                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                            : (mapCoordinates.length > 2 && 
+                                               mapCoordinates[mapCoordinates.length - 1].lat === mapCoordinates[0].lat &&
+                                               mapCoordinates[mapCoordinates.length - 1].lng === mapCoordinates[0].lng)
+                                                ? 'bg-green-500 text-white cursor-not-allowed'
+                                                : 'bg-purple-600 text-white hover:bg-purple-700'
+                                    }`}
+                                    disabled={mapCoordinates.length < 2 || 
+                                        (mapCoordinates.length > 2 && 
+                                         mapCoordinates[mapCoordinates.length - 1].lat === mapCoordinates[0].lat &&
+                                         mapCoordinates[mapCoordinates.length - 1].lng === mapCoordinates[0].lng)}
+                                    title={mapCoordinates.length < 2 ? 'Need at least 2 points to close loop' : ''}
+                                >
+                                    {(mapCoordinates.length > 2 && 
+                                      mapCoordinates[mapCoordinates.length - 1].lat === mapCoordinates[0].lat &&
+                                      mapCoordinates[mapCoordinates.length - 1].lng === mapCoordinates[0].lng)
+                                        ? '✓ Loop Closed'
+                                        : 'Close Loop'}
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={isSubmitting || mapCoordinates.length < 2}
+                                    className={`flex-1 py-3 px-4 rounded-lg font-semibold text-white transition-all ${
+                                        isSubmitting || mapCoordinates.length < 2
+                                            ? 'bg-gray-400 cursor-not-allowed'
+                                            : 'bg-blue-600 hover:bg-blue-700'
+                                    }`}
+                                >
+                                    {isSubmitting ? 'Submitting...' : 'Submit Route for Review'}
+                                </button>
+                            </div>
 
                             {/* Status Message */}
                             {status.message && (
@@ -403,6 +424,31 @@ export default function ContributeRoutePage() {
                     </p>
                 </div>
             </div>
+            
+            {/* Close Loop Confirmation Modal */}
+            <ConfirmModal
+                isOpen={showCloseLoopModal}
+                onClose={() => setShowCloseLoopModal(false)}
+                onConfirm={() => {
+                    const firstPoint = mapCoordinates[0];
+                    const lastIndex = mapCoordinates.length;
+                    const closingPoint = {
+                        ...firstPoint,
+                        label: `Point ${lastIndex + 1} (Loop Close)`
+                    };
+                    setMapCoordinates([...mapCoordinates, closingPoint]);
+                }}
+                title="⚠️ Closing the Loop"
+                message={`Once you close the loop:
+• You can only add points between existing segments
+• You cannot add points at the end of the route  
+• The route will form a continuous loop
+
+Are you sure you want to close the loop?`}
+                confirmText="Yes, Close Loop"
+                cancelText="Cancel"
+                confirmButtonClass="bg-purple-600 hover:bg-purple-700"
+            />
         </div>
     );
 }

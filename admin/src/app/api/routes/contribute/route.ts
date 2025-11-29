@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server-client';
+import { query } from '@/lib/db/db';
 
 export async function POST(request: Request) {
     try {
@@ -20,73 +20,48 @@ export async function POST(request: Request) {
             );
         }
 
-        const supabase = createClient();
-
-        // Create GeoJSON LineString from coordinates
+        // Create GeoJSON for the contribution
         const forward_geojson = {
             type: 'LineString',
             coordinates: coordinates_forward
         };
 
-        // Store the contribution with pending status
-        // You might want to create a separate 'route_contributions' table for this
-        // For now, we'll add it to the routes table with a pending status field
-        const { data, error } = await supabase
-            .from('route_contributions')
-            .insert({
+        // Insert into route_contributions table
+        const sql = `
+            INSERT INTO route_contributions (
                 route_code,
                 contributor_name,
                 contributor_email,
                 forward_geojson,
                 status,
-                created_at: new Date().toISOString(),
-                // Terminal names are set as placeholders
-                start_point_name: 'Terminal A',
-                end_point_name: 'Terminal B'
-            })
-            .select()
-            .single();
+                start_point_name,
+                end_point_name
+            ) VALUES (
+                $1, $2, $3, $4::jsonb, $5, $6, $7
+            ) RETURNING id, route_code, contributor_name, status;
+        `;
 
-        if (error) {
-            // If the contributions table doesn't exist, try the regular routes table
-            // with a metadata field to track contributions
-            const fallbackResult = await supabase
-                .from('routes')
-                .insert({
-                    route_code: `CONTRIB_${route_code}_${Date.now()}`, // Prefix to identify contributions
-                    forward_geojson,
-                    start_point_name: 'Terminal A',
-                    end_point_name: 'Terminal B',
-                    metadata: {
-                        is_contribution: true,
-                        contributor_name,
-                        contributor_email,
-                        status: 'pending',
-                        submitted_at: new Date().toISOString()
-                    }
-                })
-                .select()
-                .single();
+        const result = await query(sql, [
+            route_code,
+            contributor_name,
+            contributor_email || null,
+            JSON.stringify(forward_geojson),
+            status,
+            'Terminal A',
+            'Terminal B'
+        ]);
 
-            if (fallbackResult.error) {
-                console.error('Error storing contribution:', fallbackResult.error);
-                return NextResponse.json(
-                    { success: false, error: 'Failed to store contribution' },
-                    { status: 500 }
-                );
-            }
-
-            return NextResponse.json({
-                success: true,
-                message: 'Route contribution submitted successfully',
-                contribution_id: fallbackResult.data.id
-            });
+        if (!result || result.length === 0) {
+            return NextResponse.json(
+                { success: false, error: 'Failed to store contribution' },
+                { status: 500 }
+            );
         }
 
         return NextResponse.json({
             success: true,
-            message: 'Route contribution submitted successfully',
-            contribution_id: data.id
+            message: 'Route contribution submitted successfully for review',
+            contribution: result[0]
         });
 
     } catch (error) {
@@ -104,41 +79,28 @@ export async function GET(request: Request) {
         const { searchParams } = new URL(request.url);
         const status = searchParams.get('status') || 'pending';
         
-        const supabase = createClient();
+        const sql = `
+            SELECT 
+                id,
+                route_code,
+                contributor_name,
+                contributor_email,
+                forward_geojson,
+                status,
+                review_notes,
+                created_at,
+                start_point_name,
+                end_point_name
+            FROM route_contributions
+            WHERE status = $1
+            ORDER BY created_at DESC;
+        `;
 
-        // Try to get from contributions table first
-        let { data, error } = await supabase
-            .from('route_contributions')
-            .select('*')
-            .eq('status', status)
-            .order('created_at', { ascending: false });
-
-        if (error) {
-            // Fallback to routes table with metadata filter
-            const fallbackResult = await supabase
-                .from('routes')
-                .select('*')
-                .like('route_code', 'CONTRIB_%')
-                .order('created_at', { ascending: false });
-
-            if (fallbackResult.error) {
-                console.error('Error fetching contributions:', fallbackResult.error);
-                return NextResponse.json(
-                    { success: false, error: 'Failed to fetch contributions' },
-                    { status: 500 }
-                );
-            }
-
-            // Filter by status from metadata
-            data = fallbackResult.data?.filter(route => 
-                route.metadata?.is_contribution && 
-                route.metadata?.status === status
-            );
-        }
+        const contributions = await query(sql, [status]);
 
         return NextResponse.json({
             success: true,
-            contributions: data || []
+            contributions: contributions || []
         });
 
     } catch (error) {

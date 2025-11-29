@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import RoutesList from '@/components/routes/RoutesList';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 
 // Dynamically import map component to avoid SSR issues
 const AddRouteMap = dynamic(() => import('@/components/routes/AddRouteMap'), { 
@@ -16,8 +17,27 @@ interface Coordinate {
     label?: string;
 }
 
+interface Contribution {
+    id: string;
+    route_code: string;
+    contributor_name: string;
+    contributor_email?: string;
+    forward_geojson: {
+        type: string;
+        coordinates: [number, number][];
+    };
+    status: string;
+    created_at: string;
+    review_notes?: string;
+}
+
 export default function EnhancedAddRoutePage() {
-    const [activeTab, setActiveTab] = useState<'add' | 'list'>('add');
+    const [activeTab, setActiveTab] = useState<'add' | 'list' | 'review'>('add');
+    const [contributions, setContributions] = useState<Contribution[]>([]);
+    const [loadingContributions, setLoadingContributions] = useState(false);
+    const [selectedContribution, setSelectedContribution] = useState<Contribution | null>(null);
+    const [reviewAction, setReviewAction] = useState<'approve' | 'reject' | null>(null);
+    const [reviewNotes, setReviewNotes] = useState('');
     const [formData, setFormData] = useState({
         route_code: ''
     });
@@ -25,11 +45,16 @@ export default function EnhancedAddRoutePage() {
     const [mapCoordinates, setMapCoordinates] = useState<Coordinate[]>([]);
     const [status, setStatus] = useState({ type: '', message: '' });
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [showPreview, setShowPreview] = useState(false);
     const [selectedPointIndex, setSelectedPointIndex] = useState<number | null>(null);
     const [insertMode, setInsertMode] = useState(false);
     const [showPointNumbers, setShowPointNumbers] = useState(true);
     const [hidePOIs, setHidePOIs] = useState(false);
+    const [showCloseLoopModal, setShowCloseLoopModal] = useState(false);
+
+    useEffect(() => {
+        // Fetch contributions on component mount to show badge count
+        fetchContributions();
+    }, []);
 
     // Parse coordinates for map display
     const getDisplayCoordinates = (): [number, number][] => {
@@ -99,16 +124,22 @@ export default function EnhancedAddRoutePage() {
             
         } else if (!insertMode && selectedPointIndex !== null) {
             // Update existing point at its current position
-            console.log(`Updating point ${selectedPointIndex} to new position: ${lat}, ${lng}`);
             setMapCoordinates(prevCoords => {
-                const updatedCoords = [...prevCoords];
-                updatedCoords[selectedPointIndex] = {
-                    ...updatedCoords[selectedPointIndex],
-                    lat,
-                    lng
-                };
-                console.log('Updated coordinates:', updatedCoords);
-                return updatedCoords;
+                if (!prevCoords || prevCoords.length === 0 || selectedPointIndex >= prevCoords.length) {
+                    return prevCoords;
+                }
+                
+                return prevCoords.map((coord, index) => {
+                    if (index === selectedPointIndex) {
+                        // Update this point with new lat/lng, keeping the label
+                        return {
+                            ...coord,
+                            lat,
+                            lng
+                        };
+                    }
+                    return coord;
+                });
             });
             // Keep the point selected after editing to avoid confusion
             // User can click elsewhere or press Escape to deselect
@@ -131,14 +162,6 @@ export default function EnhancedAddRoutePage() {
             setMapCoordinates([...mapCoordinates, newCoord]);
             
             // Don't auto-select when adding new points at the end
-            // Only scroll to show the new point
-            setTimeout(() => {
-                const pointsList = document.getElementById('points-list');
-                const newElement = document.querySelector(`#point-${newIndex}`);
-                if (pointsList && newElement) {
-                    newElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-            }, 100);
         }
     };
 
@@ -151,23 +174,6 @@ export default function EnhancedAddRoutePage() {
             // Select the point
             setSelectedPointIndex(index);
             setInsertMode(false); // Reset insert mode when selecting a different point
-            
-            // Scroll the selected point into view
-            setTimeout(() => {
-                const pointsList = document.getElementById('points-list');
-                const selectedElement = document.querySelector(`#point-${index}`);
-                if (pointsList && selectedElement) {
-                    // Calculate the position to scroll to
-                    const listRect = pointsList.getBoundingClientRect();
-                    const elementRect = selectedElement.getBoundingClientRect();
-                    
-                    // Check if element is outside the visible area
-                    if (elementRect.top < listRect.top || elementRect.bottom > listRect.bottom) {
-                        // Scroll the element into the center of the list
-                        selectedElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }
-                }
-            }, 50);
         }
     };
 
@@ -256,6 +262,86 @@ export default function EnhancedAddRoutePage() {
         }
     };
 
+    const fetchContributions = async () => {
+        setLoadingContributions(true);
+        try {
+            const response = await fetch('/api/routes/contribute?status=pending');
+            const data = await response.json();
+            if (data.success) {
+                setContributions(data.contributions);
+            }
+        } catch (error) {
+            console.error('Error fetching contributions:', error);
+        } finally {
+            setLoadingContributions(false);
+        }
+    };
+
+    const handleApproveContribution = async (contribution: Contribution) => {
+        try {
+            // First, add the route to the main routes table
+            const response = await fetch('/api/routes/add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    route_code: contribution.route_code,
+                    start_point_name: 'Terminal A',
+                    end_point_name: 'Terminal B',
+                    coordinates_forward: contribution.forward_geojson.coordinates
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // Update contribution status to approved
+                await fetch(`/api/routes/contribute/${contribution.id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        status: 'approved',
+                        review_notes: reviewNotes,
+                        transferred_route_id: result.route.id
+                    })
+                });
+
+                // Refresh contributions list
+                fetchContributions();
+                setSelectedContribution(null);
+                setReviewAction(null);
+                setReviewNotes('');
+                
+                alert(`Route ${contribution.route_code} has been approved and added to the system!`);
+            }
+        } catch (error) {
+            console.error('Error approving contribution:', error);
+            alert('Failed to approve contribution');
+        }
+    };
+
+    const handleRejectContribution = async (contribution: Contribution) => {
+        try {
+            await fetch(`/api/routes/contribute/${contribution.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    status: 'rejected',
+                    review_notes: reviewNotes
+                })
+            });
+
+            fetchContributions();
+            setSelectedContribution(null);
+            setReviewAction(null);
+            setReviewNotes('');
+            
+            alert(`Route ${contribution.route_code} has been rejected.`);
+        } catch (error) {
+            console.error('Error rejecting contribution:', error);
+            alert('Failed to reject contribution');
+        }
+    };
+
     return (
         <div className="min-h-screen bg-gray-50">
             <div className="container">
@@ -287,6 +373,26 @@ export default function EnhancedAddRoutePage() {
                             }`}
                         >
                             View All Routes
+                        </button>
+                        <button
+                            onClick={() => {
+                                setActiveTab('review');
+                                if (activeTab !== 'review') {
+                                    fetchContributions();
+                                }
+                            }}
+                            className={`px-6 py-3 font-medium transition-colors relative ${
+                                activeTab === 'review'
+                                    ? 'text-blue-600 border-b-2 border-blue-600'
+                                    : 'text-gray-800 hover:text-gray-900'
+                            }`}
+                        >
+                            Review Contributions
+                            {contributions.filter(c => c.status === 'pending').length > 0 && (
+                                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                                    {contributions.filter(c => c.status === 'pending').length}
+                                </span>
+                            )}
                         </button>
                     </div>
                 </div>
@@ -330,7 +436,7 @@ export default function EnhancedAddRoutePage() {
                                         </label>
                                         <div 
                                             id="points-list"
-                                            className="space-y-2 max-h-40 overflow-y-auto border border-gray-200 rounded-lg p-2"
+                                            className="space-y-2 h-64 overflow-y-auto border border-gray-200 rounded-lg p-2"
                                             style={{ scrollBehavior: 'smooth' }}
                                         >
                                             {mapCoordinates.map((coord, index) => (
@@ -403,50 +509,35 @@ export default function EnhancedAddRoutePage() {
                                             )}
                                         </div>
                                         
-                                        {/* Loop Close Button */}
-                                        {mapCoordinates.length >= 2 && (
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    // Show confirmation dialog
-                                                    const confirmed = window.confirm(
-                                                        "⚠️ Closing the Loop\n\n" +
-                                                        "Once you close the loop:\n" +
-                                                        "• You can only add points between existing segments\n" +
-                                                        "• You cannot add points at the end of the route\n" +
-                                                        "• The route will form a continuous loop\n\n" +
-                                                        "Are you sure you want to close the loop?"
-                                                    );
-                                                    
-                                                    if (confirmed) {
-                                                        // Add the first point at the end to close the loop
-                                                        const firstPoint = mapCoordinates[0];
-                                                        const lastIndex = mapCoordinates.length;
-                                                        const closingPoint = {
-                                                            ...firstPoint,
-                                                            label: `Point ${lastIndex + 1} (Loop Close)`
-                                                        };
-                                                        setMapCoordinates([...mapCoordinates, closingPoint]);
-                                                    }
-                                                }}
-                                                className="mt-2 w-full bg-purple-500 text-white px-3 py-2 rounded-md hover:bg-purple-600 transition-colors text-sm font-medium"
-                                                disabled={mapCoordinates.length < 2 || 
-                                                    (mapCoordinates.length > 2 && 
-                                                     mapCoordinates[mapCoordinates.length - 1].lat === mapCoordinates[0].lat &&
-                                                     mapCoordinates[mapCoordinates.length - 1].lng === mapCoordinates[0].lng)}
-                                            >
-                                                {mapCoordinates.length > 2 && 
-                                                 mapCoordinates[mapCoordinates.length - 1].lat === mapCoordinates[0].lat &&
-                                                 mapCoordinates[mapCoordinates.length - 1].lng === mapCoordinates[0].lng
-                                                    ? '✓ Loop Closed'
-                                                    : '🔄 Close Loop (Connect End to Start)'}
-                                            </button>
-                                        )}
                                     </div>
                                 </div>
 
                                 {/* Action Buttons */}
                                 <div className="flex space-x-4 pt-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowCloseLoopModal(true)}
+                                        className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                                            mapCoordinates.length < 2
+                                                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                                : (mapCoordinates.length > 2 && 
+                                                   mapCoordinates[mapCoordinates.length - 1].lat === mapCoordinates[0].lat &&
+                                                   mapCoordinates[mapCoordinates.length - 1].lng === mapCoordinates[0].lng)
+                                                    ? 'bg-green-500 text-white cursor-not-allowed'
+                                                    : 'bg-purple-500 text-white hover:bg-purple-600'
+                                        }`}
+                                        disabled={mapCoordinates.length < 2 || 
+                                            (mapCoordinates.length > 2 && 
+                                             mapCoordinates[mapCoordinates.length - 1].lat === mapCoordinates[0].lat &&
+                                             mapCoordinates[mapCoordinates.length - 1].lng === mapCoordinates[0].lng)}
+                                        title={mapCoordinates.length < 2 ? 'Need at least 2 points to close loop' : ''}
+                                    >
+                                        {(mapCoordinates.length > 2 && 
+                                          mapCoordinates[mapCoordinates.length - 1].lat === mapCoordinates[0].lat &&
+                                          mapCoordinates[mapCoordinates.length - 1].lng === mapCoordinates[0].lng)
+                                            ? '✓ Loop Closed'
+                                            : 'Close Loop'}
+                                    </button>
                                     <button
                                         type="submit"
                                         disabled={isSubmitting}
@@ -457,13 +548,6 @@ export default function EnhancedAddRoutePage() {
                                         }`}
                                     >
                                         {isSubmitting ? 'Adding...' : 'Add Route'}
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowPreview(!showPreview)}
-                                        className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-                                    >
-                                        {showPreview ? 'Hide' : 'Show'} Preview
                                     </button>
                                 </div>
 
@@ -542,10 +626,169 @@ export default function EnhancedAddRoutePage() {
                             </div>
                         </div>
                     </div>
-                ) : (
+                ) : activeTab === 'list' ? (
                     <RoutesList />
-                )}
+                ) : activeTab === 'review' ? (
+                    <div className="bg-white rounded-lg shadow-md p-6">
+                        <h2 className="text-2xl font-bold text-gray-900 mb-6">Pending Route Contributions</h2>
+                        
+                        {loadingContributions ? (
+                            <div className="text-center py-8">
+                                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                                <p className="mt-2 text-gray-600">Loading contributions...</p>
+                            </div>
+                        ) : contributions.filter(c => c.status === 'pending').length === 0 ? (
+                            <div className="text-center py-8">
+                                <p className="text-gray-600">No pending contributions to review</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                {contributions.filter(c => c.status === 'pending').map(contribution => (
+                                    <div key={contribution.id} className="border rounded-lg p-4 hover:bg-gray-50">
+                                        <div className="flex justify-between items-start mb-4">
+                                            <div>
+                                                <h3 className="text-lg font-semibold text-gray-900">
+                                                    Route {contribution.route_code}
+                                                </h3>
+                                                <p className="text-sm text-gray-600">
+                                                    Contributed by: {contribution.contributor_name}
+                                                    {contribution.contributor_email && ` (${contribution.contributor_email})`}
+                                                </p>
+                                                <p className="text-xs text-gray-500">
+                                                    Submitted: {new Date(contribution.created_at).toLocaleString()}
+                                                </p>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => {
+                                                        setSelectedContribution(contribution);
+                                                        setReviewAction(null);
+                                                    }}
+                                                    className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
+                                                >
+                                                    Review
+                                                </button>
+                                            </div>
+                                        </div>
+                                        
+                                        {/* Show map preview if selected */}
+                                        {selectedContribution?.id === contribution.id && (
+                                            <div className="mt-4 border-t pt-4">
+                                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                                    <div>
+                                                        <h4 className="font-semibold mb-2">Route Preview</h4>
+                                                        <div className="h-64">
+                                                            <AddRouteMap
+                                                                coordinates={contribution.forward_geojson.coordinates}
+                                                                height="100%"
+                                                                enableClickToAdd={false}
+                                                                showPointNumbers={true}
+                                                                hidePOIs={false}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-semibold mb-2">Route Details</h4>
+                                                        <div className="space-y-2 text-sm">
+                                                            <p><strong>Points:</strong> {contribution.forward_geojson.coordinates.length}</p>
+                                                            <p><strong>Type:</strong> {contribution.forward_geojson.type}</p>
+                                                            
+                                                            {!reviewAction && (
+                                                                <div className="flex gap-2 mt-4">
+                                                                    <button
+                                                                        onClick={() => setReviewAction('approve')}
+                                                                        className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+                                                                    >
+                                                                        Approve
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => setReviewAction('reject')}
+                                                                        className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                                                                    >
+                                                                        Reject
+                                                                    </button>
+                                                                </div>
+                                                            )}
+                                                            
+                                                            {reviewAction && (
+                                                                <div className="mt-4">
+                                                                    <label className="block text-sm font-semibold mb-1">
+                                                                        Review Notes:
+                                                                    </label>
+                                                                    <textarea
+                                                                        value={reviewNotes}
+                                                                        onChange={e => setReviewNotes(e.target.value)}
+                                                                        className="w-full px-3 py-2 border rounded text-sm"
+                                                                        rows={3}
+                                                                        placeholder={reviewAction === 'approve' ? 'Optional approval notes...' : 'Please provide rejection reason...'}
+                                                                        required={reviewAction === 'reject'}
+                                                                    />
+                                                                    <div className="flex gap-2 mt-2">
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                if (reviewAction === 'approve') {
+                                                                                    handleApproveContribution(contribution);
+                                                                                } else {
+                                                                                    handleRejectContribution(contribution);
+                                                                                }
+                                                                            }}
+                                                                            className={`px-4 py-2 text-white rounded ${
+                                                                                reviewAction === 'approve' 
+                                                                                    ? 'bg-green-500 hover:bg-green-600' 
+                                                                                    : 'bg-red-500 hover:bg-red-600'
+                                                                            }`}
+                                                                        >
+                                                                            Confirm {reviewAction === 'approve' ? 'Approval' : 'Rejection'}
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                setReviewAction(null);
+                                                                                setReviewNotes('');
+                                                                            }}
+                                                                            className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500"
+                                                                        >
+                                                                            Cancel
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                ) : null}
             </div>
+            
+            {/* Close Loop Confirmation Modal */}
+            <ConfirmModal
+                isOpen={showCloseLoopModal}
+                onClose={() => setShowCloseLoopModal(false)}
+                onConfirm={() => {
+                    const firstPoint = mapCoordinates[0];
+                    const lastIndex = mapCoordinates.length;
+                    const closingPoint = {
+                        ...firstPoint,
+                        label: `Point ${lastIndex + 1} (Loop Close)`
+                    };
+                    setMapCoordinates([...mapCoordinates, closingPoint]);
+                }}
+                title="⚠️ Closing the Loop"
+                message={`Once you close the loop:
+• You can only add points between existing segments
+• You cannot add points at the end of the route
+• The route will form a continuous loop
+
+Are you sure you want to close the loop?`}
+                confirmText="Yes, Close Loop"
+                cancelText="Cancel"
+                confirmButtonClass="bg-purple-600 hover:bg-purple-700"
+            />
         </div>
     );
 }
