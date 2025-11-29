@@ -11,7 +11,7 @@ async function viewAllRoutes() {
                 horizontal_or_vertical_road,
                 ST_AsText(geom_forward) as forward_path,
                 ST_AsText(geom_reverse) as reverse_path
-            FROM new_jeepney_routes
+            FROM jeepney_routes
             ORDER BY route_code;
         `;
 

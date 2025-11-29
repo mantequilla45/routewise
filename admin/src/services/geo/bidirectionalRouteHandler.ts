@@ -55,7 +55,7 @@ export async function analyzeBidirectionalRoute(
                 -- Get the actual geometry
                 geom_forward
                 
-            FROM new_jeepney_routes
+            FROM jeepney_routes
             WHERE id = $5
         ),
         distance_calc AS (

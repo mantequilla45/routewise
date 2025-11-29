@@ -124,18 +124,7 @@ export default function AddRouteMap({
                     mapInstanceRef.current = map;
                     setIsMapReady(true);
                     
-                    // Add click listener if enabled
-                    if (enableClickToAdd && onMapClick) {
-                        clickListener = map.addListener('click', (e: GoogleMapClickEvent) => {
-                            if (e.latLng) {
-                                const lat = e.latLng.lat();
-                                const lng = e.latLng.lng();
-                                console.log('Map clicked:', lat, lng);
-                                onMapClick(lat, lng);
-                            }
-                        });
-                        console.log('Click to add enabled');
-                    }
+                    // Click listener will be added in the separate useEffect below
                 }
             } catch (err) {
                 console.error('Failed to initialize map:', err);

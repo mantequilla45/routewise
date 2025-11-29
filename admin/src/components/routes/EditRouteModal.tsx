@@ -527,7 +527,48 @@ export default function EditRouteModal({ routeId, isOpen, onClose, onUpdate }: E
                         )}
 
                         {/* Action Buttons */}
-                        <div className="flex justify-end space-x-4 mt-6 pt-4 border-t">
+                        <div className="flex justify-between items-center mt-6 pt-4 border-t">
+                            {/* Close Loop Button */}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (mapCoordinates.length < 2) return;
+                                    
+                                    const isAlreadyClosed = mapCoordinates.length > 2 && 
+                                        Math.abs(mapCoordinates[0].lat - mapCoordinates[mapCoordinates.length - 1].lat) < 0.000001 && 
+                                        Math.abs(mapCoordinates[0].lng - mapCoordinates[mapCoordinates.length - 1].lng) < 0.000001;
+                                        
+                                    if (isAlreadyClosed) return;
+                                    
+                                    const firstPoint = mapCoordinates[0];
+                                    const closingPoint = {
+                                        ...firstPoint,
+                                        label: `Point ${mapCoordinates.length + 1} (Loop Close)`
+                                    };
+                                    setMapCoordinates([...mapCoordinates, closingPoint]);
+                                }}
+                                disabled={mapCoordinates.length < 2 || (mapCoordinates.length > 2 && 
+                                    Math.abs(mapCoordinates[0].lat - mapCoordinates[mapCoordinates.length - 1].lat) < 0.000001 && 
+                                    Math.abs(mapCoordinates[0].lng - mapCoordinates[mapCoordinates.length - 1].lng) < 0.000001)}
+                                className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                                    mapCoordinates.length < 2
+                                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                        : (mapCoordinates.length > 2 && 
+                                            Math.abs(mapCoordinates[0].lat - mapCoordinates[mapCoordinates.length - 1].lat) < 0.000001 && 
+                                            Math.abs(mapCoordinates[0].lng - mapCoordinates[mapCoordinates.length - 1].lng) < 0.000001)
+                                            ? 'bg-green-500 text-white cursor-not-allowed'
+                                            : 'bg-purple-600 text-white hover:bg-purple-700'
+                                }`}
+                                title={mapCoordinates.length < 2 ? 'Need at least 2 points to close loop' : ''}
+                            >
+                                {(mapCoordinates.length > 2 && 
+                                    Math.abs(mapCoordinates[0].lat - mapCoordinates[mapCoordinates.length - 1].lat) < 0.000001 && 
+                                    Math.abs(mapCoordinates[0].lng - mapCoordinates[mapCoordinates.length - 1].lng) < 0.000001)
+                                    ? '✓ Loop Closed'
+                                    : 'Close Loop'}
+                            </button>
+
+                            <div className="flex space-x-4">
                                 <button
                                     type="button"
                                     onClick={onClose}
@@ -557,6 +598,7 @@ export default function EditRouteModal({ routeId, isOpen, onClose, onUpdate }: E
                                         <span>Update Route</span>
                                     )}
                                 </button>
+                            </div>
                         </div>
                     </form>
                 )}
