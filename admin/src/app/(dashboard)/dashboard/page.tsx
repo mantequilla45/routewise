@@ -145,39 +145,41 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 bg-[#CC9933] p-4 rounded-2xl">
-        {/* Left Column */}
-        <div className="space-y-6">
+      <div className="space-y-6 bg-[#CC9933] p-4 rounded-2xl">
+        {/* Upper Row */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Statistic Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {statCards.map((stat, index) => (
-              <div
-                key={index}
-                className="rounded-2xl hover:shadow-2xl transition-shadow duration-200 overflow-hidden"
-              >
-                <div className="p-6 bg-[#3A3A3A]">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className={`p-3 rounded-xl bg-[#CC9933]`}>
-                      <span className="text-white">{stat.icon}</span>
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {statCards.map((stat, index) => (
+                <div
+                  key={index}
+                  className="rounded-2xl hover:shadow-2xl transition-shadow duration-200 overflow-hidden"
+                >
+                  <div className="p-6 bg-[#3A3A3A] min-h-[240px]">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className={`p-3 rounded-xl bg-[#CC9933]`}>
+                        <span className="text-white">{stat.icon}</span>
+                      </div>
+                      <span
+                        className={`text-sm font-medium ${
+                          stat.changeType === "positive"
+                            ? "text-green-600"
+                            : "text-red-600"
+                        }`}
+                      >
+                        {stat.change}
+                      </span>
                     </div>
-                    <span
-                      className={`text-sm font-medium ${
-                        stat.changeType === "positive"
-                          ? "text-green-600"
-                          : "text-red-600"
-                      }`}
-                    >
-                      {stat.change}
-                    </span>
+                    <h3 className="text-2xl font-bold text-white mt-[70px]">
+                      {stat.value}
+                    </h3>
+                    <p className="text-sm text-white mt-1">{stat.title}</p>
                   </div>
-                  <h3 className="text-2xl font-bold text-white">
-                    {stat.value}
-                  </h3>
-                  <p className="text-sm text-white mt-1">{stat.title}</p>
+                  <div className="h-1 bg-gradient-to-r from-transparent via-[#FFCC66] to-transparent"></div>
                 </div>
-                <div className="h-1 bg-gradient-to-r from-transparent via-[#FFCC66] to-transparent"></div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
 
           {/* Activity Chart */}
@@ -220,10 +222,10 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Right Column */}
+        {/* Lower Row */}
         <div className="h-full">
           {/* Recent Activity */}
-          <div className="bg-[#3A3A3A] rounded-2xl shadow-sm p-6 h-full flex flex-col item-center">
+          <div className="bg-[#3A3A3A] rounded-2xl shadow-sm p-6 h-full flex flex-col item-center min-h-[350px]">
             <h2 className="text-lg font-semibold text-white mb-6">
               Recent Routes
             </h2>
