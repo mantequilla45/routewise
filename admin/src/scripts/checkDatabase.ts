@@ -16,11 +16,11 @@ async function checkDatabase() {
         console.log('');
 
         // 2. Check if table exists
-        console.log('2. Checking for new_jeepney_routes table...');
+        console.log('2. Checking for jeepney_routes table...');
         const tableCheck = await query(`
             SELECT EXISTS (
                 SELECT FROM information_schema.tables 
-                WHERE table_name = 'new_jeepney_routes'
+                WHERE table_name = 'jeepney_routes'
             );
         `);
         console.log('Table exists:', tableCheck[0].exists);
@@ -35,7 +35,7 @@ async function checkDatabase() {
                 is_nullable,
                 column_default
             FROM information_schema.columns
-            WHERE table_name = 'new_jeepney_routes'
+            WHERE table_name = 'jeepney_routes'
             ORDER BY ordinal_position;
         `);
         
@@ -55,7 +55,7 @@ async function checkDatabase() {
                 start_point_name,
                 end_point_name,
                 horizontal_or_vertical_road
-            FROM new_jeepney_routes
+            FROM jeepney_routes
             ORDER BY id;
         `);
         
@@ -80,7 +80,7 @@ async function checkDatabase() {
                     ST_NPoints(geom_reverse) as reverse_points,
                     ST_AsText(ST_StartPoint(geom_forward)) as start_point,
                     ST_AsText(ST_EndPoint(geom_forward)) as end_point
-                FROM new_jeepney_routes
+                FROM jeepney_routes
                 WHERE id = $1;
             `, [routes[0].id]);
             
@@ -99,7 +99,7 @@ async function checkDatabase() {
                 horizontal_or_vertical_road,
                 ST_AsGeoJSON(geom_forward)::json as forward_geojson,
                 ST_AsGeoJSON(geom_reverse)::json as reverse_geojson
-            FROM new_jeepney_routes
+            FROM jeepney_routes
             WHERE id = 1;
         `);
         

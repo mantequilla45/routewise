@@ -82,7 +82,7 @@ export async function findNearestRoutesPoints(latLng: LatLng) {
             )
         ) AS snapped_forward_lat
         
-        FROM new_jeepney_routes
+        FROM jeepney_routes
         
         WHERE ST_DWithin(
             geom_forward::geography,
@@ -141,7 +141,7 @@ async function calculateRouteDistances(
                 ST_LineLocatePoint(geom_forward, ST_SetSRID(ST_MakePoint($3, $4), 4326)) as loc_b,
                 -- Check if route is closed (first point equals last point)
                 ST_Equals(ST_StartPoint(geom_forward), ST_EndPoint(geom_forward)) as is_closed_loop
-            FROM new_jeepney_routes
+            FROM jeepney_routes
             WHERE id = $5
         )
         SELECT

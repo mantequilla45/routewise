@@ -26,7 +26,7 @@ export async function addRoute(route: RouteData) {
         : forwardLineString; // Use forward as reverse if not provided
 
     const sql = `
-        INSERT INTO new_jeepney_routes (
+        INSERT INTO jeepney_routes (
             route_code,
             start_point_name,
             end_point_name,
