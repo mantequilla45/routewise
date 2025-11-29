@@ -78,6 +78,53 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return () => subscription.remove();
     }, []);
 
+    // Subscribe to Supabase auth state changes so other sign-in methods (email/password)
+    // update this context's `user` immediately.
+    React.useEffect(() => {
+        // If supabase isn't available, skip
+        if (!supabase || !supabase.auth || !supabase.auth.onAuthStateChange) return;
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            try {
+                if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+                    // Try to get the authenticated user from Supabase
+                    const userResponse = await supabase.auth.getUser();
+                    const supaUser = userResponse?.data?.user;
+
+                    if (supaUser && supaUser.email) {
+                        // Try to load profile from users table
+                        const { data: profile } = await supabase
+                            .from('users')
+                            .select('*')
+                            .eq('email', supaUser.email)
+                            .single();
+
+                        const userData = {
+                            id: profile?.id || supaUser.id,
+                            email: supaUser.email,
+                            name: profile?.full_name || null,
+                            picture: profile?.avatar_url || null,
+                            email_verified: supaUser.email_confirmed || supaUser.email_confirmed_at || undefined,
+                            provider: supaUser?.app_metadata?.provider || 'email',
+                        } as AuthUser;
+
+                        setUser(userData);
+                        await SecureStore.setItemAsync('user_data', JSON.stringify(userData));
+                    }
+                }
+
+                if (event === 'SIGNED_OUT') {
+                    setUser(null);
+                    await SecureStore.deleteItemAsync('user_data');
+                }
+            } catch (e) {
+                console.warn('Error handling auth state change:', e);
+            }
+        });
+
+        return () => subscription?.unsubscribe?.();
+    }, []);
+
     const signIn = async () => {
         let timeoutId: NodeJS.Timeout | null = null;
         
