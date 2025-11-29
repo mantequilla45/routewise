@@ -139,39 +139,89 @@ export default function RouteMap({
                 lat: coord[1],
                 lng: coord[0]
             }));
-
-            // Create closed loop by adding first point at the end if we have at least 2 points
-            const closedPath = path.length >= 2 ? [...path, path[0]] : path;
             
-            // Draw polyline
+            // Draw polyline with direction arrows
             const newPolyline = new window.google.maps.Polyline({
-                path: closedPath,
+                path: path, // Don't close the loop - show actual route direction
                 geodesic: true,
                 strokeColor: '#FF6B6B',
                 strokeOpacity: 1.0,
                 strokeWeight: 3,
-                map
+                map,
+                icons: [{
+                    icon: {
+                        path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                        scale: 3,
+                        strokeColor: '#FFFFFF',
+                        strokeWeight: 2,
+                        fillColor: '#FF6B6B',
+                        fillOpacity: 1
+                    },
+                    offset: '50px',
+                    repeat: '100px' // Show arrows every 100 pixels
+                }]
             });
             setPolyline(newPolyline);
 
-            // Add uniform markers for all points (no start/end distinction)
+            // Add markers with START and END indicators
             const newMarkers: google.maps.Marker[] = [];
             
             if (path.length > 0) {
-                // Add markers for all points with uniform style
+                // Add markers for all points with special styling for start/end
                 path.forEach((point, index) => {
-                    newMarkers.push(new window.google.maps.Marker({
-                        position: point,
-                        map,
-                        title: `Point ${index + 1}`,
-                        icon: {
+                    let icon;
+                    let label = null;
+                    
+                    if (index === 0) {
+                        // Start marker - green
+                        icon = {
                             path: window.google.maps.SymbolPath.CIRCLE,
-                            scale: 6,
-                            fillColor: '#FF6B6B',
+                            scale: 8,
+                            fillColor: '#10B981',
                             fillOpacity: 1,
                             strokeColor: 'white',
                             strokeWeight: 2
-                        }
+                        };
+                        label = {
+                            text: 'S',
+                            color: 'white',
+                            fontSize: '12px',
+                            fontWeight: 'bold'
+                        };
+                    } else if (index === path.length - 1) {
+                        // End marker - red
+                        icon = {
+                            path: window.google.maps.SymbolPath.CIRCLE,
+                            scale: 8,
+                            fillColor: '#EF4444',
+                            fillOpacity: 1,
+                            strokeColor: 'white',
+                            strokeWeight: 2
+                        };
+                        label = {
+                            text: 'E',
+                            color: 'white',
+                            fontSize: '12px',
+                            fontWeight: 'bold'
+                        };
+                    } else {
+                        // Middle points - smaller blue
+                        icon = {
+                            path: window.google.maps.SymbolPath.CIRCLE,
+                            scale: 5,
+                            fillColor: '#3B82F6',
+                            fillOpacity: 1,
+                            strokeColor: 'white',
+                            strokeWeight: 2
+                        };
+                    }
+                    
+                    newMarkers.push(new window.google.maps.Marker({
+                        position: point,
+                        map,
+                        title: index === 0 ? 'Start' : index === path.length - 1 ? 'End' : `Point ${index + 1}`,
+                        icon: icon,
+                        label: label
                     }));
                 });
             }

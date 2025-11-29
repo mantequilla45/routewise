@@ -47,7 +47,16 @@ export default function SignupForm() {
             const { data, error } = await supabase.auth.signUp({ email, password });
             if (error) {
                 console.error('Sign up error:', error);
-                Alert.alert('Sign up failed', error.message || 'An error occurred');
+                // Detect rate limiting and provide actionable guidance
+                const msg = (error.message || '').toString();
+                if (error.status === 429 || /rate limit/i.test(msg)) {
+                    Alert.alert(
+                        'Email rate limit exceeded',
+                        'Supabase rejected the confirmation email due to rate limits.\n\nOptions:\n• Wait a few minutes and try again.\n• Configure an SMTP provider in the Supabase Dashboard (Authentication → Settings → Email) so emails are sent from your own provider and not subject to the project demo quota.\n• For testing, create users server-side with a service-role key or temporarily disable email confirmations in your Auth settings.\n\nCheck Supabase logs for more details.'
+                    );
+                } else {
+                    Alert.alert('Sign up failed', error.message || 'An error occurred');
+                }
                 return;
             }
 
@@ -75,7 +84,7 @@ export default function SignupForm() {
                 await SecureStore.deleteItemAsync('saved_credentials');
             }
 
-            Alert.alert('Sign up', 'Check your email for a confirmation (if enabled).');
+            
         } catch (e) {
             console.error('Unexpected sign up error:', e);
             Alert.alert('Sign up failed', 'Unexpected error');
@@ -83,9 +92,7 @@ export default function SignupForm() {
             setLoading(false);
         }
     };
-    const [selectedType, setSelectedType] = useState("");
-    const [openDropdown, setOpenDropdown] = useState(false);
-    const commuterTypes = ["Regular", "Student", "PWD", "Senior"];
+    
 
     return (
         <View style={styles.container}>
@@ -131,43 +138,7 @@ export default function SignupForm() {
                 </View>
             </View>
 
-            {/* Commuter Type */}
-            <View style={styles.passwordcontainer}>
-                <Text style={styles.text}> Commuter Type </Text>
-
-                <TouchableOpacity
-                style={styles.passwordWrapper}
-                onPress={() => setOpenDropdown(!openDropdown)}
-                activeOpacity={0.8}
-            >
-                    <Text style={[styles.passwordtextbox, { color: selectedType ? "#FFFFFF" : "#585756" }]}>
-                        {selectedType || "(e.g., Student)"}
-                    </Text>
-
-                {/* ▼ arrow */}
-                    <Text style={{ color: "#FFFFFF", fontSize: 18 }}>
-                        {openDropdown ? "▲" : "▼"}
-                    </Text>
-                </TouchableOpacity>
-
-                {/* Dropdown List */}
-                {openDropdown && (
-                <View style={styles.dropdown}>
-                    {commuterTypes.map((type, index) => (
-                        <TouchableOpacity
-                        key={index}
-                        style={styles.dropdownItem}
-                        onPress={() => {
-                            setSelectedType(type);
-                            setOpenDropdown(false);
-                        }}
-                    >
-                        <Text style={styles.dropdownText}>{type}</Text>
-                    </TouchableOpacity>
-                ))}
-                </View>
-                )}
-            </View>
+            
 
             {/* Remember Me + Sign Up Button */}
             <View style={styles.thirdcontainer}>

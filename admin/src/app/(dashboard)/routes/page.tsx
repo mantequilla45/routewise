@@ -23,8 +23,7 @@ export default function EnhancedAddRoutePage() {
         route_code: '',
         start_point_name: '',
         end_point_name: '',
-        coordinates: '',
-        horizontal_or_vertical_road: true
+        coordinates: ''
     });
     
     const [mapCoordinates, setMapCoordinates] = useState<Coordinate[]>([]);
@@ -115,6 +114,7 @@ export default function EnhancedAddRoutePage() {
             
         } else if (!insertMode && selectedPointIndex !== null) {
             // Update existing point at its current position
+            console.log(`Updating point ${selectedPointIndex} to new position: ${lat}, ${lng}`);
             setMapCoordinates(prevCoords => {
                 const updatedCoords = [...prevCoords];
                 updatedCoords[selectedPointIndex] = {
@@ -122,9 +122,12 @@ export default function EnhancedAddRoutePage() {
                     lat,
                     lng
                 };
+                console.log('Updated coordinates:', updatedCoords);
                 return updatedCoords;
             });
-            setSelectedPointIndex(null);
+            // Keep the point selected after editing to avoid confusion
+            // User can click elsewhere or press Escape to deselect
+            // setSelectedPointIndex(null);
         } else {
             // Add new point at the end
             const newIndex = mapCoordinates.length;
@@ -147,9 +150,11 @@ export default function EnhancedAddRoutePage() {
         if (selectedPointIndex === index) {
             // Deselect if clicking the same point
             setSelectedPointIndex(null);
+            setInsertMode(false); // Also exit insert mode when deselecting
         } else {
             // Select the point
             setSelectedPointIndex(index);
+            setInsertMode(false); // Reset insert mode when selecting a different point
             
             // Scroll the selected point into view
             setTimeout(() => {
@@ -219,8 +224,7 @@ export default function EnhancedAddRoutePage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     ...formData,
-                    coordinates_forward,
-                    coordinates_reverse: null
+                    coordinates_forward
                 })
             });
 
@@ -237,8 +241,7 @@ export default function EnhancedAddRoutePage() {
                     route_code: '',
                     start_point_name: '',
                     end_point_name: '',
-                    coordinates: '',
-                    horizontal_or_vertical_road: true
+                    coordinates: ''
                 });
                 setMapCoordinates([]);
                 
@@ -340,22 +343,6 @@ export default function EnhancedAddRoutePage() {
                                             placeholder="e.g., 01A"
                                             required
                                         />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-semibold text-black mb-1">
-                                            Route Type
-                                        </label>
-                                        <select
-                                            value={formData.horizontal_or_vertical_road ? 'horizontal' : 'vertical'}
-                                            onChange={e => setFormData({
-                                                ...formData, 
-                                                horizontal_or_vertical_road: e.target.value === 'horizontal'
-                                            })}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        >
-                                            <option value="horizontal">Horizontal (E-W)</option>
-                                            <option value="vertical">Vertical (N-S)</option>
-                                        </select>
                                     </div>
                                 </div>
 
@@ -519,6 +506,34 @@ export default function EnhancedAddRoutePage() {
                                                 <p className="text-gray-500 text-sm text-center py-4">Click on the map to add points</p>
                                             )}
                                         </div>
+                                        
+                                        {/* Loop Close Button */}
+                                        {mapCoordinates.length >= 2 && (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    // Add the first point at the end to close the loop
+                                                    const firstPoint = mapCoordinates[0];
+                                                    const lastIndex = mapCoordinates.length;
+                                                    const closingPoint = {
+                                                        ...firstPoint,
+                                                        label: `Point ${lastIndex + 1} (Loop Close)`
+                                                    };
+                                                    setMapCoordinates([...mapCoordinates, closingPoint]);
+                                                }}
+                                                className="mt-2 w-full bg-purple-500 text-white px-3 py-2 rounded-md hover:bg-purple-600 transition-colors text-sm font-medium"
+                                                disabled={mapCoordinates.length < 2 || 
+                                                    (mapCoordinates.length > 2 && 
+                                                     mapCoordinates[mapCoordinates.length - 1].lat === mapCoordinates[0].lat &&
+                                                     mapCoordinates[mapCoordinates.length - 1].lng === mapCoordinates[0].lng)}
+                                            >
+                                                {mapCoordinates.length > 2 && 
+                                                 mapCoordinates[mapCoordinates.length - 1].lat === mapCoordinates[0].lat &&
+                                                 mapCoordinates[mapCoordinates.length - 1].lng === mapCoordinates[0].lng
+                                                    ? '✓ Loop Closed'
+                                                    : '🔄 Close Loop (Connect End to Start)'}
+                                            </button>
+                                        )}
                                     </div>
                                 )}
 
@@ -580,11 +595,13 @@ export default function EnhancedAddRoutePage() {
                                 <ul className="text-sm text-blue-800 space-y-1">
                                     {inputMethod === 'map' ? (
                                         <>
+                                            <li className="font-bold text-red-700">⚠️ IMPORTANT: Pin order defines jeepney travel direction!</li>
+                                            <li>• <span className="text-green-700 font-semibold">GREEN marker (START)</span> = Where jeepney begins its route</li>
+                                            <li>• <span className="text-red-700 font-semibold">RED marker (END)</span> = Where jeepney ends its route</li>
+                                            <li>• Arrows show the direction jeepney will travel</li>
                                             <li>• Click on the map to add waypoints at the end</li>
-                                            <li>• Click on the red route line to insert points between existing ones</li>
-                                            <li>• Select a point to edit or move it</li>
-                                            <li>• Green marker = Start, Red marker = End</li>
-                                            <li>• Remove or insert points using the list above</li>
+                                            <li>• Click on the route line to insert points between</li>
+                                            <li>• Follow the actual jeepney route direction</li>
                                         </>
                                     ) : (
                                         <>

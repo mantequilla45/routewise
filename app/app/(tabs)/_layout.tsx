@@ -21,13 +21,12 @@ export default function TabLayout() {
         headerTintColor: '#fff',
         tabBarStyle: {
           backgroundColor: '#25292e',
-          position: 'absolute',
           paddingTop: 10,
-          paddingBottom: 10,
-          bottom: 50,
-          borderRadius: 35,
-          marginHorizontal: 50,
-          height: 80
+          paddingBottom: insets.bottom > 0 ? insets.bottom : 10,
+          borderRadius: 0,
+          height: 70 + (insets.bottom > 0 ? insets.bottom : 0),
+          borderTopWidth: 1,
+          borderTopColor: '#404040',
         },
         tabBarLabelStyle: {
           fontFamily: 'Lexend_400Regular',

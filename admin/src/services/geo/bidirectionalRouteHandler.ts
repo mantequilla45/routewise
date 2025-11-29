@@ -47,19 +47,13 @@ export async function analyzeBidirectionalRoute(
             SELECT
                 id,
                 route_code,
-                horizontal_or_vertical_road,
                 
                 -- Forward direction calculation
                 ST_LineLocatePoint(geom_forward, ST_SetSRID(ST_MakePoint($1, $2), 4326)) as loc_a_forward,
                 ST_LineLocatePoint(geom_forward, ST_SetSRID(ST_MakePoint($3, $4), 4326)) as loc_b_forward,
                 
-                -- Reverse direction calculation
-                ST_LineLocatePoint(geom_reverse, ST_SetSRID(ST_MakePoint($1, $2), 4326)) as loc_a_reverse,
-                ST_LineLocatePoint(geom_reverse, ST_SetSRID(ST_MakePoint($3, $4), 4326)) as loc_b_reverse,
-                
-                -- Get the actual geometries
-                geom_forward,
-                geom_reverse
+                -- Get the actual geometry
+                geom_forward
                 
             FROM new_jeepney_routes
             WHERE id = $5
@@ -67,42 +61,21 @@ export async function analyzeBidirectionalRoute(
         distance_calc AS (
             SELECT
                 *,
-                -- Forward route distance (always go from A to B along the line)
-                ST_Length(
-                    ST_LineSubstring(
-                        geom_forward, 
-                        LEAST(loc_a_forward, loc_b_forward), 
-                        GREATEST(loc_a_forward, loc_b_forward)
-                    )::geography
-                ) as forward_segment_distance,
+                -- Forward route distance (only if A comes before B)
+                CASE
+                    WHEN loc_a_forward < loc_b_forward THEN
+                        ST_Length(
+                            ST_LineSubstring(geom_forward, loc_a_forward, loc_b_forward)::geography
+                        )
+                    ELSE NULL
+                END as forward_segment_distance,
                 
-                -- Reverse route distance (always go from A to B along the line)
-                ST_Length(
-                    ST_LineSubstring(
-                        geom_reverse, 
-                        LEAST(loc_a_reverse, loc_b_reverse), 
-                        GREATEST(loc_a_reverse, loc_b_reverse)
-                    )::geography
-                ) as reverse_segment_distance,
-                
-                -- Get the segment geometries for both directions (A to B)
-                ST_AsGeoJSON(
-                    CASE
-                        WHEN loc_a_forward <= loc_b_forward THEN
-                            ST_LineSubstring(geom_forward, loc_a_forward, loc_b_forward)
-                        ELSE
-                            ST_Reverse(ST_LineSubstring(geom_forward, loc_b_forward, loc_a_forward))
-                    END
-                ) as forward_segment_geojson,
-                
-                ST_AsGeoJSON(
-                    CASE
-                        WHEN loc_a_reverse <= loc_b_reverse THEN
-                            ST_LineSubstring(geom_reverse, loc_a_reverse, loc_b_reverse)
-                        ELSE
-                            ST_Reverse(ST_LineSubstring(geom_reverse, loc_b_reverse, loc_a_reverse))
-                    END
-                ) as reverse_segment_geojson
+                -- Get the segment geometry for forward direction (A to B)
+                CASE
+                    WHEN loc_a_forward < loc_b_forward THEN
+                        ST_AsGeoJSON(ST_LineSubstring(geom_forward, loc_a_forward, loc_b_forward))
+                    ELSE NULL
+                END as forward_segment_geojson
                 
             FROM route_analysis
         )
@@ -110,10 +83,9 @@ export async function analyzeBidirectionalRoute(
             id,
             route_code,
             forward_segment_distance,
-            reverse_segment_distance,
             forward_segment_geojson,
-            reverse_segment_geojson,
-            horizontal_or_vertical_road
+            loc_a_forward,
+            loc_b_forward
         FROM distance_calc;
     `;
 
@@ -136,33 +108,23 @@ export async function analyzeBidirectionalRoute(
             { latitude: routeB.snapped_forward_lat, longitude: routeB.snapped_forward_lon }
         );
 
-        const forwardDistance = result.forward_segment_distance;
-        const reverseDistance = result.reverse_segment_distance;
+        // Only process if the route goes in the correct direction
+        if (!result.forward_segment_distance || !result.forward_segment_geojson) {
+            console.log(`Route ${result.route_code}: Invalid direction - A (${result.loc_a_forward?.toFixed(3)}) comes after B (${result.loc_b_forward?.toFixed(3)})`);
+            return null;
+        }
 
-        // Determine if we should suggest crossing the road
-        // If one direction is significantly longer than the direct distance and the other
+        const forwardDistance = result.forward_segment_distance;
+
+        // Check if the route distance is reasonable
         const CROSSING_THRESHOLD = 3; // If route is 3x longer than direct distance
         const MIN_DETOUR_DISTANCE = 500; // Minimum 500m detour to suggest crossing
 
         let shouldCrossRoad = false;
-        let bestDirection: 'forward' | 'reverse' = 'forward';
-        let bestDistance = forwardDistance;
-        let bestGeoJSON = result.forward_segment_geojson;
 
-        // Choose the shorter route
-        if (forwardDistance <= reverseDistance) {
-            bestDirection = 'forward';
-            bestDistance = forwardDistance;
-            bestGeoJSON = result.forward_segment_geojson;
-        } else {
-            bestDirection = 'reverse';
-            bestDistance = reverseDistance;
-            bestGeoJSON = result.reverse_segment_geojson;
-        }
-
-        // Check if the best route is still unreasonably long
-        if (bestDistance > directDistance * CROSSING_THRESHOLD && 
-            bestDistance > MIN_DETOUR_DISTANCE) {
+        // Check if the route is unreasonably long
+        if (forwardDistance > directDistance * CROSSING_THRESHOLD && 
+            forwardDistance > MIN_DETOUR_DISTANCE) {
             // The route requires a long detour, suggest crossing the road
             shouldCrossRoad = true;
         }
@@ -171,11 +133,11 @@ export async function analyzeBidirectionalRoute(
             routeId: result.id,
             routeCode: result.route_code,
             forwardDistance,
-            reverseDistance,
+            reverseDistance: 0, // Not used anymore
             directDistance,
             shouldCrossRoad,
-            segmentGeoJSON: bestGeoJSON,
-            direction: bestDirection
+            segmentGeoJSON: result.forward_segment_geojson,
+            direction: 'forward' as 'forward' | 'reverse'
         };
 
     } catch (err) {
@@ -222,12 +184,10 @@ export async function calculateSmartRoute(
                     })
                 });
             } else {
-                // Use the optimal direction
+                // Use the forward direction (only valid direction now)
                 results.push({
                     routeId: analysis.routeCode,
-                    distanceMeters: analysis.direction === 'forward' 
-                        ? analysis.forwardDistance 
-                        : analysis.reverseDistance,
+                    distanceMeters: analysis.forwardDistance,
                     segmentGeoJSON: analysis.segmentGeoJSON
                 });
             }
