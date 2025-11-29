@@ -92,9 +92,7 @@ export default function SignupForm() {
             setLoading(false);
         }
     };
-    const [selectedType, setSelectedType] = useState("");
-    const [openDropdown, setOpenDropdown] = useState(false);
-    const commuterTypes = ["Regular", "Student", "PWD", "Senior"];
+    
 
     return (
         <View style={styles.container}>
@@ -140,43 +138,7 @@ export default function SignupForm() {
                 </View>
             </View>
 
-            {/* Commuter Type */}
-            <View style={styles.passwordcontainer}>
-                <Text style={styles.text}> Commuter Type </Text>
-
-                <TouchableOpacity
-                style={styles.passwordWrapper}
-                onPress={() => setOpenDropdown(!openDropdown)}
-                activeOpacity={0.8}
-            >
-                    <Text style={[styles.passwordtextbox, { color: selectedType ? "#FFFFFF" : "#585756" }]}>
-                        {selectedType || "(e.g., Student)"}
-                    </Text>
-
-                {/* ▼ arrow */}
-                    <Text style={{ color: "#FFFFFF", fontSize: 18 }}>
-                        {openDropdown ? "▲" : "▼"}
-                    </Text>
-                </TouchableOpacity>
-
-                {/* Dropdown List */}
-                {openDropdown && (
-                <View style={styles.dropdown}>
-                    {commuterTypes.map((type, index) => (
-                        <TouchableOpacity
-                        key={index}
-                        style={styles.dropdownItem}
-                        onPress={() => {
-                            setSelectedType(type);
-                            setOpenDropdown(false);
-                        }}
-                    >
-                        <Text style={styles.dropdownText}>{type}</Text>
-                    </TouchableOpacity>
-                ))}
-                </View>
-                )}
-            </View>
+            
 
             {/* Remember Me + Sign Up Button */}
             <View style={styles.thirdcontainer}>
