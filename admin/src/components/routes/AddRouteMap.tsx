@@ -83,7 +83,7 @@ export default function AddRouteMap({
 
     useEffect(() => {
         let mounted = true;
-        let clickListener: google.maps.MapsEventListener | null = null;
+        const clickListener: google.maps.MapsEventListener | null = null;
 
         const initMap = async () => {
             try {

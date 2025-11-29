@@ -405,8 +405,8 @@ export default function EnhancedAddRoutePage() {
                 // KML coordinates are in format: longitude,latitude,altitude (altitude is optional)
                 const coordPairs = coordText.split(/\s+/).filter(pair => pair.length > 0);
                 
-                coordPairs.forEach((pair, index) => {
-                    const [lng, lat, alt] = pair.split(',');
+                coordPairs.forEach((pair) => {
+                    const [lng, lat] = pair.split(',');
                     const longitude = parseFloat(lng);
                     const latitude = parseFloat(lat);
                     
