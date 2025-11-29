@@ -53,13 +53,8 @@ export async function analyzeBidirectionalRoute(
                 ST_LineLocatePoint(geom_forward, ST_SetSRID(ST_MakePoint($1, $2), 4326)) as loc_a_forward,
                 ST_LineLocatePoint(geom_forward, ST_SetSRID(ST_MakePoint($3, $4), 4326)) as loc_b_forward,
                 
-                -- Reverse direction calculation
-                ST_LineLocatePoint(geom_reverse, ST_SetSRID(ST_MakePoint($1, $2), 4326)) as loc_a_reverse,
-                ST_LineLocatePoint(geom_reverse, ST_SetSRID(ST_MakePoint($3, $4), 4326)) as loc_b_reverse,
-                
-                -- Get the actual geometries
-                geom_forward,
-                geom_reverse
+                -- Get the actual geometry
+                geom_forward
                 
             FROM new_jeepney_routes
             WHERE id = $5

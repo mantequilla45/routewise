@@ -12,6 +12,8 @@ type RouteCardProps = {
 
 export default function RouteCard({ route, isSelected = false, onSelect }: Readonly<RouteCardProps>) {
     const isCrossRoadSuggestion = route.shouldCrossRoad || route.routeId.endsWith('_CROSS');
+    // Extract the actual route code (remove _CROSS suffix if present)
+    const routeCode = route.routeId.replace('_CROSS', '');
     
     return (
         <TouchableOpacity onPress={onSelect} activeOpacity={0.7}>
@@ -21,9 +23,16 @@ export default function RouteCard({ route, isSelected = false, onSelect }: Reado
                 isSelected && styles.selectedCard
             ]}>
                 <View style={styles.column1}>
-                    <Text style={styles.routeCode}>
-                        {isCrossRoadSuggestion ? '⚠️ Cross Road' : route.routeId}
-                    </Text>
+                    <View>
+                        <Text style={styles.routeCode}>
+                            {routeCode}
+                        </Text>
+                        {isCrossRoadSuggestion && (
+                            <Text style={styles.crossRoadIndicator}>
+                                ↔️ Cross to opposite side
+                            </Text>
+                        )}
+                    </View>
                     <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
                         <Ionicons 
                             name={isCrossRoadSuggestion ? "walk-outline" : "compass-outline"} 
@@ -31,27 +40,13 @@ export default function RouteCard({ route, isSelected = false, onSelect }: Reado
                             color={isCrossRoadSuggestion ? "#FF6B6B" : "#2D2D2D"}
                         />
                         <Text style={[styles.route, isCrossRoadSuggestion && styles.crossRoadText]} numberOfLines={2}>
-                            {isCrossRoadSuggestion 
-                                ? (route.message || "Cross to the other side for a shorter route") 
-                                : `${route.startingPoint} - ${route.endPoint}`}
+                            {`${route.startingPoint} - ${route.endPoint}`}
                         </Text>
                     </View>
                 </View>
                 <View style={styles.column2}>
-                    {!isCrossRoadSuggestion && (
-                        <>
-                            <Ionicons name="bookmark-outline" size={25} />
-                            <Text style={styles.fare}>P{route.fare}</Text>
-                        </>
-                    )}
-                    {isCrossRoadSuggestion && (
-                        <View style={styles.crossDistance}>
-                            <Text style={styles.distanceText}>
-                                {(route.distanceMeters || 0).toFixed(0)}m
-                            </Text>
-                            <Text style={styles.distanceLabel}>to cross</Text>
-                        </View>
-                    )}
+                    <Ionicons name="bookmark-outline" size={25} />
+                    <Text style={styles.fare}>P{route.fare}</Text>
                 </View>
                 {isSelected && (
                     <View style={styles.selectedIndicator}>
@@ -125,6 +120,12 @@ const styles = StyleSheet.create({
         fontFamily: 'Lexend_600SemiBold',
         fontSize: 24,
         color: "#2D2D2D",
+    },
+    crossRoadIndicator: {
+        fontFamily: 'Lexend_400Regular',
+        fontSize: 12,
+        color: "#FF6B6B",
+        marginTop: 2,
     },
     fare: {
         fontFamily: 'Lexend_600SemiBold',

@@ -6,13 +6,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { Stack } from 'expo-router';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { PanResponder, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 function MapScreenContent() {
     const { isPinPlacementEnabled, setIsPinPlacementEnabled, isPointAB, pointA, pointB } = useContext(MapPointsContext);
     const [showBottomSheet, setShowBottomSheet] = useState(true)
     const [prevPinPlacement, setPrevPinPlacement] = useState(false)
     const mapRef = useRef<NativeMapRef>(null);
+    const insets = useSafeAreaInsets();
 
     // Auto-reopen modal after location selection
     useEffect(() => {
@@ -50,7 +51,7 @@ function MapScreenContent() {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
+        <View style={[styles.container, { paddingTop: insets.top }]}>
             <Stack.Screen options={{ headerShown: false }} />
             <NativeMap ref={mapRef} />
             
@@ -102,7 +103,6 @@ function MapScreenContent() {
                     bottom: 0,
                     left: 0,
                     right: 0,
-                    height: "20%",
                 }}
                 {...panResponder.panHandlers}
             />
@@ -122,7 +122,7 @@ function MapScreenContent() {
             >
                 <MapModalContent exit={() => setShowBottomSheet(false)} setShowBottomSheet={setShowBottomSheet}></MapModalContent>
             </SwipeModal>
-        </SafeAreaView>
+        </View>
     );
 }
 
@@ -137,12 +137,11 @@ export default function MapScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F9F9F9',
         position: 'relative',
     },
     arrowButton: {
         position: 'absolute',
-        bottom: 90,
+        bottom: 40,
         alignSelf: 'center',
         backgroundColor: '#FFCC66',
         width: 50,
@@ -234,7 +233,7 @@ const styles = StyleSheet.create({
     },
     confirmLocationButton: {
         position: 'absolute',
-        bottom: 100,
+        bottom: 20,
         alignSelf: 'center',
         left: 20,
         right: 20,

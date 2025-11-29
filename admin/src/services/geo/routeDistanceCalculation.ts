@@ -3,8 +3,15 @@ import { CalculatedRoutes, LatLng, MappedGeoRouteResult, RouteSnap } from "@/typ
 import { calculateSmartRoute } from "./bidirectionalRouteHandler";
 
 export async function calculateRoute(latLngA: LatLng, latLngB: LatLng) {
+    console.log('=== CALCULATING ROUTE ===');
+    console.log('Point A:', latLngA);
+    console.log('Point B:', latLngB);
+    
     const snappedRoutesA: RouteSnap[] = await findNearestRoutesPoints(latLngA);
     const snappedRoutesB: RouteSnap[] = await findNearestRoutesPoints(latLngB);
+
+    console.log('Routes near A:', snappedRoutesA.map(r => r.route_code));
+    console.log('Routes near B:', snappedRoutesB.map(r => r.route_code));
 
     if (!snappedRoutesA.length || !snappedRoutesB.length) {
         throw new Error("No routes found near one of the points");
@@ -70,10 +77,6 @@ export async function findNearestRoutesPoints(latLng: LatLng) {
             geom_forward::geography,
             ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography
         ) AS distance_forward,
-        ST_Distance(
-            geom_reverse::geography,
-            ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography
-        ) AS distance_reverse,
         ST_X(
             ST_ClosestPoint(
             geom_forward,
@@ -85,29 +88,12 @@ export async function findNearestRoutesPoints(latLng: LatLng) {
             geom_forward,
             ST_SetSRID(ST_MakePoint($1, $2), 4326)
             )
-        ) AS snapped_forward_lat,
-        ST_X(
-            ST_ClosestPoint(
-            geom_reverse,
-            ST_SetSRID(ST_MakePoint($1, $2), 4326)
-            )
-        ) AS snapped_reverse_lon,
-        ST_Y(
-            ST_ClosestPoint(
-            geom_reverse,
-            ST_SetSRID(ST_MakePoint($1, $2), 4326)
-            )
-        ) AS snapped_reverse_lat
+        ) AS snapped_forward_lat
         
         FROM new_jeepney_routes
         
         WHERE ST_DWithin(
             geom_forward::geography,
-            ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography,
-            $3
-        )
-        OR ST_DWithin(
-            geom_reverse::geography,
             ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography,
             $3
         )
@@ -151,7 +137,8 @@ async function calculateRouteDistances(
     const results: CalculatedRoutes[] = [];
 
     for (const [routeA, routeB] of matchingPairs) {
-        // Fixed SQL to ensure we only get the segment between points, not a loop
+        // Each route has its own specific path and direction
+        // Only check if the route goes in the correct direction (A before B)
         const sql = `
         WITH route_locations AS (
             SELECT
@@ -159,66 +146,35 @@ async function calculateRouteDistances(
                 route_code,
                 horizontal_or_vertical_road,
                 geom_forward,
-                geom_reverse,
-                ST_LineLocatePoint(geom_forward, ST_SetSRID(ST_MakePoint($1, $2), 4326)) as loc_a_forward,
-                ST_LineLocatePoint(geom_forward, ST_SetSRID(ST_MakePoint($3, $4), 4326)) as loc_b_forward,
-                ST_LineLocatePoint(geom_reverse, ST_SetSRID(ST_MakePoint($1, $2), 4326)) as loc_a_reverse,
-                ST_LineLocatePoint(geom_reverse, ST_SetSRID(ST_MakePoint($3, $4), 4326)) as loc_b_reverse
+                ST_LineLocatePoint(geom_forward, ST_SetSRID(ST_MakePoint($1, $2), 4326)) as loc_a,
+                ST_LineLocatePoint(geom_forward, ST_SetSRID(ST_MakePoint($3, $4), 4326)) as loc_b
             FROM new_jeepney_routes
             WHERE id = $5
         )
         SELECT
-            -- Calculate the shorter segment (not going around the loop)
-            LEAST(
-                ST_Length(
-                    ST_LineSubstring(
-                        geom_forward,
-                        LEAST(loc_a_forward, loc_b_forward),
-                        GREATEST(loc_a_forward, loc_b_forward)
-                    )::geography
-                ),
-                ST_Length(
-                    ST_LineSubstring(
-                        geom_reverse,
-                        LEAST(loc_a_reverse, loc_b_reverse),
-                        GREATEST(loc_a_reverse, loc_b_reverse)
-                    )::geography
-                )
-            ) AS segment_length_meters,
-            
-            -- Get the geometry of the shorter segment
+            route_code,
+            -- Only return a result if A comes before B in the route direction
             CASE
-                WHEN ST_Length(
-                    ST_LineSubstring(
-                        geom_forward,
-                        LEAST(loc_a_forward, loc_b_forward),
-                        GREATEST(loc_a_forward, loc_b_forward)
-                    )::geography
-                ) <= ST_Length(
-                    ST_LineSubstring(
-                        geom_reverse,
-                        LEAST(loc_a_reverse, loc_b_reverse),
-                        GREATEST(loc_a_reverse, loc_b_reverse)
-                    )::geography
-                ) THEN
-                    ST_AsGeoJSON(
-                        CASE
-                            WHEN loc_a_forward <= loc_b_forward THEN
-                                ST_LineSubstring(geom_forward, loc_a_forward, loc_b_forward)
-                            ELSE
-                                ST_Reverse(ST_LineSubstring(geom_forward, loc_b_forward, loc_a_forward))
-                        END
-                    )
-                ELSE
-                    ST_AsGeoJSON(
-                        CASE
-                            WHEN loc_a_reverse <= loc_b_reverse THEN
-                                ST_LineSubstring(geom_reverse, loc_a_reverse, loc_b_reverse)
-                            ELSE
-                                ST_Reverse(ST_LineSubstring(geom_reverse, loc_b_reverse, loc_a_reverse))
-                        END
-                    )
-            END AS segment_geojson
+                WHEN loc_a < loc_b THEN
+                    ST_Length(ST_LineSubstring(geom_forward, loc_a, loc_b)::geography)
+                ELSE NULL
+            END AS segment_length_meters,
+            
+            -- Get the geometry only if direction is valid
+            CASE
+                WHEN loc_a < loc_b THEN
+                    ST_AsGeoJSON(ST_LineSubstring(geom_forward, loc_a, loc_b))
+                ELSE NULL
+            END AS segment_geojson,
+            
+            -- Debug info
+            loc_a,
+            loc_b,
+            CASE
+                WHEN loc_a < loc_b THEN 'valid'
+                WHEN loc_a > loc_b THEN 'wrong_direction'
+                ELSE 'same_point'
+            END AS direction_status
         FROM route_locations;
         `;
 
@@ -232,11 +188,23 @@ async function calculateRouteDistances(
 
         try {
             const [row] = await query(sql, params);
-            results.push({
-                routeId: routeA.route_code,
-                distanceMeters: row.segment_length_meters,
-                segmentGeoJSON: row.segment_geojson
-            });
+            
+            // Only include routes that have a valid direction
+            if (row.segment_length_meters !== null && row.segment_geojson !== null) {
+                // Additional check: if the distance along the route is too large compared to
+                // what would be expected, it might be going the wrong way
+                const routeDistance = row.segment_length_meters;
+                console.log(`Route ${routeA.route_code}: Distance check - ${routeDistance.toFixed(0)}m`);
+                
+                results.push({
+                    routeId: routeA.route_code,
+                    distanceMeters: row.segment_length_meters,
+                    segmentGeoJSON: row.segment_geojson
+                });
+                console.log(`Route ${routeA.route_code}: Valid (${row.direction_status}) - loc_a: ${row.loc_a?.toFixed(3)}, loc_b: ${row.loc_b?.toFixed(3)}`);
+            } else {
+                console.log(`Route ${routeA.route_code}: Skipped (${row.direction_status}) - Route goes in opposite direction (A:${row.loc_a?.toFixed(3)} B:${row.loc_b?.toFixed(3)})`);
+            }
         } catch (err) {
             console.error(`Error calculating distance for route ${routeA.id}:`, err);
         }

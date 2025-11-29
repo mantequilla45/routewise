@@ -44,9 +44,9 @@ const NativeMap = forwardRef<NativeMapRef>((props, ref) => {
     },
     setLocationAtCenter: () => {
       if (!isPinPlacementEnabled) return;
-      
+
       console.log('Setting location at center:', currentCenter);
-      
+
       // Set the point at the current center (crosshair position)
       if (isPointAB) {
         setPointA(currentCenter);
@@ -57,7 +57,7 @@ const NativeMap = forwardRef<NativeMapRef>((props, ref) => {
         setLastSelectedPoint('B');
         console.log('Set point B at crosshair:', currentCenter);
       }
-      
+
       // Disable pin placement after selecting a location
       setIsPinPlacementEnabled(false);
     }
@@ -66,8 +66,8 @@ const NativeMap = forwardRef<NativeMapRef>((props, ref) => {
   const markers: GoogleMapsMarker[] = [];
 
   if (pointA) {
-    markers.push({ 
-      coordinates: pointA, 
+    markers.push({
+      coordinates: pointA,
       title: 'Starting Point',
       snippet: 'Your journey begins here',
       pinColor: '#4CAF50' // Green for start
@@ -75,8 +75,8 @@ const NativeMap = forwardRef<NativeMapRef>((props, ref) => {
   }
 
   if (pointB) {
-    markers.push({ 
-      coordinates: pointB, 
+    markers.push({
+      coordinates: pointB,
       title: 'Destination',
       snippet: 'Your journey ends here',
       pinColor: '#F44336' // Red for destination
@@ -101,7 +101,7 @@ const NativeMap = forwardRef<NativeMapRef>((props, ref) => {
       console.log('First route:', routes[0]);
     }
   }, [routes]);
-  
+
   if (Platform.OS === 'android') {
     return (
       <GoogleMaps.View
@@ -131,7 +131,7 @@ const NativeMap = forwardRef<NativeMapRef>((props, ref) => {
 });
 
 const styles = StyleSheet.create({
-  map: { flex: 1 },
+  map: { flex: 1, },
 });
 
 export default NativeMap;

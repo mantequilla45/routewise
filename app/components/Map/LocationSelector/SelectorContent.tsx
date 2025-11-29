@@ -11,6 +11,7 @@ export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{
     const { setIsPointAB, setIsPinPlacementEnabled, pointA, pointB, setPointA, setPointB, setRoutes, results, setResults, isPinPlacementEnabled, selectedRouteIndex, setSelectedRouteIndex } = useContext(MapPointsContext)
     const [wasSelectingFirstLocation, setWasSelectingFirstLocation] = useState(false)
     const [allRoutes, setAllRoutes] = useState<GoogleMapsPolyline[]>([]); // Store all routes
+    const [routeIndexMap, setRouteIndexMap] = useState<Map<number, number>>(new Map()); // Map result index to polyline index
 
     // Auto-open second location selection after first location is selected
     useEffect(() => {
@@ -28,33 +29,31 @@ export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{
     // Handle route selection
     const handleRouteSelect = (index: number) => {
         console.log(`Route card clicked: index ${index}, current selected: ${selectedRouteIndex}`);
-        console.log(`All routes length: ${allRoutes.length}, Results length: ${results.length}`);
         
-        // Find the corresponding route in allRoutes based on the result index
+        // Find the corresponding route in results
         const selectedResult = results[index];
         if (!selectedResult) {
             console.warn(`No result found at index ${index}`);
             return;
         }
         
-        // Find the matching route in allRoutes (excluding cross-road routes)
-        const validResults = results.filter(r => 
-            r.latLng && 
-            r.latLng.length > 0 && 
-            !r.shouldCrossRoad && 
-            !r.routeId.endsWith('_CROSS')
-        );
+        setSelectedRouteIndex(index);
         
-        const routeIndexInAllRoutes = validResults.findIndex(r => r.routeId === selectedResult.routeId);
-        
-        if (routeIndexInAllRoutes !== -1 && routeIndexInAllRoutes < allRoutes.length) {
-            setSelectedRouteIndex(index);
-            setRoutes([allRoutes[routeIndexInAllRoutes]]);
-            console.log(`Selected route ${index}: ${selectedResult.routeId}, polyline index: ${routeIndexInAllRoutes}`);
-        } else if (selectedResult.shouldCrossRoad || selectedResult.routeId.endsWith('_CROSS')) {
+        // Check if this is a cross-road suggestion
+        if (selectedResult.shouldCrossRoad || selectedResult.routeId.endsWith('_CROSS')) {
             console.log('Cross-road route selected - no polyline to show');
-            setSelectedRouteIndex(index);
             setRoutes([]); // Clear routes for cross-road suggestions
+            return;
+        }
+        
+        // Use the pre-calculated index map
+        const polylineIndex = routeIndexMap.get(index);
+        if (polylineIndex !== undefined && polylineIndex < allRoutes.length) {
+            setRoutes([allRoutes[polylineIndex]]);
+            console.log(`Selected route ${index}: ${selectedResult.routeId}, showing polyline ${polylineIndex}`);
+        } else {
+            console.warn(`No polyline found for route ${selectedResult.routeId} at index ${index}`);
+            setRoutes([]);
         }
     };
 
@@ -70,39 +69,52 @@ export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{
             if (Array.isArray(routes) && routes.length > 0) {
                 setResults(routes);
                 
-                // Filter and transform routes for display on map
-                const validRoutes = routes.filter(r => 
-                    r.latLng && 
-                    r.latLng.length > 0 && 
-                    !r.shouldCrossRoad && 
-                    !r.routeId.endsWith('_CROSS')
-                );
+                // Build index map and filter routes
+                const indexMap = new Map<number, number>();
+                const googlePolylineRoutes: GoogleMapsPolyline[] = [];
+                let polylineIndex = 0;
                 
-                console.log(`Filtered ${routes.length} routes to ${validRoutes.length} valid polylines`);
-                
-                const googlePolylineRoutes: GoogleMapsPolyline[] = validRoutes.map((r, index) => {
-                    // Ensure coordinates are in the correct format
-                    const polyline: GoogleMapsPolyline = {
-                        id: `route_${index}`, // Simple numeric string ID
-                        coordinates: r.latLng.map(coord => ({
-                            latitude: coord.latitude,
-                            longitude: coord.longitude
-                        })),
-                        color: '#33ff00', // Green color without alpha
-                        width: 16,
-                        geodesic: true
-                    };
-                    console.log(`Created polyline ${polyline.id} with ${polyline.coordinates.length} points`);
-                    return polyline;
+                routes.forEach((r, resultIndex) => {
+                    // Check if this route has a valid polyline
+                    if (r.latLng && r.latLng.length > 0 && !r.shouldCrossRoad && !r.routeId.endsWith('_CROSS')) {
+                        // Map the result index to the polyline index
+                        indexMap.set(resultIndex, polylineIndex);
+                        
+                        // Create the polyline
+                        const polyline: GoogleMapsPolyline = {
+                            id: `route_${polylineIndex}`,
+                            coordinates: r.latLng.map(coord => ({
+                                latitude: coord.latitude,
+                                longitude: coord.longitude
+                            })),
+                            color: '#33ff00',
+                            width: 16,
+                            geodesic: true
+                        };
+                        
+                        googlePolylineRoutes.push(polyline);
+                        polylineIndex++;
+                        
+                        console.log(`Mapped result ${resultIndex} (${r.routeId}) to polyline ${polylineIndex - 1}`);
+                    } else {
+                        console.log(`Result ${resultIndex} (${r.routeId}) has no polyline (cross-road or invalid)`);
+                    }
                 });
                 
-                console.log('Setting routes:', googlePolylineRoutes.length);
+                console.log(`Created ${googlePolylineRoutes.length} polylines from ${routes.length} results`);
                 
-                // Store all routes but only display the first one initially
+                // Store the index map and routes
+                setRouteIndexMap(indexMap);
                 setAllRoutes(googlePolylineRoutes);
-                if (googlePolylineRoutes.length > 0) {
-                    setRoutes([googlePolylineRoutes[0]]); // Show only first route
-                    setSelectedRouteIndex(0); // Select first route by default
+                
+                // Display the first valid route if available
+                const firstValidIndex = routes.findIndex(r => 
+                    r.latLng && r.latLng.length > 0 && !r.shouldCrossRoad && !r.routeId.endsWith('_CROSS')
+                );
+                
+                if (firstValidIndex !== -1 && googlePolylineRoutes.length > 0) {
+                    setRoutes([googlePolylineRoutes[0]]);
+                    setSelectedRouteIndex(firstValidIndex);
                 } else {
                     setRoutes([]);
                     setSelectedRouteIndex(null);
@@ -123,6 +135,7 @@ export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{
         setResults([]); // Clear route results first
         setRoutes([]); // Clear polylines from map
         setAllRoutes([]); // Clear stored routes
+        setRouteIndexMap(new Map()); // Clear index map
         setSelectedRouteIndex(null); // Clear selection
         
         // Use a small delay to ensure routes are cleared before points
