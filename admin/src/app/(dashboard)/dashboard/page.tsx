@@ -145,41 +145,39 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      <div className="space-y-6 bg-[#CC9933] p-4 rounded-2xl">
-        {/* Upper Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 bg-[#CC9933] p-4 rounded-2xl">
+        {/* Left Column */}
+        <div className="space-y-6">
           {/* Statistic Cards */}
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {statCards.map((stat, index) => (
-                <div
-                  key={index}
-                  className="rounded-2xl hover:shadow-2xl transition-shadow duration-200 overflow-hidden"
-                >
-                  <div className="p-6 bg-[#3A3A3A] min-h-[240px]">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className={`p-3 rounded-xl bg-[#CC9933]`}>
-                        <span className="text-white">{stat.icon}</span>
-                      </div>
-                      <span
-                        className={`text-sm font-medium ${
-                          stat.changeType === "positive"
-                            ? "text-green-600"
-                            : "text-red-600"
-                        }`}
-                      >
-                        {stat.change}
-                      </span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {statCards.map((stat, index) => (
+              <div
+                key={index}
+                className="rounded-2xl hover:shadow-2xl transition-shadow duration-200 overflow-hidden"
+              >
+                <div className="p-6 bg-[#3A3A3A]">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className={`p-3 rounded-xl bg-[#CC9933]`}>
+                      <span className="text-white">{stat.icon}</span>
                     </div>
-                    <h3 className="text-2xl font-bold text-white mt-[70px]">
-                      {stat.value}
-                    </h3>
-                    <p className="text-sm text-white mt-1">{stat.title}</p>
+                    <span
+                      className={`text-sm font-medium ${
+                        stat.changeType === "positive"
+                          ? "text-green-600"
+                          : "text-red-600"
+                      }`}
+                    >
+                      {stat.change}
+                    </span>
                   </div>
-                  <div className="h-1 bg-gradient-to-r from-transparent via-[#FFCC66] to-transparent"></div>
+                  <h3 className="text-2xl font-bold text-white">
+                    {stat.value}
+                  </h3>
+                  <p className="text-sm text-white mt-1">{stat.title}</p>
                 </div>
-              ))}
-            </div>
+                <div className="h-1 bg-gradient-to-r from-transparent via-[#FFCC66] to-transparent"></div>
+              </div>
+            ))}
           </div>
 
           {/* Activity Chart */}
@@ -222,60 +220,62 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Lower Row */}
+        {/* Right Column */}
         <div className="h-full">
           {/* Recent Activity */}
-          <div className="bg-[#3A3A3A] rounded-2xl shadow-sm p-6 h-full flex flex-col item-center min-h-[350px]">
+          <div className="bg-[#3A3A3A] rounded-2xl shadow-sm p-6 min-h-[400px]">
             <h2 className="text-lg font-semibold text-white mb-6">
               Recent Routes
             </h2>
-            <div className="space-y-4 max-h-96 overflow-y-auto flex item-center justify-center">
-              {recentRoutes.length > 0 ? (
-                recentRoutes.map((route, index) => (
-                  <div
-                    key={route.id || index}
-                    className="flex items-start space-x-3"
-                  >
-                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-gray-900">
-                        Route{" "}
-                        <span className="font-semibold">
-                          {route.route_code}
-                        </span>
-                      </p>
-                      <p className="text-xs text-gray-500 truncate">
-                        {route.start_point_name} → {route.end_point_name}
-                      </p>
+            <div className="flex flex-col h-full justify-between">
+              <div className="space-y-4 max-h-96 overflow-y-auto">
+                {recentRoutes.length > 0 ? (
+                  recentRoutes.map((route, index) => (
+                    <div
+                      key={route.id || index}
+                      className="flex items-start space-x-3 p-2 bg-[#404040] rounded-lg transition-colors hover:bg-[#4c4c4c]"
+                    >
+                      <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                      <div className="flex-1 min-w-0 text-white">
+                        <p className="text-sm">
+                          Route{" "}
+                          <span className="font-semibold text-[#FFCC66]">
+                            {route.route_code}
+                          </span>
+                        </p>
+                        <p className="text-xs text-gray-400 truncate">
+                          {route.start_point_name} → {route.end_point_name}
+                        </p>
+                      </div>
                     </div>
+                  ))
+                ) : (
+                  <div className="text-center text-gray-500 text-sm py-4">
+                    No routes added yet
                   </div>
-                ))
-              ) : (
-                <div className="text-center text-gray-500 text-sm py-4">
-                  No routes added yet
-                </div>
-              )}
-              {recentRoutes.length > 0 && (
-                <a
-                  href="/routes"
-                  className="text-sm text-blue-600 hover:text-blue-800 font-medium inline-flex items-center mt-4"
-                >
-                  View all routes
-                  <svg
-                    className="w-4 h-4 ml-1"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+                )}
+                {recentRoutes.length > 0 && (
+                  <a
+                    href="/routes"
+                    className="text-sm text-blue-600 hover:text-blue-800 font-medium inline-flex items-center mt-auto ml-auto pt-4"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
-                </a>
-              )}
+                    View all routes
+                    <svg
+                      className="w-4 h-4 ml-1"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                  </a>
+                )}
+              </div>
             </div>
           </div>
         </div>
