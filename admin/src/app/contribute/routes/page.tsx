@@ -171,17 +171,24 @@ export default function ContributeRoutePage() {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-            <div className="container mx-auto px-4 py-8">
+            <div className="container py-8 pb-0 min-w-[100vw]">
                 {/* Header */}
-                <div className="text-center mb-8">
-                    <h1 className="text-4xl font-bold text-gray-900 mb-2">Contribute a Route</h1>
-                    <p className="text-lg text-gray-600">Help map jeepney routes in your community</p>
+                <div className="p-8 flex items-center gap-4">
+                    <img
+                        src="/routewise.svg"
+                        alt="Routewise Logo"
+                        className="h-16 w-auto"
+                    />
+                    <div>
+                        <h1 className="text-4xl font-bold text-gray-900 mb-2">Contribute a Route</h1>
+                        <p className="text-lg text-gray-600">Help map jeepney routes in your community</p>
+                    </div>
                 </div>
 
                 {/* Main Content */}
-                <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="flex lg:flex-row flex-col gap-6 w-full">
                     {/* Form Section */}
-                    <div className="bg-white rounded-lg shadow-lg p-6">
+                    <div className="bg-white rounded-lg shadow-lg p-6 w-1/3">
                         <h2 className="text-2xl font-bold text-gray-900 mb-6">Route Information</h2>
 
                         <form onSubmit={handleSubmit} className="space-y-4">
@@ -248,8 +255,8 @@ export default function ContributeRoutePage() {
                                             key={index}
                                             id={`point-${index}`}
                                             className={`flex items-center justify-between text-sm p-2 rounded cursor-pointer transition-all ${selectedPointIndex === index
-                                                    ? 'bg-yellow-100 border-2 border-yellow-400 shadow-md'
-                                                    : 'bg-gray-50 hover:bg-gray-100 border border-gray-200'
+                                                ? 'bg-yellow-100 border-2 border-yellow-400 shadow-md'
+                                                : 'bg-gray-50 hover:bg-gray-100 border border-gray-200'
                                                 }`}
                                             onClick={() => handlePointSelect(index)}
                                         >
@@ -271,8 +278,8 @@ export default function ContributeRoutePage() {
                                                             setInsertMode(!insertMode);
                                                         }}
                                                         className={`px-2 py-1 text-xs font-medium rounded ${insertMode
-                                                                ? 'bg-green-500 text-white hover:bg-green-600'
-                                                                : 'bg-blue-500 text-white hover:bg-blue-600'
+                                                            ? 'bg-green-500 text-white hover:bg-green-600'
+                                                            : 'bg-blue-500 text-white hover:bg-blue-600'
                                                             }`}
                                                     >
                                                         {insertMode ? 'Cancel' : 'Insert'}
@@ -304,12 +311,12 @@ export default function ContributeRoutePage() {
                                     type="button"
                                     onClick={() => setShowCloseLoopModal(true)}
                                     className={`px-4 py-3 rounded-lg font-semibold transition-all ${mapCoordinates.length < 2
-                                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                            : (mapCoordinates.length > 2 &&
-                                                mapCoordinates[mapCoordinates.length - 1].lat === mapCoordinates[0].lat &&
-                                                mapCoordinates[mapCoordinates.length - 1].lng === mapCoordinates[0].lng)
-                                                ? 'bg-green-500 text-white cursor-not-allowed'
-                                                : 'bg-purple-600 text-white hover:bg-purple-700'
+                                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                        : (mapCoordinates.length > 2 &&
+                                            mapCoordinates[mapCoordinates.length - 1].lat === mapCoordinates[0].lat &&
+                                            mapCoordinates[mapCoordinates.length - 1].lng === mapCoordinates[0].lng)
+                                            ? 'bg-green-500 text-white cursor-not-allowed'
+                                            : 'bg-purple-600 text-white hover:bg-purple-700'
                                         }`}
                                     disabled={mapCoordinates.length < 2 ||
                                         (mapCoordinates.length > 2 &&
@@ -327,8 +334,8 @@ export default function ContributeRoutePage() {
                                     type="submit"
                                     disabled={isSubmitting || mapCoordinates.length < 2}
                                     className={`flex-1 py-3 px-4 rounded-lg font-semibold text-white transition-all ${isSubmitting || mapCoordinates.length < 2
-                                            ? 'bg-gray-400 cursor-not-allowed'
-                                            : 'bg-blue-600 hover:bg-blue-700'
+                                        ? 'bg-gray-400 cursor-not-allowed'
+                                        : 'bg-blue-600 hover:bg-blue-700'
                                         }`}
                                 >
                                     {isSubmitting ? 'Submitting...' : 'Submit Route for Review'}
@@ -338,8 +345,8 @@ export default function ContributeRoutePage() {
                             {/* Status Message */}
                             {status.message && (
                                 <div className={`p-4 rounded-lg ${status.type === 'error'
-                                        ? 'bg-red-100 text-red-700 border border-red-300'
-                                        : 'bg-green-100 text-green-700 border border-green-300'
+                                    ? 'bg-red-100 text-red-700 border border-red-300'
+                                    : 'bg-green-100 text-green-700 border border-green-300'
                                     }`}>
                                     {status.message}
                                 </div>
@@ -348,7 +355,7 @@ export default function ContributeRoutePage() {
                     </div>
 
                     {/* Map Section */}
-                    <div className="bg-white rounded-lg shadow-lg p-6">
+                    <div className="bg-white rounded-lg shadow-lg p-6 w-2/3">
                         <div className="flex justify-between items-center mb-4">
                             <h2 className="text-2xl font-bold text-gray-900">Draw Route on Map</h2>
                             <div className="flex items-center gap-3">
@@ -393,9 +400,9 @@ export default function ContributeRoutePage() {
                         />
 
                         {/* Map Instructions */}
-                        <div className="mt-4 space-y-3">
+                        <div className="mt-6 flex flex-row gap-6">
                             {/* Legend */}
-                            <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                            <div className="p-3 bg-gray-50 rounded-lg border border-gray-200 w-full">
                                 <h4 className="font-semibold text-gray-900 mb-2 text-sm">Map Legend</h4>
                                 <div className="grid grid-cols-2 gap-2 text-xs">
                                     <div className="flex items-center gap-2">
@@ -418,7 +425,7 @@ export default function ContributeRoutePage() {
                             </div>
 
                             {/* Instructions */}
-                            <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                            <div className="p-3 bg-blue-50 rounded-lg border border-blue-200 w-full">
                                 <h4 className="font-semibold text-blue-900 mb-2 text-sm flex items-center">
                                     <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -458,16 +465,40 @@ export default function ContributeRoutePage() {
                     </div>
                 </div>
 
-                {/* Footer Info */}
-                <div className="text-center mt-8 text-gray-600">
-                    <p className="text-sm">
-                        All contributions will be reviewed by administrators before being published.
-                    </p>
-                    <p className="text-xs mt-2">
-                        Thank you for helping improve public transportation mapping!
-                    </p>
-                </div>
             </div>
+
+            {/* Footer */}
+            <footer className="mt-12 bg-white/80 border-t border-gray-200">
+                <div className="container min-w-[100vw] px-12 py-12">
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className="text-left">
+                                <img
+                                    src="/routewise.svg"
+                                    alt="Routewise"
+                                    className="h-10 w-auto opacity-80"
+                                />
+                                <p className="text-xs text-gray-600">Mapping the future of public transport</p>
+                            </div>
+                        </div>
+
+                        <div className="text-center md:text-right">
+                            <p className="text-sm text-gray-700 font-medium mb-1">
+                                🛡️ All contributions are reviewed before publication
+                            </p>
+                            <p className="text-xs text-gray-600">
+                                Thank you for helping improve public transportation in your community
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="mt-4 pt-4 border-t border-gray-200 text-center">
+                        <p className="text-xs text-gray-500">
+                            © {new Date().getFullYear()} Routewise
+                        </p>
+                    </div>
+                </div>
+            </footer>
 
             {/* Close Loop Confirmation Modal */}
             <ConfirmModal
