@@ -70,7 +70,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
         >
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="w-10 h-10 min-w-10 min-h-10 flex items-center justify-center border-none transition-all duration-200 cursor-pointer focus:outline-none shadow-none bg-transparent active:scale-100"
+            className="w-10 h-10 min-w-10 min-h-10 flex items-center justify-center border-none transition-all duration-300 cursor-pointer focus:outline-none shadow-none bg-transparent active:scale-100"
           >
             <Image
               src="/icon.svg"
@@ -120,7 +120,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 group relative ${
+              className={`flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-300 group relative ${
                 isActive
                   ? "bg-[#3A3A3A] text-white shadow-sm"
                   : "hover:bg-[#404040] text-gray-600 hover:text-[#CC9933]"
