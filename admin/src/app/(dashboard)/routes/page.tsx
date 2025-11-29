@@ -626,23 +626,67 @@ export default function EnhancedAddRoutePage() {
                             />
                             
                             {/* Map Instructions */}
-                            <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
-                                <h3 className="font-semibold text-blue-900 mb-2 flex items-center">
-                                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    Interactive Map Editing:
-                                </h3>
-                                <ul className="text-sm text-blue-800 space-y-1">
-                                    <li className="font-bold text-red-700">⚠️ IMPORTANT: Pin order defines jeepney travel direction!</li>
-                                    <li>• <span className="text-green-700 font-semibold">GREEN X marker</span> = Route start point</li>
-                                    <li>• <span className="text-red-700 font-semibold">RED O marker</span> = Route end point</li>
-                                    <li>• <span className="font-semibold">Click anywhere on map</span> = Add new waypoint at the end</li>
-                                    <li>• <span className="font-semibold">Click on blue route line</span> = Insert point between existing points</li>
-                                    <li>• <span className="font-semibold">Select a point from list</span> = Click map to move it or use Insert/Remove buttons</li>
-                                    <li>• <span className="font-semibold">Drag markers</span> = Reposition route points (when selected)</li>
-                                    <li>• Arrows show the direction jeepney will travel</li>
-                                </ul>
+                            <div className="mt-4 space-y-3">
+                                {/* Legend */}
+                                <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                    <h4 className="font-semibold text-gray-900 mb-2 text-sm">Map Legend</h4>
+                                    <div className="grid grid-cols-2 gap-2 text-xs">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center text-white font-bold text-[10px]">✕</div>
+                                            <span className="text-gray-700">Start Point</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center text-white font-bold text-[10px]">O</div>
+                                            <span className="text-gray-700">End Point</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-[10px]">•</div>
+                                            <span className="text-gray-700">Waypoints</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-5 h-1 rounded" style={{ backgroundColor: '#FF6B6B' }}></div>
+                                            <span className="text-gray-700">Route Path</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Instructions */}
+                                <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                                    <h4 className="font-semibold text-blue-900 mb-2 text-sm flex items-center">
+                                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        How to Map a Route
+                                    </h4>
+                                    <div className="space-y-2 text-xs text-blue-800">
+                                        <div>
+                                            <p className="font-semibold mb-1">Adding Points:</p>
+                                            <ul className="ml-3 space-y-0.5">
+                                                <li>• Click anywhere on map → Add waypoint at end</li>
+                                                <li>• Click on blue line → Insert between points</li>
+                                                <li>• Minimum 2 points required</li>
+                                            </ul>
+                                        </div>
+                                        <div>
+                                            <p className="font-semibold mb-1">Editing Points:</p>
+                                            <ul className="ml-3 space-y-0.5">
+                                                <li>• Select point from list → Click map to move</li>
+                                                <li>• Click "Insert" button → Add point after selected</li>
+                                                <li>• Click "✕" button → Remove point</li>
+                                            </ul>
+                                        </div>
+                                        <div>
+                                            <p className="font-semibold mb-1">Final Step:</p>
+                                            <ul className="ml-3 space-y-0.5">
+                                                <li>• After placing all pins → Click "Close Loop" button</li>
+                                                <li>• This connects the end point back to start</li>
+                                            </ul>
+                                        </div>
+                                        <div className="mt-2 p-2 bg-yellow-50 rounded border border-yellow-300">
+                                            <p className="text-yellow-800 font-semibold">⚠️ Important: Pin order defines travel direction!</p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

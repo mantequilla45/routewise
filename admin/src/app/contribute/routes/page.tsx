@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 
 // Dynamically import map component to avoid SSR issues
-const AddRouteMap = dynamic(() => import('@/components/routes/AddRouteMap'), { 
+const AddRouteMap = dynamic(() => import('@/components/routes/AddRouteMap'), {
     ssr: false,
     loading: () => <div className="h-96 bg-gray-100 animate-pulse rounded-lg flex items-center justify-center">Loading map...</div>
 });
@@ -22,7 +22,7 @@ export default function ContributeRoutePage() {
         contributor_name: '',
         contributor_email: ''
     });
-    
+
     const [mapCoordinates, setMapCoordinates] = useState<Coordinate[]>([]);
     const [status, setStatus] = useState({ type: '', message: '' });
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -39,7 +39,7 @@ export default function ContributeRoutePage() {
 
     const handleSegmentClick = (afterIndex: number, lat: number, lng: number) => {
         const newPointIndex = afterIndex + 1;
-        
+
         setMapCoordinates(prevCoords => {
             const newPoint = { lat, lng, label: '' };
             const updatedCoords = [
@@ -52,10 +52,10 @@ export default function ContributeRoutePage() {
                 label: `Point ${i + 1}`
             }));
         });
-        
+
         setSelectedPointIndex(newPointIndex);
     };
-    
+
     const handleMapClick = (lat: number, lng: number) => {
         if (insertMode && selectedPointIndex !== null) {
             setMapCoordinates(prevCoords => {
@@ -73,8 +73,8 @@ export default function ContributeRoutePage() {
             setSelectedPointIndex(selectedPointIndex + 1);
             setInsertMode(false);
         } else if (selectedPointIndex !== null) {
-            setMapCoordinates(prevCoords => 
-                prevCoords.map((coord, index) => 
+            setMapCoordinates(prevCoords =>
+                prevCoords.map((coord, index) =>
                     index === selectedPointIndex ? { lat, lng, label: coord.label } : coord
                 )
             );
@@ -106,7 +106,7 @@ export default function ContributeRoutePage() {
                 label: `Point ${i + 1}`
             }));
         });
-        
+
         if (selectedPointIndex === index) {
             setSelectedPointIndex(null);
             setInsertMode(false);
@@ -141,11 +141,11 @@ export default function ContributeRoutePage() {
             const result = await response.json();
 
             if (result.success) {
-                setStatus({ 
-                    type: 'success', 
-                    message: `Thank you for contributing! Route ${formData.route_code} has been submitted for review.` 
+                setStatus({
+                    type: 'success',
+                    message: `Thank you for contributing! Route ${formData.route_code} has been submitted for review.`
                 });
-                
+
                 // Reset form
                 setFormData({
                     route_code: '',
@@ -160,9 +160,9 @@ export default function ContributeRoutePage() {
             }
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'An error occurred';
-            setStatus({ 
-                type: 'error', 
-                message: errorMessage 
+            setStatus({
+                type: 'error',
+                message: errorMessage
             });
         } finally {
             setIsSubmitting(false);
@@ -179,11 +179,11 @@ export default function ContributeRoutePage() {
                 </div>
 
                 {/* Main Content */}
-                <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* Form Section */}
                     <div className="bg-white rounded-lg shadow-lg p-6">
                         <h2 className="text-2xl font-bold text-gray-900 mb-6">Route Information</h2>
-                        
+
                         <form onSubmit={handleSubmit} className="space-y-4">
                             {/* Route Code */}
                             <div>
@@ -193,7 +193,7 @@ export default function ContributeRoutePage() {
                                 <input
                                     type="text"
                                     value={formData.route_code}
-                                    onChange={e => setFormData({...formData, route_code: e.target.value})}
+                                    onChange={e => setFormData({ ...formData, route_code: e.target.value })}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     placeholder="Enter route code"
                                     required
@@ -209,7 +209,7 @@ export default function ContributeRoutePage() {
                                     <input
                                         type="text"
                                         value={formData.contributor_name}
-                                        onChange={e => setFormData({...formData, contributor_name: e.target.value})}
+                                        onChange={e => setFormData({ ...formData, contributor_name: e.target.value })}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         placeholder="Your name"
                                         required
@@ -222,7 +222,7 @@ export default function ContributeRoutePage() {
                                     <input
                                         type="email"
                                         value={formData.contributor_email}
-                                        onChange={e => setFormData({...formData, contributor_email: e.target.value})}
+                                        onChange={e => setFormData({ ...formData, contributor_email: e.target.value })}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         placeholder="your@email.com"
                                     />
@@ -233,25 +233,24 @@ export default function ContributeRoutePage() {
                             <div className="border-t pt-4">
                                 <label className="block text-sm font-semibold text-gray-700 mb-1">
                                     Route Points ({mapCoordinates.length})
-                                    {mapCoordinates.length > 2 && 
-                                     Math.abs(mapCoordinates[0].lat - mapCoordinates[mapCoordinates.length - 1].lat) < 0.000001 &&
-                                     Math.abs(mapCoordinates[0].lng - mapCoordinates[mapCoordinates.length - 1].lng) < 0.000001 && (
-                                        <span className="ml-2 text-purple-600 text-xs font-medium">🔄 Closed Loop</span>
-                                    )}
+                                    {mapCoordinates.length > 2 &&
+                                        Math.abs(mapCoordinates[0].lat - mapCoordinates[mapCoordinates.length - 1].lat) < 0.000001 &&
+                                        Math.abs(mapCoordinates[0].lng - mapCoordinates[mapCoordinates.length - 1].lng) < 0.000001 && (
+                                            <span className="ml-2 text-purple-600 text-xs font-medium">🔄 Closed Loop</span>
+                                        )}
                                 </label>
-                                <div 
+                                <div
                                     id="points-list"
                                     className="space-y-2 h-64 overflow-y-auto border border-gray-200 rounded-lg p-2"
                                 >
                                     {mapCoordinates.map((coord, index) => (
-                                        <div 
-                                            key={index} 
+                                        <div
+                                            key={index}
                                             id={`point-${index}`}
-                                            className={`flex items-center justify-between text-sm p-2 rounded cursor-pointer transition-all ${
-                                                selectedPointIndex === index 
-                                                    ? 'bg-yellow-100 border-2 border-yellow-400 shadow-md' 
+                                            className={`flex items-center justify-between text-sm p-2 rounded cursor-pointer transition-all ${selectedPointIndex === index
+                                                    ? 'bg-yellow-100 border-2 border-yellow-400 shadow-md'
                                                     : 'bg-gray-50 hover:bg-gray-100 border border-gray-200'
-                                            }`}
+                                                }`}
                                             onClick={() => handlePointSelect(index)}
                                         >
                                             <span className="text-gray-800 flex-1">
@@ -271,11 +270,10 @@ export default function ContributeRoutePage() {
                                                             e.stopPropagation();
                                                             setInsertMode(!insertMode);
                                                         }}
-                                                        className={`px-2 py-1 text-xs font-medium rounded ${
-                                                            insertMode 
-                                                                ? 'bg-green-500 text-white hover:bg-green-600' 
+                                                        className={`px-2 py-1 text-xs font-medium rounded ${insertMode
+                                                                ? 'bg-green-500 text-white hover:bg-green-600'
                                                                 : 'bg-blue-500 text-white hover:bg-blue-600'
-                                                        }`}
+                                                            }`}
                                                     >
                                                         {insertMode ? 'Cancel' : 'Insert'}
                                                     </button>
@@ -297,7 +295,7 @@ export default function ContributeRoutePage() {
                                         <p className="text-gray-500 text-sm text-center py-4">Click on the map to add points</p>
                                     )}
                                 </div>
-                                
+
                             </div>
 
                             {/* Action Buttons */}
@@ -305,35 +303,33 @@ export default function ContributeRoutePage() {
                                 <button
                                     type="button"
                                     onClick={() => setShowCloseLoopModal(true)}
-                                    className={`px-4 py-3 rounded-lg font-semibold transition-all ${
-                                        mapCoordinates.length < 2
+                                    className={`px-4 py-3 rounded-lg font-semibold transition-all ${mapCoordinates.length < 2
                                             ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                            : (mapCoordinates.length > 2 && 
-                                               mapCoordinates[mapCoordinates.length - 1].lat === mapCoordinates[0].lat &&
-                                               mapCoordinates[mapCoordinates.length - 1].lng === mapCoordinates[0].lng)
+                                            : (mapCoordinates.length > 2 &&
+                                                mapCoordinates[mapCoordinates.length - 1].lat === mapCoordinates[0].lat &&
+                                                mapCoordinates[mapCoordinates.length - 1].lng === mapCoordinates[0].lng)
                                                 ? 'bg-green-500 text-white cursor-not-allowed'
                                                 : 'bg-purple-600 text-white hover:bg-purple-700'
-                                    }`}
-                                    disabled={mapCoordinates.length < 2 || 
-                                        (mapCoordinates.length > 2 && 
-                                         mapCoordinates[mapCoordinates.length - 1].lat === mapCoordinates[0].lat &&
-                                         mapCoordinates[mapCoordinates.length - 1].lng === mapCoordinates[0].lng)}
+                                        }`}
+                                    disabled={mapCoordinates.length < 2 ||
+                                        (mapCoordinates.length > 2 &&
+                                            mapCoordinates[mapCoordinates.length - 1].lat === mapCoordinates[0].lat &&
+                                            mapCoordinates[mapCoordinates.length - 1].lng === mapCoordinates[0].lng)}
                                     title={mapCoordinates.length < 2 ? 'Need at least 2 points to close loop' : ''}
                                 >
-                                    {(mapCoordinates.length > 2 && 
-                                      mapCoordinates[mapCoordinates.length - 1].lat === mapCoordinates[0].lat &&
-                                      mapCoordinates[mapCoordinates.length - 1].lng === mapCoordinates[0].lng)
+                                    {(mapCoordinates.length > 2 &&
+                                        mapCoordinates[mapCoordinates.length - 1].lat === mapCoordinates[0].lat &&
+                                        mapCoordinates[mapCoordinates.length - 1].lng === mapCoordinates[0].lng)
                                         ? '✓ Loop Closed'
                                         : 'Close Loop'}
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={isSubmitting || mapCoordinates.length < 2}
-                                    className={`flex-1 py-3 px-4 rounded-lg font-semibold text-white transition-all ${
-                                        isSubmitting || mapCoordinates.length < 2
+                                    className={`flex-1 py-3 px-4 rounded-lg font-semibold text-white transition-all ${isSubmitting || mapCoordinates.length < 2
                                             ? 'bg-gray-400 cursor-not-allowed'
                                             : 'bg-blue-600 hover:bg-blue-700'
-                                    }`}
+                                        }`}
                                 >
                                     {isSubmitting ? 'Submitting...' : 'Submit Route for Review'}
                                 </button>
@@ -341,11 +337,10 @@ export default function ContributeRoutePage() {
 
                             {/* Status Message */}
                             {status.message && (
-                                <div className={`p-4 rounded-lg ${
-                                    status.type === 'error' 
-                                        ? 'bg-red-100 text-red-700 border border-red-300' 
+                                <div className={`p-4 rounded-lg ${status.type === 'error'
+                                        ? 'bg-red-100 text-red-700 border border-red-300'
                                         : 'bg-green-100 text-green-700 border border-green-300'
-                                }`}>
+                                    }`}>
                                     {status.message}
                                 </div>
                             )}
@@ -385,7 +380,7 @@ export default function ContributeRoutePage() {
                                 </label>
                             </div>
                         </div>
-                        <AddRouteMap 
+                        <AddRouteMap
                             coordinates={getDisplayCoordinates()}
                             onMapClick={handleMapClick}
                             enableClickToAdd={true}
@@ -396,20 +391,69 @@ export default function ContributeRoutePage() {
                             showPointNumbers={showPointNumbers}
                             hidePOIs={hidePOIs}
                         />
-                        
+
                         {/* Map Instructions */}
-                        <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-                            <h3 className="font-semibold text-blue-900 mb-2">How to map a route:</h3>
-                            <ul className="text-sm text-blue-800 space-y-1">
-                                <li className="font-bold text-red-700">⚠️ Pin order defines travel direction!</li>
-                                <li>• Click on the map to add route waypoints</li>
-                                <li>• <span className="text-green-700 font-semibold">Green X</span> = Route start point</li>
-                                <li>• <span className="text-red-700 font-semibold">Red O</span> = Route end point</li>
-                                <li>• Click on the line between points to insert waypoints</li>
-                                <li>• Select a point and click "Insert" to add after it</li>
-                                <li>• Select a point and click elsewhere to move it</li>
-                                <li>• Minimum 2 points required to submit</li>
-                            </ul>
+                        <div className="mt-4 space-y-3">
+                            {/* Legend */}
+                            <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                <h4 className="font-semibold text-gray-900 mb-2 text-sm">Map Legend</h4>
+                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center text-white font-bold text-[10px]">✕</div>
+                                        <span className="text-gray-700">Start Point</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center text-white font-bold text-[10px]">O</div>
+                                        <span className="text-gray-700">End Point</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-[10px]">•</div>
+                                        <span className="text-gray-700">Waypoints</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-5 h-1 rounded" style={{ backgroundColor: '#FF6B6B' }}></div>
+                                        <span className="text-gray-700">Route Path</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Instructions */}
+                            <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                                <h4 className="font-semibold text-blue-900 mb-2 text-sm flex items-center">
+                                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    How to Map a Route
+                                </h4>
+                                <div className="space-y-2 text-xs text-blue-800">
+                                    <div>
+                                        <p className="font-semibold mb-1">Adding Points:</p>
+                                        <ul className="ml-3 space-y-0.5">
+                                            <li>• Click anywhere on map → Add waypoint at end</li>
+                                            <li>• Click on blue line → Insert between points</li>
+                                            <li>• Minimum 2 points required</li>
+                                        </ul>
+                                    </div>
+                                    <div>
+                                        <p className="font-semibold mb-1">Editing Points:</p>
+                                        <ul className="ml-3 space-y-0.5">
+                                            <li>• Select point from list → Click map to move</li>
+                                            <li>• Click "Insert" button → Add point after selected</li>
+                                            <li>• Click "✕" button → Remove point</li>
+                                        </ul>
+                                    </div>
+                                    <div>
+                                        <p className="font-semibold mb-1">Final Step:</p>
+                                        <ul className="ml-3 space-y-0.5">
+                                            <li>• After placing all pins → Click "Close Loop" button</li>
+                                            <li>• This connects the end point back to start</li>
+                                        </ul>
+                                    </div>
+                                    <div className="mt-2 p-2 bg-yellow-50 rounded border border-yellow-300">
+                                        <p className="text-yellow-800 font-semibold">⚠️ Important: Pin order defines travel direction!</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -424,7 +468,7 @@ export default function ContributeRoutePage() {
                     </p>
                 </div>
             </div>
-            
+
             {/* Close Loop Confirmation Modal */}
             <ConfirmModal
                 isOpen={showCloseLoopModal}
