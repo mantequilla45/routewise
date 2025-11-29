@@ -57,6 +57,8 @@ interface AddRouteMapProps {
     highlightedIndex?: number | null;
     onPointClick?: (index: number) => void;
     onSegmentClick?: (afterIndex: number, lat: number, lng: number) => void;
+    showPointNumbers?: boolean;
+    hidePOIs?: boolean;
 }
 
 export default function AddRouteMap({ 
@@ -66,7 +68,9 @@ export default function AddRouteMap({
     enableClickToAdd = false,
     highlightedIndex = null,
     onPointClick,
-    onSegmentClick
+    onSegmentClick,
+    showPointNumbers = true,
+    hidePOIs = false
 }: AddRouteMapProps) {
     const mapRef = useRef<HTMLDivElement>(null);
     const mapInstanceRef = useRef<google.maps.Map | null>(null);
@@ -92,11 +96,29 @@ export default function AddRouteMap({
                     const mapDiv = mapRef.current;
                     
                     // Create map with a defensive check
+                    const mapStyles = hidePOIs ? [
+                        {
+                            featureType: "poi",
+                            elementType: "labels",
+                            stylers: [{ visibility: "off" }]
+                        },
+                        {
+                            featureType: "poi.business",
+                            stylers: [{ visibility: "off" }]
+                        },
+                        {
+                            featureType: "transit",
+                            elementType: "labels",
+                            stylers: [{ visibility: "off" }]
+                        }
+                    ] : [];
+                    
                     const map = new window.google.maps.Map(mapDiv, {
                         center: { lat: 10.3157, lng: 123.8854 }, // Cebu City
                         zoom: 13,
                         mapTypeControl: true,
                         streetViewControl: false,
+                        styles: mapStyles
                     });
                     
                     mapInstanceRef.current = map;
@@ -320,51 +342,63 @@ export default function AddRouteMap({
                     };
                     
                     // Determine icon and label based on position and highlight status
-                    if (index === 0) {
-                        // First point - Starting point with green marker
+                    if (index === 0 && !isClosedLoop) {
+                        // First point - Starting point with X icon (only if not a closed loop)
                         console.log(`Marker ${index}: START (first point)`);
                         markerOptions.icon = {
                             url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-                                <svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-                                    <circle cx="24" cy="24" r="20" fill="#10B981" stroke="white" stroke-width="3"/>
-                                    <text x="24" y="30" font-family="Arial" font-size="14" font-weight="bold" fill="white" text-anchor="middle">START</text>
+                                <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <circle cx="12" cy="12" r="10" fill="#10B981" stroke="white" stroke-width="2"/>
+                                    <path d="M8 8 L16 16 M16 8 L8 16" stroke="white" stroke-width="2" stroke-linecap="round"/>
                                 </svg>
                             `),
-                            scaledSize: new window.google.maps.Size(48, 48),
-                            anchor: new window.google.maps.Point(24, 24)
+                            scaledSize: new window.google.maps.Size(24, 24),
+                            anchor: new window.google.maps.Point(12, 12)
                         };
                         markerOptions.title = 'Starting Point';
                         markerOptions.zIndex = 200;
                     } else if (index === path.length - 1 && path.length > 1 && !isClosedLoop) {
-                        // Last point - End point with red marker (only if not a closed loop)
+                        // Last point - End point with circle icon
                         console.log(`Marker ${index}: END (last point of ${path.length} total)`);
                         markerOptions.icon = {
                             url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-                                <svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-                                    <circle cx="24" cy="24" r="20" fill="#EF4444" stroke="white" stroke-width="3"/>
-                                    <text x="24" y="30" font-family="Arial" font-size="14" font-weight="bold" fill="white" text-anchor="middle">END</text>
+                                <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <circle cx="12" cy="12" r="10" fill="#EF4444" stroke="white" stroke-width="2"/>
+                                    <circle cx="12" cy="12" r="5" fill="white"/>
                                 </svg>
                             `),
-                            scaledSize: new window.google.maps.Size(48, 48),
-                            anchor: new window.google.maps.Point(24, 24)
+                            scaledSize: new window.google.maps.Size(24, 24),
+                            anchor: new window.google.maps.Point(12, 12)
                         };
                         markerOptions.title = 'End Point';
                         markerOptions.zIndex = 200;
                     } else if (isClosedLoop && index === path.length - 1) {
-                        // Loop closing point - show as special marker
-                        console.log(`Marker ${index}: LOOP CLOSE (connects back to start)`);
-                        markerOptions.icon = {
-                            url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-                                <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
-                                    <circle cx="20" cy="20" r="16" fill="#9333EA" stroke="white" stroke-width="3"/>
-                                    <text x="20" y="25" font-family="Arial" font-size="12" font-weight="bold" fill="white" text-anchor="middle">LOOP</text>
-                                </svg>
-                            `),
-                            scaledSize: new window.google.maps.Size(40, 40),
-                            anchor: new window.google.maps.Point(20, 20)
-                        };
-                        markerOptions.title = 'Loop Close Point';
-                        markerOptions.zIndex = 190;
+                        // Loop closing point - show as Point 1 (same as first point)
+                        console.log(`Marker ${index}: LOOP CLOSE (same as Point 1)`);
+                        if (showPointNumbers) {
+                            markerOptions.icon = {
+                                url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                                    <svg width="28" height="28" viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg">
+                                        <circle cx="14" cy="14" r="11" fill="#3B82F6" stroke="white" stroke-width="2"/>
+                                        <text x="14" y="18" font-family="Arial" font-size="11" font-weight="bold" fill="white" text-anchor="middle">1</text>
+                                    </svg>
+                                `),
+                                scaledSize: new window.google.maps.Size(28, 28),
+                                anchor: new window.google.maps.Point(14, 14)
+                            };
+                        } else {
+                            markerOptions.icon = {
+                                url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                                    <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                        <circle cx="10" cy="10" r="8" fill="#3B82F6" stroke="white" stroke-width="2"/>
+                                    </svg>
+                                `),
+                                scaledSize: new window.google.maps.Size(20, 20),
+                                anchor: new window.google.maps.Point(10, 10)
+                            };
+                        }
+                        markerOptions.title = 'Point 1 (Loop Close)';
+                        markerOptions.zIndex = 100;
                     } else if (index === highlightedIndex) {
                         // Highlighted middle point
                         markerOptions.icon = {
@@ -380,18 +414,30 @@ export default function AddRouteMap({
                         markerOptions.title = `Point ${index + 1} (Selected)`;
                         markerOptions.zIndex = 250;
                     } else {
-                        // Regular middle points with numbers
+                        // Regular middle points - with or without numbers
                         console.log(`Marker ${index}: Middle point (${index + 1}/${path.length})`);
-                        markerOptions.icon = {
-                            url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-                                <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-                                    <circle cx="16" cy="16" r="12" fill="#3B82F6" stroke="white" stroke-width="2"/>
-                                    <text x="16" y="21" font-family="Arial" font-size="12" font-weight="bold" fill="white" text-anchor="middle">${index + 1}</text>
-                                </svg>
-                            `),
-                            scaledSize: new window.google.maps.Size(32, 32),
-                            anchor: new window.google.maps.Point(16, 16)
-                        };
+                        if (showPointNumbers) {
+                            markerOptions.icon = {
+                                url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                                    <svg width="28" height="28" viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg">
+                                        <circle cx="14" cy="14" r="11" fill="#3B82F6" stroke="white" stroke-width="2"/>
+                                        <text x="14" y="18" font-family="Arial" font-size="11" font-weight="bold" fill="white" text-anchor="middle">${index + 1}</text>
+                                    </svg>
+                                `),
+                                scaledSize: new window.google.maps.Size(28, 28),
+                                anchor: new window.google.maps.Point(14, 14)
+                            };
+                        } else {
+                            markerOptions.icon = {
+                                url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                                    <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                        <circle cx="10" cy="10" r="8" fill="#3B82F6" stroke="white" stroke-width="2"/>
+                                    </svg>
+                                `),
+                                scaledSize: new window.google.maps.Size(20, 20),
+                                anchor: new window.google.maps.Point(10, 10)
+                            };
+                        }
                         markerOptions.title = `Point ${index + 1}`;
                         markerOptions.zIndex = 100;
                     }
@@ -435,7 +481,31 @@ export default function AddRouteMap({
                 previousCoordinatesLength.current = coordinates.length;
             }
         }
-    }, [coordinates, isMapReady, highlightedIndex, enableClickToAdd, onPointClick, onSegmentClick]);
+    }, [coordinates, isMapReady, highlightedIndex, enableClickToAdd, onPointClick, onSegmentClick, showPointNumbers]);
+    
+    // Update map styles when POI visibility changes
+    useEffect(() => {
+        if (!mapInstanceRef.current || !isMapReady || !window.google?.maps) return;
+        
+        const mapStyles = hidePOIs ? [
+            {
+                featureType: "poi",
+                elementType: "labels",
+                stylers: [{ visibility: "off" }]
+            },
+            {
+                featureType: "poi.business",
+                stylers: [{ visibility: "off" }]
+            },
+            {
+                featureType: "transit",
+                elementType: "labels",
+                stylers: [{ visibility: "off" }]
+            }
+        ] : [];
+        
+        mapInstanceRef.current.setOptions({ styles: mapStyles });
+    }, [hidePOIs, isMapReady]);
 
     if (error) {
         return (
@@ -456,11 +526,6 @@ export default function AddRouteMap({
                     </div>
                 )}
             </div>
-            {enableClickToAdd && isMapReady && (
-                <div className="absolute top-2 left-2 bg-white px-3 py-1 rounded-md shadow-md text-sm">
-                    Click on map to add points
-                </div>
-            )}
         </div>
     );
 }

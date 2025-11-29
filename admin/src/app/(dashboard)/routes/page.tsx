@@ -21,8 +21,6 @@ export default function EnhancedAddRoutePage() {
     const [inputMethod, setInputMethod] = useState<'text' | 'map'>('text');
     const [formData, setFormData] = useState({
         route_code: '',
-        start_point_name: '',
-        end_point_name: '',
         coordinates: ''
     });
     
@@ -32,6 +30,8 @@ export default function EnhancedAddRoutePage() {
     const [showPreview, setShowPreview] = useState(false);
     const [selectedPointIndex, setSelectedPointIndex] = useState<number | null>(null);
     const [insertMode, setInsertMode] = useState(false);
+    const [showPointNumbers, setShowPointNumbers] = useState(true);
+    const [hidePOIs, setHidePOIs] = useState(false);
 
     // Parse coordinates for map display
     const getDisplayCoordinates = (): [number, number][] => {
@@ -234,7 +234,9 @@ export default function EnhancedAddRoutePage() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    ...formData,
+                    route_code: formData.route_code,
+                    start_point_name: 'Terminal A',
+                    end_point_name: 'Terminal B',
                     coordinates_forward
                 })
             });
@@ -250,8 +252,6 @@ export default function EnhancedAddRoutePage() {
                 // Reset form
                 setFormData({
                     route_code: '',
-                    start_point_name: '',
-                    end_point_name: '',
                     coordinates: ''
                 });
                 setMapCoordinates([]);
@@ -298,8 +298,8 @@ export default function EnhancedAddRoutePage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 py-8">
-            <div className="container mx-auto px-4">
+        <div className="min-h-screen bg-gray-50">
+            <div className="container">
                 {/* Header */}
                 <div className="bg-white rounded-lg shadow-md p-6 mb-6">
                     <h1 className="text-3xl font-bold text-gray-900">Route Management</h1>
@@ -357,33 +357,6 @@ export default function EnhancedAddRoutePage() {
                                     </div>
                                 </div>
 
-                                <div>
-                                    <label className="block text-sm font-semibold text-black mb-1">
-                                        Primary Terminal / Landmark 1*
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={formData.start_point_name}
-                                        onChange={e => setFormData({...formData, start_point_name: e.target.value})}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        placeholder="e.g., IT Park"
-                                        required
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-semibold text-black mb-1">
-                                        Secondary Terminal / Landmark 2*
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={formData.end_point_name}
-                                        onChange={e => setFormData({...formData, end_point_name: e.target.value})}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        placeholder="e.g., Ayala Center"
-                                        required
-                                    />
-                                </div>
 
                                 {/* Coordinate Input Method Toggle */}
                                 <div className="border-t pt-4">
@@ -602,9 +575,39 @@ export default function EnhancedAddRoutePage() {
 
                         {/* Map Section */}
                         <div className="bg-white rounded-lg shadow-md p-6">
-                            <h2 className="text-xl font-bold text-black mb-4">
-                                {inputMethod === 'map' ? 'Click to Add Points' : 'Route Preview'}
-                            </h2>
+                            <div className="flex justify-between items-center mb-4">
+                                <h2 className="text-xl font-bold text-black">
+                                    {inputMethod === 'map' ? 'Click to Add Points' : 'Route Preview'}
+                                </h2>
+                                <div className="flex items-center gap-4">
+                                    <label className="flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={showPointNumbers}
+                                            onChange={e => setShowPointNumbers(e.target.checked)}
+                                            className="sr-only"
+                                        />
+                                        <div className="relative">
+                                            <div className={`block w-10 h-6 rounded-full ${showPointNumbers ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
+                                            <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition ${showPointNumbers ? 'transform translate-x-4' : ''}`}></div>
+                                        </div>
+                                        <span className="ml-2 text-sm font-medium text-gray-700">Numbers</span>
+                                    </label>
+                                    <label className="flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={hidePOIs}
+                                            onChange={e => setHidePOIs(e.target.checked)}
+                                            className="sr-only"
+                                        />
+                                        <div className="relative">
+                                            <div className={`block w-10 h-6 rounded-full ${hidePOIs ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
+                                            <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition ${hidePOIs ? 'transform translate-x-4' : ''}`}></div>
+                                        </div>
+                                        <span className="ml-2 text-sm font-medium text-gray-700">Hide Places</span>
+                                    </label>
+                                </div>
+                            </div>
                             <AddRouteMap 
                                 coordinates={getDisplayCoordinates()}
                                 onMapClick={inputMethod === 'map' ? handleMapClick : undefined}
@@ -613,6 +616,8 @@ export default function EnhancedAddRoutePage() {
                                 highlightedIndex={selectedPointIndex}
                                 onPointClick={handlePointSelect}
                                 onSegmentClick={inputMethod === 'map' ? handleSegmentClick : undefined}
+                                showPointNumbers={showPointNumbers}
+                                hidePOIs={hidePOIs}
                             />
                             
                             {/* Map Instructions */}

@@ -23,10 +23,7 @@ interface Coordinate {
 
 export default function EditRouteModal({ routeId, isOpen, onClose, onUpdate }: EditRouteModalProps) {
     const [formData, setFormData] = useState({
-        route_code: '',
-        start_point_name: '',
-        end_point_name: '',
-        horizontal_or_vertical_road: true
+        route_code: ''
     });
     
     const [mapCoordinates, setMapCoordinates] = useState<Coordinate[]>([]);
@@ -39,6 +36,8 @@ export default function EditRouteModal({ routeId, isOpen, onClose, onUpdate }: E
     const selectedPointRef = useRef<number | null>(null);
     const isProcessingClick = useRef(false);
     const [insertMode, setInsertMode] = useState(false);
+    const [showPointNumbers, setShowPointNumbers] = useState(true);
+    const [hidePOIs, setHidePOIs] = useState(false);
 
     useEffect(() => {
         if (isOpen && routeId) {
@@ -67,10 +66,7 @@ export default function EditRouteModal({ routeId, isOpen, onClose, onUpdate }: E
                 const route = data.route;
                 
                 setFormData({
-                    route_code: route.route_code || '',
-                    start_point_name: route.start_point_name || '',
-                    end_point_name: route.end_point_name || '',
-                    horizontal_or_vertical_road: route.horizontal_or_vertical_road ?? true
+                    route_code: route.route_code || ''
                 });
                 
                 // Extract coordinates from GeoJSON
@@ -357,7 +353,9 @@ export default function EditRouteModal({ routeId, isOpen, onClose, onUpdate }: E
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    ...formData,
+                    route_code: formData.route_code,
+                    start_point_name: 'Terminal A',
+                    end_point_name: 'Terminal B',
                     coordinates_forward
                 })
             });
@@ -407,62 +405,19 @@ export default function EditRouteModal({ routeId, isOpen, onClose, onUpdate }: E
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             {/* Left Column - Form Fields */}
                             <div className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-1">
-                                            Route Code*
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={formData.route_code}
-                                            onChange={e => setFormData({...formData, route_code: e.target.value})}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                            required
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-1">
-                                            Route Type
-                                        </label>
-                                        <select
-                                            value={formData.horizontal_or_vertical_road ? 'horizontal' : 'vertical'}
-                                            onChange={e => setFormData({
-                                                ...formData, 
-                                                horizontal_or_vertical_road: e.target.value === 'horizontal'
-                                            })}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        >
-                                            <option value="horizontal">Horizontal (E-W)</option>
-                                            <option value="vertical">Vertical (N-S)</option>
-                                        </select>
-                                    </div>
-                                </div>
-
                                 <div>
                                     <label className="block text-sm font-semibold text-gray-700 mb-1">
-                                        Primary Terminal / Landmark 1*
+                                        Route Code*
                                     </label>
                                     <input
                                         type="text"
-                                        value={formData.start_point_name}
-                                        onChange={e => setFormData({...formData, start_point_name: e.target.value})}
+                                        value={formData.route_code}
+                                        onChange={e => setFormData({...formData, route_code: e.target.value})}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         required
                                     />
                                 </div>
 
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-1">
-                                        Secondary Terminal / Landmark 2*
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={formData.end_point_name}
-                                        onChange={e => setFormData({...formData, end_point_name: e.target.value})}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        required
-                                    />
-                                </div>
 
                                 {/* Input Method Toggle */}
                                 <div>
@@ -603,9 +558,39 @@ export default function EditRouteModal({ routeId, isOpen, onClose, onUpdate }: E
 
                             {/* Right Column - Map */}
                             <div>
-                                <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                                    {inputMethod === 'map' ? 'Click to Edit Points' : 'Route Preview'}
-                                </h3>
+                                <div className="flex justify-between items-center mb-2">
+                                    <h3 className="text-lg font-semibold text-gray-700">
+                                        {inputMethod === 'map' ? 'Click to Edit Points' : 'Route Preview'}
+                                    </h3>
+                                    <div className="flex items-center gap-3">
+                                        <label className="flex items-center cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={showPointNumbers}
+                                                onChange={e => setShowPointNumbers(e.target.checked)}
+                                                className="sr-only"
+                                            />
+                                            <div className="relative">
+                                                <div className={`block w-9 h-5 rounded-full ${showPointNumbers ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
+                                                <div className={`absolute left-0.5 top-0.5 bg-white w-4 h-4 rounded-full transition ${showPointNumbers ? 'transform translate-x-4' : ''}`}></div>
+                                            </div>
+                                            <span className="ml-2 text-xs font-medium text-gray-700">Numbers</span>
+                                        </label>
+                                        <label className="flex items-center cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={hidePOIs}
+                                                onChange={e => setHidePOIs(e.target.checked)}
+                                                className="sr-only"
+                                            />
+                                            <div className="relative">
+                                                <div className={`block w-9 h-5 rounded-full ${hidePOIs ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
+                                                <div className={`absolute left-0.5 top-0.5 bg-white w-4 h-4 rounded-full transition ${hidePOIs ? 'transform translate-x-4' : ''}`}></div>
+                                            </div>
+                                            <span className="ml-2 text-xs font-medium text-gray-700">Hide Places</span>
+                                        </label>
+                                    </div>
+                                </div>
                                 <AddRouteMap 
                                     coordinates={getDisplayCoordinates()}
                                     onMapClick={inputMethod === 'map' ? handleMapClick : undefined}
@@ -614,6 +599,8 @@ export default function EditRouteModal({ routeId, isOpen, onClose, onUpdate }: E
                                     highlightedIndex={selectedPointIndex}
                                     onPointClick={handlePointSelect}
                                     onSegmentClick={inputMethod === 'map' ? handleSegmentClick : undefined}
+                                    showPointNumbers={showPointNumbers}
+                                    hidePOIs={hidePOIs}
                                 />
                             </div>
                         </div>
