@@ -234,22 +234,44 @@ export default function AddRouteMap({
             // Convert coordinates to Google Maps format with validation
             const path = coordinates
                 .filter(coord => {
-                    // Validate coordinates
-                    if (!coord || !Array.isArray(coord) || coord.length !== 2) {
-                        console.warn('Invalid coordinate format:', coord);
+                    // Validate coordinates - handle both array and object formats
+                    if (!coord) {
+                        console.warn('Invalid coordinate: null or undefined');
                         return false;
                     }
-                    const [lng, lat] = coord;
-                    if (!isFinite(lat) || !isFinite(lng)) {
-                        console.warn('Non-finite coordinate values:', coord);
-                        return false;
+                    
+                    // Check if it's an object with lat/lng properties
+                    if (typeof coord === 'object' && 'lat' in coord && 'lng' in coord) {
+                        if (!isFinite(coord.lat) || !isFinite(coord.lng)) {
+                            console.warn('Non-finite coordinate values:', coord);
+                            return false;
+                        }
+                        return true;
                     }
-                    return true;
+                    
+                    // Check if it's an array [lng, lat]
+                    if (Array.isArray(coord) && coord.length === 2) {
+                        const [lng, lat] = coord;
+                        if (!isFinite(lat) || !isFinite(lng)) {
+                            console.warn('Non-finite coordinate values:', coord);
+                            return false;
+                        }
+                        return true;
+                    }
+                    
+                    console.warn('Invalid coordinate format:', coord);
+                    return false;
                 })
-                .map(coord => ({
-                    lat: coord[1],
-                    lng: coord[0]
-                }));
+                .map(coord => {
+                    // Convert to Google Maps format
+                    if (typeof coord === 'object' && 'lat' in coord && 'lng' in coord) {
+                        return { lat: coord.lat, lng: coord.lng };
+                    } else if (Array.isArray(coord)) {
+                        return { lat: coord[1], lng: coord[0] };
+                    }
+                    return null;
+                })
+                .filter(coord => coord !== null);
             
             if (path.length === 0) {
                 console.error('No valid coordinates to display');

@@ -50,6 +50,9 @@ export default function EnhancedAddRoutePage() {
     const [showPointNumbers, setShowPointNumbers] = useState(true);
     const [hidePOIs, setHidePOIs] = useState(false);
     const [showCloseLoopModal, setShowCloseLoopModal] = useState(false);
+    const [editingContributionId, setEditingContributionId] = useState<string | null>(null);
+    const [contributionCoordinates, setContributionCoordinates] = useState<MapCoordinate[]>([]);
+    const [selectedContribPointIndex, setSelectedContribPointIndex] = useState<number | null>(null);
 
     useEffect(() => {
         // Fetch contributions on component mount to show badge count
@@ -564,10 +567,13 @@ export default function EnhancedAddRoutePage() {
                             </form>
                         </div>
 
-                        {/* Map Section */}
-                        <div className="bg-white rounded-lg shadow-md p-6">
+                        {/* Map Section - Route Preview */}
+                        <div className="bg-white rounded-lg shadow-md p-6 border-2 border-blue-200">
                             <div className="flex justify-between items-center mb-4">
-                                <h2 className="text-xl font-bold text-black">Click to Add Points</h2>
+                                <div>
+                                    <h2 className="text-xl font-bold text-black">Route Preview</h2>
+                                    <p className="text-sm text-gray-600 mt-1">Click on the map to add/edit route points</p>
+                                </div>
                                 <div className="flex items-center gap-4">
                                     <label className="flex items-center cursor-pointer">
                                         <input
@@ -597,6 +603,16 @@ export default function EnhancedAddRoutePage() {
                                     </label>
                                 </div>
                             </div>
+                            {/* Edit Mode Indicator */}
+                            {selectedPointIndex !== null && (
+                                <div className="mb-4 p-3 bg-yellow-50 border border-yellow-300 rounded-lg flex items-center">
+                                    <svg className="w-5 h-5 text-yellow-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                    <span className="text-yellow-800 font-medium">Editing Point {selectedPointIndex + 1} - Click on the map to move this point</span>
+                                </div>
+                            )}
+                            
                             <AddRouteMap 
                                 coordinates={getDisplayCoordinates()}
                                 onMapClick={handleMapClick}
@@ -610,18 +626,22 @@ export default function EnhancedAddRoutePage() {
                             />
                             
                             {/* Map Instructions */}
-                            <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-                                <h3 className="font-semibold text-blue-900 mb-2">How to add points:</h3>
+                            <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                                <h3 className="font-semibold text-blue-900 mb-2 flex items-center">
+                                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    Interactive Map Editing:
+                                </h3>
                                 <ul className="text-sm text-blue-800 space-y-1">
-                                        <>
-                                            <li className="font-bold text-red-700">⚠️ IMPORTANT: Pin order defines jeepney travel direction!</li>
-                                            <li>• <span className="text-green-700 font-semibold">GREEN marker (START)</span> = Where jeepney begins its route</li>
-                                            <li>• <span className="text-red-700 font-semibold">RED marker (END)</span> = Where jeepney ends its route</li>
-                                            <li>• Arrows show the direction jeepney will travel</li>
-                                            <li>• Click on the map to add waypoints at the end</li>
-                                            <li>• Click on the route line to insert points between</li>
-                                            <li>• Follow the actual jeepney route direction</li>
-                                        </>
+                                    <li className="font-bold text-red-700">⚠️ IMPORTANT: Pin order defines jeepney travel direction!</li>
+                                    <li>• <span className="text-green-700 font-semibold">GREEN X marker</span> = Route start point</li>
+                                    <li>• <span className="text-red-700 font-semibold">RED O marker</span> = Route end point</li>
+                                    <li>• <span className="font-semibold">Click anywhere on map</span> = Add new waypoint at the end</li>
+                                    <li>• <span className="font-semibold">Click on blue route line</span> = Insert point between existing points</li>
+                                    <li>• <span className="font-semibold">Select a point from list</span> = Click map to move it or use Insert/Remove buttons</li>
+                                    <li>• <span className="font-semibold">Drag markers</span> = Reposition route points (when selected)</li>
+                                    <li>• Arrows show the direction jeepney will travel</li>
                                 </ul>
                             </div>
                         </div>
@@ -643,7 +663,11 @@ export default function EnhancedAddRoutePage() {
                             </div>
                         ) : (
                             <div className="space-y-4">
-                                {contributions.filter(c => c.status === 'pending').map(contribution => (
+                                {contributions.filter(c => c.status === 'pending').map(contribution => {
+                                    const isReviewing = selectedContribution?.id === contribution.id;
+                                    const isEditing = isReviewing && editingContributionId === contribution.id;
+                                    
+                                    return (
                                     <div key={contribution.id} className="border rounded-lg p-4 hover:bg-gray-50">
                                         <div className="flex justify-between items-start mb-4">
                                             <div>
@@ -659,106 +683,252 @@ export default function EnhancedAddRoutePage() {
                                                 </p>
                                             </div>
                                             <div className="flex gap-2">
-                                                <button
-                                                    onClick={() => {
-                                                        setSelectedContribution(contribution);
-                                                        setReviewAction(null);
-                                                    }}
-                                                    className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
-                                                >
-                                                    Review
-                                                </button>
+                                                {!isReviewing ? (
+                                                    <button
+                                                        onClick={() => {
+                                                            setSelectedContribution(contribution);
+                                                            setEditingContributionId(null);
+                                                            setContributionCoordinates(contribution.forward_geojson?.coordinates?.map((coord: [number, number], index: number) => ({
+                                                                lat: coord[1],
+                                                                lng: coord[0],
+                                                                label: `Point ${index + 1}`
+                                                            })) || []);
+                                                            setReviewAction(null);
+                                                        }}
+                                                        className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
+                                                    >
+                                                        Review
+                                                    </button>
+                                                ) : (
+                                                    <>
+                                                        {!isEditing && (
+                                                            <button
+                                                                onClick={() => setEditingContributionId(contribution.id)}
+                                                                className="px-3 py-1 text-sm bg-yellow-500 text-white rounded hover:bg-yellow-600"
+                                                            >
+                                                                Edit
+                                                            </button>
+                                                        )}
+                                                        {isEditing && (
+                                                            <button
+                                                                onClick={() => setEditingContributionId(null)}
+                                                                className="px-3 py-1 text-sm bg-green-500 text-white rounded hover:bg-green-600"
+                                                            >
+                                                                Done Editing
+                                                            </button>
+                                                        )}
+                                                        <button
+                                                            onClick={() => {
+                                                                setSelectedContribution(null);
+                                                                setEditingContributionId(null);
+                                                                setContributionCoordinates([]);
+                                                            }}
+                                                            className="px-3 py-1 text-sm bg-gray-500 text-white rounded hover:bg-gray-600"
+                                                        >
+                                                            Close
+                                                        </button>
+                                                    </>
+                                                )}
                                             </div>
                                         </div>
                                         
-                                        {/* Show map preview if selected */}
-                                        {selectedContribution?.id === contribution.id && (
+                                        {/* Show review details if selected */}
+                                        {isReviewing && (
                                             <div className="mt-4 border-t pt-4">
                                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                                                    <div>
-                                                        <h4 className="font-semibold mb-2">Route Preview</h4>
-                                                        <div className="h-64">
+                                                    {/* Left side - Details and Controls */}
+                                                    <div className="space-y-4">
+                                                        <div className="bg-gray-50 p-4 rounded-lg">
+                                                            <h4 className="font-semibold mb-3 text-lg">Route Details</h4>
+                                                            <div className="space-y-3">
+                                                                <div className="text-sm space-y-2">
+                                                                    <p className="flex justify-between">
+                                                                        <strong>Route Code:</strong> 
+                                                                        <span className="text-blue-600 font-medium">{contribution.route_code}</span>
+                                                                    </p>
+                                                                    <p className="flex justify-between">
+                                                                        <strong>Total Points:</strong> 
+                                                                        <span>{contributionCoordinates.length}</span>
+                                                                    </p>
+                                                                    <p className="flex justify-between">
+                                                                        <strong>Route Type:</strong> 
+                                                                        <span>{contribution.forward_geojson.type}</span>
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Editing Controls */}
+                                                        {isEditing && (
+                                                            <div className="bg-white p-4 rounded-lg border">
+                                                                <h4 className="font-semibold mb-3">Edit Route Points</h4>
+                                                                <div className="h-64 overflow-y-auto border border-gray-200 rounded-lg p-2 space-y-2">
+                                                                    {contributionCoordinates.map((coord, index) => (
+                                                                        <div 
+                                                                            key={index}
+                                                                            className={`flex items-center justify-between text-sm p-2 rounded cursor-pointer transition-all ${
+                                                                                selectedContribPointIndex === index 
+                                                                                    ? 'bg-yellow-100 border-2 border-yellow-400 shadow-md' 
+                                                                                    : 'bg-gray-50 hover:bg-gray-100 border border-gray-200'
+                                                                            }`}
+                                                                            onClick={() => setSelectedContribPointIndex(index)}
+                                                                        >
+                                                                            <span className="text-gray-800 flex-1">
+                                                                                {coord.label}: {coord.lat.toFixed(6)}, {coord.lng.toFixed(6)}
+                                                                            </span>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    const newCoords = contributionCoordinates.filter((_, i) => i !== index);
+                                                                                    setContributionCoordinates(newCoords);
+                                                                                }}
+                                                                                className="text-red-500 hover:text-red-700 px-2"
+                                                                            >
+                                                                                ✕
+                                                                            </button>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                                {contributionCoordinates.length === 0 && (
+                                                                    <p className="text-gray-500 text-sm mt-2">Click on the map to add route points</p>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                        
+                                                        {/* Action Buttons */}
+                                                        {!reviewAction && (
+                                                            <div className="flex gap-2">
+                                                                <button
+                                                                    onClick={() => setReviewAction('approve')}
+                                                                    className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+                                                                >
+                                                                    Approve
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => setReviewAction('reject')}
+                                                                    className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                                                                >
+                                                                    Reject
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                        
+                                                        {reviewAction && (
+                                                            <div className="bg-white p-4 rounded-lg border">
+                                                                <label className="block text-sm font-semibold mb-1">
+                                                                    Review Notes:
+                                                                </label>
+                                                                <textarea
+                                                                    value={reviewNotes}
+                                                                    onChange={e => setReviewNotes(e.target.value)}
+                                                                    className="w-full px-3 py-2 border rounded text-sm"
+                                                                    rows={3}
+                                                                    placeholder={reviewAction === 'approve' ? 'Optional approval notes...' : 'Please provide rejection reason...'}
+                                                                    required={reviewAction === 'reject'}
+                                                                />
+                                                                <div className="flex gap-2 mt-2">
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            // Update contribution with edited coordinates before approval
+                                                                            const updatedContribution = {
+                                                                                ...contribution,
+                                                                                forward_geojson: {
+                                                                                    ...contribution.forward_geojson,
+                                                                                    coordinates: contributionCoordinates.map(coord => [coord.lng, coord.lat])
+                                                                                }
+                                                                            };
+                                                                            if (reviewAction === 'approve') {
+                                                                                handleApproveContribution(updatedContribution);
+                                                                            } else {
+                                                                                handleRejectContribution(updatedContribution);
+                                                                            }
+                                                                        }}
+                                                                        className={`px-4 py-2 text-white rounded ${
+                                                                            reviewAction === 'approve' 
+                                                                                ? 'bg-green-500 hover:bg-green-600' 
+                                                                                : 'bg-red-500 hover:bg-red-600'
+                                                                        }`}
+                                                                    >
+                                                                        Confirm {reviewAction === 'approve' ? 'Approval' : 'Rejection'}
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            setReviewAction(null);
+                                                                            setReviewNotes('');
+                                                                        }}
+                                                                        className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500"
+                                                                    >
+                                                                        Cancel
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Right side - Map */}
+                                                    <div className="bg-gray-50 p-4 rounded-lg">
+                                                        <h4 className="font-semibold mb-3 text-lg flex items-center">
+                                                            <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                                                            </svg>
+                                                            Route Preview {isEditing && '(Editing)'}
+                                                        </h4>
+                                                        <div className="h-96 border-2 border-blue-200 rounded-lg overflow-hidden">
                                                             <AddRouteMap
-                                                                coordinates={contribution.forward_geojson.coordinates}
-                                                                height="100%"
-                                                                enableClickToAdd={false}
+                                                                coordinates={contributionCoordinates}
+                                                                height="384px"
+                                                                enableClickToAdd={isEditing}
                                                                 showPointNumbers={true}
                                                                 hidePOIs={false}
+                                                                highlightedIndex={isEditing ? selectedContribPointIndex : null}
+                                                                onMapClick={isEditing ? (lat: number, lng: number) => {
+                                                                    if (selectedContribPointIndex !== null) {
+                                                                        // Update existing point
+                                                                        const newCoords = [...contributionCoordinates];
+                                                                        newCoords[selectedContribPointIndex] = {
+                                                                            ...newCoords[selectedContribPointIndex],
+                                                                            lat,
+                                                                            lng
+                                                                        };
+                                                                        setContributionCoordinates(newCoords);
+                                                                        setSelectedContribPointIndex(null);
+                                                                    } else {
+                                                                        // Add new point
+                                                                        const newPoint = {
+                                                                            lat,
+                                                                            lng,
+                                                                            label: `Point ${contributionCoordinates.length + 1}`
+                                                                        };
+                                                                        setContributionCoordinates([...contributionCoordinates, newPoint]);
+                                                                    }
+                                                                } : undefined}
+                                                                onPointClick={isEditing ? (index: number) => {
+                                                                    setSelectedContribPointIndex(index);
+                                                                } : undefined}
+                                                                onSegmentClick={isEditing ? (afterIndex: number, lat: number, lng: number) => {
+                                                                    const newPoint = {
+                                                                        lat,
+                                                                        lng,
+                                                                        label: `Point ${afterIndex + 2}`
+                                                                    };
+                                                                    const newCoords = [...contributionCoordinates];
+                                                                    newCoords.splice(afterIndex + 1, 0, newPoint);
+                                                                    // Update labels
+                                                                    newCoords.forEach((coord, i) => {
+                                                                        coord.label = `Point ${i + 1}`;
+                                                                    });
+                                                                    setContributionCoordinates(newCoords);
+                                                                } : undefined}
                                                             />
-                                                        </div>
-                                                    </div>
-                                                    <div>
-                                                        <h4 className="font-semibold mb-2">Route Details</h4>
-                                                        <div className="space-y-2 text-sm">
-                                                            <p><strong>Points:</strong> {contribution.forward_geojson.coordinates.length}</p>
-                                                            <p><strong>Type:</strong> {contribution.forward_geojson.type}</p>
-                                                            
-                                                            {!reviewAction && (
-                                                                <div className="flex gap-2 mt-4">
-                                                                    <button
-                                                                        onClick={() => setReviewAction('approve')}
-                                                                        className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-                                                                    >
-                                                                        Approve
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={() => setReviewAction('reject')}
-                                                                        className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-                                                                    >
-                                                                        Reject
-                                                                    </button>
-                                                                </div>
-                                                            )}
-                                                            
-                                                            {reviewAction && (
-                                                                <div className="mt-4">
-                                                                    <label className="block text-sm font-semibold mb-1">
-                                                                        Review Notes:
-                                                                    </label>
-                                                                    <textarea
-                                                                        value={reviewNotes}
-                                                                        onChange={e => setReviewNotes(e.target.value)}
-                                                                        className="w-full px-3 py-2 border rounded text-sm"
-                                                                        rows={3}
-                                                                        placeholder={reviewAction === 'approve' ? 'Optional approval notes...' : 'Please provide rejection reason...'}
-                                                                        required={reviewAction === 'reject'}
-                                                                    />
-                                                                    <div className="flex gap-2 mt-2">
-                                                                        <button
-                                                                            onClick={() => {
-                                                                                if (reviewAction === 'approve') {
-                                                                                    handleApproveContribution(contribution);
-                                                                                } else {
-                                                                                    handleRejectContribution(contribution);
-                                                                                }
-                                                                            }}
-                                                                            className={`px-4 py-2 text-white rounded ${
-                                                                                reviewAction === 'approve' 
-                                                                                    ? 'bg-green-500 hover:bg-green-600' 
-                                                                                    : 'bg-red-500 hover:bg-red-600'
-                                                                            }`}
-                                                                        >
-                                                                            Confirm {reviewAction === 'approve' ? 'Approval' : 'Rejection'}
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={() => {
-                                                                                setReviewAction(null);
-                                                                                setReviewNotes('');
-                                                                            }}
-                                                                            className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500"
-                                                                        >
-                                                                            Cancel
-                                                                        </button>
-                                                                    </div>
-                                                                </div>
-                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
                                         )}
                                     </div>
-                                ))}
+                                );
+                                })}
                             </div>
                         )}
                     </div>
