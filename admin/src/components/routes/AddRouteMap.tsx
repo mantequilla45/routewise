@@ -207,25 +207,57 @@ export default function AddRouteMap({
         // Draw new route if coordinates exist
         if (coordinates && coordinates.length > 0) {
             console.log('Drawing route with', coordinates.length, 'points');
+            console.log('Raw coordinates:', coordinates);
             
-            // Convert coordinates to Google Maps format
-            const path = coordinates.map(coord => ({
-                lat: coord[1],
-                lng: coord[0]
-            }));
+            // Convert coordinates to Google Maps format with validation
+            const path = coordinates
+                .filter(coord => {
+                    // Validate coordinates
+                    if (!coord || !Array.isArray(coord) || coord.length !== 2) {
+                        console.warn('Invalid coordinate format:', coord);
+                        return false;
+                    }
+                    const [lng, lat] = coord;
+                    if (!isFinite(lat) || !isFinite(lng)) {
+                        console.warn('Non-finite coordinate values:', coord);
+                        return false;
+                    }
+                    return true;
+                })
+                .map(coord => ({
+                    lat: coord[1],
+                    lng: coord[0]
+                }));
             
-            // Create closed loop by adding first point at the end if we have at least 2 points
-            const closedPath = path.length >= 2 ? [...path, path[0]] : path;
+            if (path.length === 0) {
+                console.error('No valid coordinates to display');
+                return;
+            }
+            
+            // Don't create closed loop - jeepney routes are not loops
+            const routePath = [...path];
             
             // Draw polyline with click handling for inserting points
             polylineRef.current = new window.google.maps.Polyline({
-                path: closedPath,
+                path: routePath,
                 geodesic: true,
                 strokeColor: '#FF6B6B',
                 strokeOpacity: 1.0,
                 strokeWeight: 4,
                 map: map,
-                clickable: enableClickToAdd // Only clickable when editing is enabled
+                clickable: enableClickToAdd, // Only clickable when editing is enabled
+                icons: [{
+                    icon: {
+                        path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                        scale: 3,
+                        strokeColor: '#FFFFFF',
+                        strokeWeight: 2,
+                        fillColor: '#FF6B6B',
+                        fillOpacity: 1
+                    },
+                    offset: '50%',
+                    repeat: '150px' // Show arrows every 150 pixels
+                }]
             });
             
             // Add click listener to polyline for inserting points
@@ -239,12 +271,12 @@ export default function AddRouteMap({
                         let minDistance = Infinity;
                         let insertAfterIndex = 0;
                         
-                        // Check all segments including the closing segment (last to first)
-                        const segmentsToCheck = path.length >= 2 ? path.length : path.length - 1;
+                        // Check all segments (not including a closing segment since routes aren't loops)
+                        const segmentsToCheck = path.length - 1;
                         
                         for (let i = 0; i < segmentsToCheck; i++) {
                             const segmentStart = path[i];
-                            const segmentEnd = i === path.length - 1 ? path[0] : path[i + 1]; // Close the loop
+                            const segmentEnd = path[i + 1];
                             
                             // Calculate distance from click point to this segment
                             const distance = distanceToSegment(
@@ -270,43 +302,80 @@ export default function AddRouteMap({
             
             // Add markers
             if (path.length > 0) {
+                console.log('Creating markers for', path.length, 'points');
+                console.log('Highlighted index:', highlightedIndex);
+                
                 // Create markers for all points
                 path.forEach((point, index) => {
-                    let icon;
-                    let zIndex = 100;
-                    
-                    // Determine icon based on highlight status only (no start/end distinction)
-                    if (index === highlightedIndex) {
-                        // Highlighted point - make it stand out
-                        icon = {
-                            path: window.google.maps.SymbolPath.CIRCLE,
-                            scale: 10,
-                            fillColor: '#FFD700',
-                            fillOpacity: 1,
-                            strokeColor: '#FF6B6B',
-                            strokeWeight: 3
-                        };
-                        zIndex = 200; // Bring to front
-                    } else {
-                        // All regular points use the same style
-                        icon = {
-                            path: window.google.maps.SymbolPath.CIRCLE,
-                            scale: 7,
-                            fillColor: '#FF6B6B',
-                            fillOpacity: 1,
-                            strokeColor: 'white',
-                            strokeWeight: 2
-                        };
-                    }
-                    
-                    const marker = new window.google.maps.Marker({
+                    let markerOptions: any = {
                         position: point,
                         map: map,
-                        title: `Point ${index + 1}`,
-                        icon: icon,
-                        zIndex: zIndex,
                         cursor: enableClickToAdd ? 'pointer' : 'default'
-                    });
+                    };
+                    
+                    // Determine icon and label based on position and highlight status
+                    if (index === 0) {
+                        // First point - Starting point with green marker
+                        console.log(`Marker ${index}: START (first point)`);
+                        markerOptions.icon = {
+                            url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                                <svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                                    <circle cx="24" cy="24" r="20" fill="#10B981" stroke="white" stroke-width="3"/>
+                                    <text x="24" y="30" font-family="Arial" font-size="14" font-weight="bold" fill="white" text-anchor="middle">START</text>
+                                </svg>
+                            `),
+                            scaledSize: new window.google.maps.Size(48, 48),
+                            anchor: new window.google.maps.Point(24, 24)
+                        };
+                        markerOptions.title = 'Starting Point';
+                        markerOptions.zIndex = 200;
+                    } else if (index === path.length - 1 && path.length > 1) {
+                        // Last point - End point with red marker
+                        console.log(`Marker ${index}: END (last point of ${path.length} total)`);
+                        markerOptions.icon = {
+                            url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                                <svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                                    <circle cx="24" cy="24" r="20" fill="#EF4444" stroke="white" stroke-width="3"/>
+                                    <text x="24" y="30" font-family="Arial" font-size="14" font-weight="bold" fill="white" text-anchor="middle">END</text>
+                                </svg>
+                            `),
+                            scaledSize: new window.google.maps.Size(48, 48),
+                            anchor: new window.google.maps.Point(24, 24)
+                        };
+                        markerOptions.title = 'End Point';
+                        markerOptions.zIndex = 200;
+                    } else if (index === highlightedIndex) {
+                        // Highlighted middle point
+                        markerOptions.icon = {
+                            url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                                <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                                    <circle cx="20" cy="20" r="16" fill="#FFD700" stroke="#FF6B6B" stroke-width="3"/>
+                                    <text x="20" y="26" font-family="Arial" font-size="14" font-weight="bold" fill="black" text-anchor="middle">${index + 1}</text>
+                                </svg>
+                            `),
+                            scaledSize: new window.google.maps.Size(40, 40),
+                            anchor: new window.google.maps.Point(20, 20)
+                        };
+                        markerOptions.title = `Point ${index + 1} (Selected)`;
+                        markerOptions.zIndex = 250;
+                    } else {
+                        // Regular middle points with numbers
+                        console.log(`Marker ${index}: Middle point (${index + 1}/${path.length})`);
+                        markerOptions.icon = {
+                            url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                                <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+                                    <circle cx="16" cy="16" r="12" fill="#3B82F6" stroke="white" stroke-width="2"/>
+                                    <text x="16" y="21" font-family="Arial" font-size="12" font-weight="bold" fill="white" text-anchor="middle">${index + 1}</text>
+                                </svg>
+                            `),
+                            scaledSize: new window.google.maps.Size(32, 32),
+                            anchor: new window.google.maps.Point(16, 16)
+                        };
+                        markerOptions.title = `Point ${index + 1}`;
+                        markerOptions.zIndex = 100;
+                    }
+                    
+                    const marker = new window.google.maps.Marker(markerOptions);
                     
                     // Add click listener to markers if editing is enabled
                     if (enableClickToAdd && onPointClick) {

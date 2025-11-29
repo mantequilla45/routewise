@@ -2,22 +2,37 @@ import { LOCATION_ICON } from "@/constants";
 import { MappedGeoRouteResult } from "@/types/GeoTypes";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 type RouteCardProps = {
     route: MappedGeoRouteResult;
+    isSelected?: boolean;
+    onSelect?: () => void;
 };
 
-export default function RouteCard({ route }: Readonly<RouteCardProps>) {
+export default function RouteCard({ route, isSelected = false, onSelect }: Readonly<RouteCardProps>) {
     const isCrossRoadSuggestion = route.shouldCrossRoad || route.routeId.endsWith('_CROSS');
+    // Extract the actual route code (remove _CROSS suffix if present)
+    const routeCode = route.routeId.replace('_CROSS', '');
     
     return (
-        <Pressable>
-            <View style={[styles.routeCard, isCrossRoadSuggestion && styles.crossRoadCard]}>
+        <TouchableOpacity onPress={onSelect} activeOpacity={0.7}>
+            <View style={[
+                styles.routeCard, 
+                isCrossRoadSuggestion && styles.crossRoadCard,
+                isSelected && styles.selectedCard
+            ]}>
                 <View style={styles.column1}>
-                    <Text style={styles.routeCode}>
-                        {isCrossRoadSuggestion ? '⚠️ Cross Road' : route.routeId}
-                    </Text>
+                    <View>
+                        <Text style={styles.routeCode}>
+                            {routeCode}
+                        </Text>
+                        {isCrossRoadSuggestion && (
+                            <Text style={styles.crossRoadIndicator}>
+                                ↔️ Cross to opposite side
+                            </Text>
+                        )}
+                    </View>
                     <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
                         <Ionicons 
                             name={isCrossRoadSuggestion ? "walk-outline" : "compass-outline"} 
@@ -25,29 +40,19 @@ export default function RouteCard({ route }: Readonly<RouteCardProps>) {
                             color={isCrossRoadSuggestion ? "#FF6B6B" : "#2D2D2D"}
                         />
                         <Text style={[styles.route, isCrossRoadSuggestion && styles.crossRoadText]} numberOfLines={2}>
-                            {isCrossRoadSuggestion 
-                                ? (route.message || "Cross to the other side for a shorter route") 
-                                : `${route.startingPoint} - ${route.endPoint}`}
+                            {`${route.startingPoint} - ${route.endPoint}`}
                         </Text>
                     </View>
                 </View>
                 <View style={styles.column2}>
-                    {!isCrossRoadSuggestion && (
-                        <>
-                            <Ionicons name="bookmark-outline" size={25} />
-                            <Text style={styles.fare}>P{route.fare}</Text>
-                        </>
-                    )}
-                    {isCrossRoadSuggestion && (
-                        <View style={styles.crossDistance}>
-                            <Text style={styles.distanceText}>
-                                {(route.distanceMeters || 0).toFixed(0)}m
-                            </Text>
-                            <Text style={styles.distanceLabel}>to cross</Text>
-                        </View>
-                    )}
+                    <Ionicons name="bookmark-outline" size={25} />
+                    <Text style={styles.fare}>P{route.fare}</Text>
                 </View>
-                <View style={styles.routeSave} />
+                {isSelected && (
+                    <View style={styles.selectedIndicator}>
+                        <Ionicons name="checkmark-circle" size={25} color="#4CAF50" />
+                    </View>
+                )}
 
                 {/*<View style={styles.routeCardInnerPadding}>
                 <View style={styles.routeCardType}>
@@ -70,7 +75,7 @@ export default function RouteCard({ route }: Readonly<RouteCardProps>) {
                 </View>
             </View> */}
             </View>
-        </Pressable>
+        </TouchableOpacity>
     );
 }
 
@@ -82,11 +87,22 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         padding: 25,
         gap: '5%',
+        position: 'relative',
     },
     crossRoadCard: {
         backgroundColor: "#FFE5E5",
         borderWidth: 2,
         borderColor: "#FF6B6B",
+    },
+    selectedCard: {
+        borderWidth: 3,
+        borderColor: "#4CAF50",
+        backgroundColor: "#E8F5E9",
+    },
+    selectedIndicator: {
+        position: 'absolute',
+        top: 10,
+        right: 10,
     },
     column1: {
         width: '75%',
@@ -104,6 +120,12 @@ const styles = StyleSheet.create({
         fontFamily: 'Lexend_600SemiBold',
         fontSize: 24,
         color: "#2D2D2D",
+    },
+    crossRoadIndicator: {
+        fontFamily: 'Lexend_400Regular',
+        fontSize: 12,
+        color: "#FF6B6B",
+        marginTop: 2,
     },
     fare: {
         fontFamily: 'Lexend_600SemiBold',

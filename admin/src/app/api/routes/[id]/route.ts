@@ -68,8 +68,7 @@ export async function GET(request: NextRequest, { params }: Params) {
                 start_point_name,
                 end_point_name,
                 horizontal_or_vertical_road,
-                ST_AsGeoJSON(geom_forward)::json as forward_geojson,
-                ST_AsGeoJSON(geom_reverse)::json as reverse_geojson
+                ST_AsGeoJSON(geom_forward)::json as forward_geojson
             FROM new_jeepney_routes
             WHERE id = $1;
         `;
@@ -97,8 +96,7 @@ export async function GET(request: NextRequest, { params }: Params) {
                 start_point_name: route.start_point_name,
                 end_point_name: route.end_point_name,
                 horizontal_or_vertical_road: route.horizontal_or_vertical_road,
-                forward_geojson: route.forward_geojson,
-                reverse_geojson: route.reverse_geojson
+                forward_geojson: route.forward_geojson
             }
         };
         

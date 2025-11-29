@@ -115,6 +115,7 @@ export default function EnhancedAddRoutePage() {
             
         } else if (!insertMode && selectedPointIndex !== null) {
             // Update existing point at its current position
+            console.log(`Updating point ${selectedPointIndex} to new position: ${lat}, ${lng}`);
             setMapCoordinates(prevCoords => {
                 const updatedCoords = [...prevCoords];
                 updatedCoords[selectedPointIndex] = {
@@ -122,9 +123,12 @@ export default function EnhancedAddRoutePage() {
                     lat,
                     lng
                 };
+                console.log('Updated coordinates:', updatedCoords);
                 return updatedCoords;
             });
-            setSelectedPointIndex(null);
+            // Keep the point selected after editing to avoid confusion
+            // User can click elsewhere or press Escape to deselect
+            // setSelectedPointIndex(null);
         } else {
             // Add new point at the end
             const newIndex = mapCoordinates.length;
@@ -147,9 +151,11 @@ export default function EnhancedAddRoutePage() {
         if (selectedPointIndex === index) {
             // Deselect if clicking the same point
             setSelectedPointIndex(null);
+            setInsertMode(false); // Also exit insert mode when deselecting
         } else {
             // Select the point
             setSelectedPointIndex(index);
+            setInsertMode(false); // Reset insert mode when selecting a different point
             
             // Scroll the selected point into view
             setTimeout(() => {
@@ -219,8 +225,7 @@ export default function EnhancedAddRoutePage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     ...formData,
-                    coordinates_forward,
-                    coordinates_reverse: null
+                    coordinates_forward
                 })
             });
 
@@ -580,11 +585,13 @@ export default function EnhancedAddRoutePage() {
                                 <ul className="text-sm text-blue-800 space-y-1">
                                     {inputMethod === 'map' ? (
                                         <>
+                                            <li className="font-bold text-red-700">⚠️ IMPORTANT: Pin order defines jeepney travel direction!</li>
+                                            <li>• <span className="text-green-700 font-semibold">GREEN marker (START)</span> = Where jeepney begins its route</li>
+                                            <li>• <span className="text-red-700 font-semibold">RED marker (END)</span> = Where jeepney ends its route</li>
+                                            <li>• Arrows show the direction jeepney will travel</li>
                                             <li>• Click on the map to add waypoints at the end</li>
-                                            <li>• Click on the red route line to insert points between existing ones</li>
-                                            <li>• Select a point to edit or move it</li>
-                                            <li>• Green marker = Start, Red marker = End</li>
-                                            <li>• Remove or insert points using the list above</li>
+                                            <li>• Click on the route line to insert points between</li>
+                                            <li>• Follow the actual jeepney route direction</li>
                                         </>
                                     ) : (
                                         <>
