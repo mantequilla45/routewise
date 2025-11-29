@@ -23,15 +23,10 @@ interface Coordinate {
 
 export default function EditRouteModal({ routeId, isOpen, onClose, onUpdate }: EditRouteModalProps) {
     const [formData, setFormData] = useState({
-        route_code: '',
-        start_point_name: '',
-        end_point_name: '',
-        horizontal_or_vertical_road: true
+        route_code: ''
     });
     
     const [mapCoordinates, setMapCoordinates] = useState<Coordinate[]>([]);
-    const [inputMethod, setInputMethod] = useState<'text' | 'map'>('map');
-    const [textCoordinates, setTextCoordinates] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -39,6 +34,8 @@ export default function EditRouteModal({ routeId, isOpen, onClose, onUpdate }: E
     const selectedPointRef = useRef<number | null>(null);
     const isProcessingClick = useRef(false);
     const [insertMode, setInsertMode] = useState(false);
+    const [showPointNumbers, setShowPointNumbers] = useState(true);
+    const [hidePOIs, setHidePOIs] = useState(false);
 
     useEffect(() => {
         if (isOpen && routeId) {
@@ -67,10 +64,7 @@ export default function EditRouteModal({ routeId, isOpen, onClose, onUpdate }: E
                 const route = data.route;
                 
                 setFormData({
-                    route_code: route.route_code || '',
-                    start_point_name: route.start_point_name || '',
-                    end_point_name: route.end_point_name || '',
-                    horizontal_or_vertical_road: route.horizontal_or_vertical_road ?? true
+                    route_code: route.route_code || ''
                 });
                 
                 // Extract coordinates from GeoJSON
@@ -84,12 +78,6 @@ export default function EditRouteModal({ routeId, isOpen, onClose, onUpdate }: E
                         label: `Point ${index + 1}`
                     }));
                     setMapCoordinates(mapCoords);
-                    
-                    // Set text coordinates
-                    const textCoords = coords.map((coord: [number, number]) => 
-                        `${coord[0]},${coord[1]}`
-                    ).join('\n');
-                    setTextCoordinates(textCoords);
                 }
             }
         } catch (error) {
@@ -167,54 +155,95 @@ export default function EditRouteModal({ routeId, isOpen, onClose, onUpdate }: E
                 }));
             });
             
-            // Exit insert mode and deselect
+            // Select the newly inserted point
+            const newPointIndex = indexToEdit + 1;
+            setSelectedPointIndex(newPointIndex);
+            selectedPointRef.current = newPointIndex;
+            
+            // Exit insert mode
             setInsertMode(false);
-            setSelectedPointIndex(null);
-            selectedPointRef.current = null;
             
             // Scroll to the new point
             setTimeout(() => {
                 const pointsList = document.getElementById('edit-points-list');
-                const newElement = document.querySelector(`#edit-point-${indexToEdit + 1}`);
+                const newElement = document.querySelector(`#edit-point-${newPointIndex}`);
                 if (pointsList && newElement) {
                     newElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
             }, 100);
             
         } else if (!insertMode && indexToEdit !== null && indexToEdit >= 0) {
-            // Edit existing point
+            // Edit existing point - only if not the first or last point in a closed loop
             setMapCoordinates(prevCoords => {
                 if (!prevCoords) return [];
-                const updatedCoords = [...prevCoords];
-                updatedCoords[indexToEdit] = {
-                    ...updatedCoords[indexToEdit],
-                    lat,
-                    lng
-                };
-                return updatedCoords;
+                
+                // Check if this is a closed loop (first and last points are the same)
+                const isClosedLoop = prevCoords.length > 2 && 
+                    Math.abs(prevCoords[0].lat - prevCoords[prevCoords.length - 1].lat) < 0.000001 &&
+                    Math.abs(prevCoords[0].lng - prevCoords[prevCoords.length - 1].lng) < 0.000001;
+                
+                // If it's a closed loop and we're editing the first or last point, update both
+                if (isClosedLoop && (indexToEdit === 0 || indexToEdit === prevCoords.length - 1)) {
+                    const updatedCoords = [...prevCoords];
+                    updatedCoords[0] = { ...updatedCoords[0], lat, lng };
+                    updatedCoords[prevCoords.length - 1] = { ...updatedCoords[prevCoords.length - 1], lat, lng };
+                    return updatedCoords;
+                } else {
+                    // Normal edit for non-loop or middle points
+                    const updatedCoords = [...prevCoords];
+                    updatedCoords[indexToEdit] = {
+                        ...updatedCoords[indexToEdit],
+                        lat,
+                        lng
+                    };
+                    return updatedCoords;
+                }
             });
             
             // Deselect after updating
             setSelectedPointIndex(null);
             selectedPointRef.current = null;
         } else {
-            // Add new point at the end
-            const newIndex = mapCoordinates?.length || 0;
-            
+            // Add new point at the end (but before the closing point if it's a closed loop)
             setMapCoordinates(prev => {
-                const currentLength = prev?.length || 0;
-                const newCoord = { lat, lng, label: `Point ${currentLength + 1}` };
-                const updated = [...(prev || []), newCoord];
-                return updated;
+                if (!prev || prev.length === 0) {
+                    // First point
+                    return [{ lat, lng, label: 'Point 1' }];
+                }
+                
+                // Check if this is a closed loop
+                const isClosedLoop = prev.length > 2 && 
+                    Math.abs(prev[0].lat - prev[prev.length - 1].lat) < 0.000001 &&
+                    Math.abs(prev[0].lng - prev[prev.length - 1].lng) < 0.000001;
+                
+                if (isClosedLoop) {
+                    // Insert before the last point (which is the closing point)
+                    const newPoint = { lat, lng, label: '' };
+                    const updatedCoords = [
+                        ...prev.slice(0, prev.length - 1),
+                        newPoint,
+                        prev[prev.length - 1]
+                    ];
+                    // Re-label all points
+                    return updatedCoords.map((coord, i) => ({
+                        ...coord,
+                        label: i === updatedCoords.length - 1 ? `Point ${updatedCoords.length} (Loop Close)` : `Point ${i + 1}`
+                    }));
+                } else {
+                    // Normal append at the end
+                    const currentLength = prev.length;
+                    const newCoord = { lat, lng, label: `Point ${currentLength + 1}` };
+                    return [...prev, newCoord];
+                }
             });
             
-            // Don't auto-select when adding new points at the end
-            // Just scroll to show the new point
+            // Scroll to show the new point
             setTimeout(() => {
                 const pointsList = document.getElementById('edit-points-list');
-                const newElement = document.querySelector(`#edit-point-${newIndex}`);
-                if (pointsList && newElement) {
-                    newElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                const points = pointsList?.querySelectorAll('[id^="edit-point-"]');
+                if (points && points.length > 0) {
+                    const lastPoint = points[points.length - 1];
+                    lastPoint.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
             }, 100);
         }
@@ -268,21 +297,7 @@ export default function EditRouteModal({ routeId, isOpen, onClose, onUpdate }: E
     };
 
     const getDisplayCoordinates = (): [number, number][] => {
-        if (inputMethod === 'map') {
-            return (mapCoordinates || []).map(coord => [coord.lng, coord.lat]);
-        }
-        
-        try {
-            if (!textCoordinates) return [];
-            const lines = textCoordinates.split('\n').filter(line => line.trim());
-            return lines.map(line => {
-                const [lon, lat] = line.split(',').map(n => parseFloat(n.trim()));
-                if (isNaN(lon) || isNaN(lat)) throw new Error('Invalid coordinates');
-                return [lon, lat];
-            });
-        } catch {
-            return [];
-        }
+        return (mapCoordinates || []).map(coord => [coord.lng, coord.lat]);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -291,32 +306,18 @@ export default function EditRouteModal({ routeId, isOpen, onClose, onUpdate }: E
         setError(null);
 
         try {
-            let coordinates_forward: [number, number][];
-            
-            if (inputMethod === 'map') {
-                if (!mapCoordinates || mapCoordinates.length < 2) {
-                    throw new Error('Please add at least 2 points on the map');
-                }
-                coordinates_forward = mapCoordinates.map(coord => [coord.lng, coord.lat]);
-            } else {
-                const coordPairs = (textCoordinates || '').split('\n').filter(line => line.trim());
-                if (!coordPairs || coordPairs.length < 2) {
-                    throw new Error('Please enter at least 2 coordinate pairs');
-                }
-                coordinates_forward = coordPairs.map(pair => {
-                    const [lon, lat] = pair.split(',').map(n => parseFloat(n.trim()));
-                    if (isNaN(lon) || isNaN(lat)) {
-                        throw new Error(`Invalid coordinate: ${pair}`);
-                    }
-                    return [lon, lat];
-                });
+            if (!mapCoordinates || mapCoordinates.length < 2) {
+                throw new Error('Please add at least 2 points on the map');
             }
+            const coordinates_forward: [number, number][] = mapCoordinates.map(coord => [coord.lng, coord.lat]);
 
             const response = await fetch(`/api/routes/${routeId}/update`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    ...formData,
+                    route_code: formData.route_code,
+                    start_point_name: 'Terminal A',
+                    end_point_name: 'Terminal B',
                     coordinates_forward
                 })
             });
@@ -366,113 +367,33 @@ export default function EditRouteModal({ routeId, isOpen, onClose, onUpdate }: E
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             {/* Left Column - Form Fields */}
                             <div className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-1">
-                                            Route Code*
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={formData.route_code}
-                                            onChange={e => setFormData({...formData, route_code: e.target.value})}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                            required
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-1">
-                                            Route Type
-                                        </label>
-                                        <select
-                                            value={formData.horizontal_or_vertical_road ? 'horizontal' : 'vertical'}
-                                            onChange={e => setFormData({
-                                                ...formData, 
-                                                horizontal_or_vertical_road: e.target.value === 'horizontal'
-                                            })}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        >
-                                            <option value="horizontal">Horizontal (E-W)</option>
-                                            <option value="vertical">Vertical (N-S)</option>
-                                        </select>
-                                    </div>
-                                </div>
-
                                 <div>
                                     <label className="block text-sm font-semibold text-gray-700 mb-1">
-                                        Primary Terminal / Landmark 1*
+                                        Route Code*
                                     </label>
                                     <input
                                         type="text"
-                                        value={formData.start_point_name}
-                                        onChange={e => setFormData({...formData, start_point_name: e.target.value})}
+                                        value={formData.route_code}
+                                        onChange={e => setFormData({...formData, route_code: e.target.value})}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         required
                                     />
                                 </div>
 
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-1">
-                                        Secondary Terminal / Landmark 2*
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={formData.end_point_name}
-                                        onChange={e => setFormData({...formData, end_point_name: e.target.value})}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        required
-                                    />
-                                </div>
-
-                                {/* Input Method Toggle */}
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                        Coordinate Input Method
-                                    </label>
-                                    <div className="flex space-x-4">
-                                        <button
-                                            type="button"
-                                            onClick={() => setInputMethod('map')}
-                                            className={`px-4 py-2 rounded-lg font-medium ${
-                                                inputMethod === 'map'
-                                                    ? 'bg-blue-500 text-white'
-                                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                            }`}
-                                        >
-                                            Click on Map
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => setInputMethod('text')}
-                                            className={`px-4 py-2 rounded-lg font-medium ${
-                                                inputMethod === 'text'
-                                                    ? 'bg-blue-500 text-white'
-                                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                            }`}
-                                        >
-                                            Text Input
-                                        </button>
-                                    </div>
-                                </div>
 
                                 {/* Coordinates Input */}
-                                {inputMethod === 'text' ? (
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-1">
-                                            Route Coordinates (longitude,latitude)
-                                        </label>
-                                        <textarea
-                                            value={textCoordinates}
-                                            onChange={e => setTextCoordinates(e.target.value)}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
-                                            rows={6}
-                                            placeholder="123.8854,10.3157&#10;123.8900,10.3200"
-                                        />
-                                    </div>
-                                ) : (
                                     <div>
                                         <label className="block text-sm font-semibold text-gray-700 mb-1">
                                             Added Points ({mapCoordinates?.length || 0})
+                                            {mapCoordinates && mapCoordinates.length > 2 && 
+                                             Math.abs(mapCoordinates[0].lat - mapCoordinates[mapCoordinates.length - 1].lat) < 0.000001 &&
+                                             Math.abs(mapCoordinates[0].lng - mapCoordinates[mapCoordinates.length - 1].lng) < 0.000001 && (
+                                                <span className="ml-2 text-purple-600 text-xs font-medium">🔄 Closed Loop</span>
+                                            )}
                                         </label>
+                                        <div className="mb-2 text-xs text-gray-600">
+                                            💡 Tip: Select a point and click &quot;Insert&quot; to add a new point after it. For closed loops, new points are added before the closing point.
+                                        </div>
                                         <div 
                                             id="edit-points-list"
                                             className="space-y-2 max-h-40 overflow-y-auto border border-gray-200 rounded-lg p-2"
@@ -549,22 +470,51 @@ export default function EditRouteModal({ routeId, isOpen, onClose, onUpdate }: E
                                             )}
                                         </div>
                                     </div>
-                                )}
                             </div>
 
                             {/* Right Column - Map */}
                             <div>
-                                <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                                    {inputMethod === 'map' ? 'Click to Edit Points' : 'Route Preview'}
-                                </h3>
+                                <div className="flex justify-between items-center mb-2">
+                                    <h3 className="text-lg font-semibold text-gray-700">Click to Edit Points</h3>
+                                    <div className="flex items-center gap-3">
+                                        <label className="flex items-center cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={showPointNumbers}
+                                                onChange={e => setShowPointNumbers(e.target.checked)}
+                                                className="sr-only"
+                                            />
+                                            <div className="relative">
+                                                <div className={`block w-9 h-5 rounded-full ${showPointNumbers ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
+                                                <div className={`absolute left-0.5 top-0.5 bg-white w-4 h-4 rounded-full transition ${showPointNumbers ? 'transform translate-x-4' : ''}`}></div>
+                                            </div>
+                                            <span className="ml-2 text-xs font-medium text-gray-700">Numbers</span>
+                                        </label>
+                                        <label className="flex items-center cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={hidePOIs}
+                                                onChange={e => setHidePOIs(e.target.checked)}
+                                                className="sr-only"
+                                            />
+                                            <div className="relative">
+                                                <div className={`block w-9 h-5 rounded-full ${hidePOIs ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
+                                                <div className={`absolute left-0.5 top-0.5 bg-white w-4 h-4 rounded-full transition ${hidePOIs ? 'transform translate-x-4' : ''}`}></div>
+                                            </div>
+                                            <span className="ml-2 text-xs font-medium text-gray-700">Hide Places</span>
+                                        </label>
+                                    </div>
+                                </div>
                                 <AddRouteMap 
                                     coordinates={getDisplayCoordinates()}
-                                    onMapClick={inputMethod === 'map' ? handleMapClick : undefined}
-                                    enableClickToAdd={inputMethod === 'map'}
+                                    onMapClick={handleMapClick}
+                                    enableClickToAdd={true}
                                     height="400px"
                                     highlightedIndex={selectedPointIndex}
                                     onPointClick={handlePointSelect}
-                                    onSegmentClick={inputMethod === 'map' ? handleSegmentClick : undefined}
+                                    onSegmentClick={handleSegmentClick}
+                                    showPointNumbers={showPointNumbers}
+                                    hidePOIs={hidePOIs}
                                 />
                             </div>
                         </div>

@@ -110,32 +110,19 @@ export async function analyzeBidirectionalRoute(
 
         // Only process if the route goes in the correct direction
         if (!result.forward_segment_distance || !result.forward_segment_geojson) {
-            console.log(`Route ${result.route_code}: Invalid direction - A (${result.loc_a_forward?.toFixed(3)}) comes after B (${result.loc_b_forward?.toFixed(3)})`);
             return null;
         }
 
         const forwardDistance = result.forward_segment_distance;
 
-        // Check if the route distance is reasonable
-        const CROSSING_THRESHOLD = 3; // If route is 3x longer than direct distance
-        const MIN_DETOUR_DISTANCE = 500; // Minimum 500m detour to suggest crossing
-
-        let shouldCrossRoad = false;
-
-        // Check if the route is unreasonably long
-        if (forwardDistance > directDistance * CROSSING_THRESHOLD && 
-            forwardDistance > MIN_DETOUR_DISTANCE) {
-            // The route requires a long detour, suggest crossing the road
-            shouldCrossRoad = true;
-        }
-
+        // Remove cross-road detection - just return the route
         return {
             routeId: result.id,
             routeCode: result.route_code,
             forwardDistance,
             reverseDistance: 0, // Not used anymore
             directDistance,
-            shouldCrossRoad,
+            shouldCrossRoad: false, // Never suggest crossing
             segmentGeoJSON: result.forward_segment_geojson,
             direction: 'forward' as 'forward' | 'reverse'
         };
@@ -151,7 +138,8 @@ export async function analyzeBidirectionalRoute(
  */
 export async function calculateSmartRoute(
     snappedRoutesA: RouteSnap[],
-    snappedRoutesB: RouteSnap[]
+    snappedRoutesB: RouteSnap[],
+    skippedRoutes?: string[]
 ): Promise<CalculatedRoutes[]> {
     const results: CalculatedRoutes[] = [];
     
@@ -165,32 +153,18 @@ export async function calculateSmartRoute(
         // Analyze if this is a bidirectional route situation
         const analysis = await analyzeBidirectionalRoute(routeA, routeB);
         
-        if (analysis) {
-            if (analysis.shouldCrossRoad) {
-                // Add a special marker to indicate road crossing is needed
-                results.push({
-                    routeId: `${analysis.routeCode}_CROSS`,
-                    distanceMeters: analysis.directDistance,
-                    segmentGeoJSON: JSON.stringify({
-                        type: "LineString",
-                        coordinates: [
-                            [routeA.snapped_forward_lon, routeA.snapped_forward_lat],
-                            [routeB.snapped_forward_lon, routeB.snapped_forward_lat]
-                        ],
-                        properties: {
-                            shouldCrossRoad: true,
-                            message: "Cross to the other side of the road for a shorter route"
-                        }
-                    })
-                });
-            } else {
-                // Use the forward direction (only valid direction now)
-                results.push({
-                    routeId: analysis.routeCode,
-                    distanceMeters: analysis.forwardDistance,
-                    segmentGeoJSON: analysis.segmentGeoJSON
-                });
+        if (!analysis) {
+            // Route goes in wrong direction
+            if (skippedRoutes && !skippedRoutes.includes(routeA.route_code)) {
+                skippedRoutes.push(routeA.route_code);
             }
+        } else {
+            // Use the forward direction (only valid direction now)
+            results.push({
+                routeId: analysis.routeCode,
+                distanceMeters: analysis.forwardDistance,
+                segmentGeoJSON: analysis.segmentGeoJSON
+            });
         }
     }
     

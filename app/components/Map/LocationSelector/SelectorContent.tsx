@@ -4,7 +4,7 @@ import { latLongStringifier } from "@/lib/util/latLngStringifier";
 import { Ionicons } from "@expo/vector-icons";
 import { GoogleMapsPolyline } from "expo-maps/build/google/GoogleMaps.types";
 import { useContext, useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import RouteCard from "./RouteCard";
 
 export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{ exit: () => void, setShowBottomSheet: (value: boolean) => void }>) {
@@ -39,13 +39,6 @@ export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{
         
         setSelectedRouteIndex(index);
         
-        // Check if this is a cross-road suggestion
-        if (selectedResult.shouldCrossRoad || selectedResult.routeId.endsWith('_CROSS')) {
-            console.log('Cross-road route selected - no polyline to show');
-            setRoutes([]); // Clear routes for cross-road suggestions
-            return;
-        }
-        
         // Use the pre-calculated index map
         const polylineIndex = routeIndexMap.get(index);
         if (polylineIndex !== undefined && polylineIndex < allRoutes.length) {
@@ -76,7 +69,7 @@ export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{
                 
                 routes.forEach((r, resultIndex) => {
                     // Check if this route has a valid polyline
-                    if (r.latLng && r.latLng.length > 0 && !r.shouldCrossRoad && !r.routeId.endsWith('_CROSS')) {
+                    if (r.latLng && r.latLng.length > 0) {
                         // Map the result index to the polyline index
                         indexMap.set(resultIndex, polylineIndex);
                         
@@ -97,7 +90,7 @@ export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{
                         
                         console.log(`Mapped result ${resultIndex} (${r.routeId}) to polyline ${polylineIndex - 1}`);
                     } else {
-                        console.log(`Result ${resultIndex} (${r.routeId}) has no polyline (cross-road or invalid)`);
+                        console.log(`Result ${resultIndex} (${r.routeId}) has no valid polyline`);
                     }
                 });
                 
@@ -108,24 +101,38 @@ export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{
                 setAllRoutes(googlePolylineRoutes);
                 
                 // Display the first valid route if available
-                const firstValidIndex = routes.findIndex(r => 
-                    r.latLng && r.latLng.length > 0 && !r.shouldCrossRoad && !r.routeId.endsWith('_CROSS')
-                );
-                
-                if (firstValidIndex !== -1 && googlePolylineRoutes.length > 0) {
+                if (googlePolylineRoutes.length > 0) {
                     setRoutes([googlePolylineRoutes[0]]);
-                    setSelectedRouteIndex(firstValidIndex);
+                    setSelectedRouteIndex(0);
                 } else {
                     setRoutes([]);
                     setSelectedRouteIndex(null);
                 }
             } else if (routes && "error" in routes) {
                 console.warn("Server error:", routes.error);
+                // Show error message to user
+                Alert.alert(
+                    "Route Not Available",
+                    routes.error,
+                    [{ text: "OK", style: "default" }]
+                );
+                setRoutes([]);
+                setSelectedRouteIndex(null);
             } else {
                 console.warn("No routes returned");
+                Alert.alert(
+                    "No Routes Found",
+                    "No jeepney routes available between these locations.",
+                    [{ text: "OK", style: "default" }]
+                );
             }
         } catch (error) {
             console.error("Error calculating routes:", error);
+            Alert.alert(
+                "Connection Error",
+                "Unable to calculate routes. Please check your connection and try again.",
+                [{ text: "OK", style: "default" }]
+            );
         }
     };
 
