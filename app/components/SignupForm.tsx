@@ -3,14 +3,85 @@ import React, { useState } from "react";
 import { View, Text, Button, StyleSheet, TextInput, TouchableOpacity, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons"; // install with expo: expo install @expo/vector-icons
 import { AntDesign } from '@expo/vector-icons';
+import { supabase } from "@/lib/supabase-client";
+import * as SecureStore from 'expo-secure-store';
 export default function SignupForm() {
 
     const { signIn } = useAuth();
     const [passwordVisible, setPasswordVisible] = useState(false); // toggle password visibility
 
-    const handleSignUp = () => {
-        // Continue with signup logic
-        console.log('Proceeding to signup.');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [rememberMe, setRememberMe] = useState(false);
+    const [loading, setLoading] = useState(false);
+
+    // Load saved credentials if user previously chose "Remember me"
+    React.useEffect(() => {
+        const loadSaved = async () => {
+            try {
+                const saved = await SecureStore.getItemAsync('saved_credentials');
+                if (saved) {
+                    const obj = JSON.parse(saved);
+                    setEmail(obj.email || '');
+                    setPassword(obj.password || '');
+                    setRememberMe(true);
+                }
+            } catch (e) {
+                console.warn('Failed to load saved credentials', e);
+            }
+        };
+
+        loadSaved();
+    }, []);
+
+    const handleSignUp = async () => {
+        if (!email || !password) {
+            Alert.alert('Validation', 'Please provide email and password');
+            return;
+        }
+
+        try {
+            setLoading(true);
+
+            // Sign up with Supabase Auth
+            const { data, error } = await supabase.auth.signUp({ email, password });
+            if (error) {
+                console.error('Sign up error:', error);
+                Alert.alert('Sign up failed', error.message || 'An error occurred');
+                return;
+            }
+
+            // Optionally, insert a user record into `users` table (if your DB table isn't populated by an auth trigger)
+            try {
+                const { error: insertError } = await supabase
+                    .from('users')
+                    .insert({
+                        email,
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString(),
+                    });
+
+                if (insertError) {
+                    console.warn('Could not insert user row:', insertError.message);
+                }
+            } catch (e) {
+                console.warn('Insert users table error:', e);
+            }
+
+            // Remember credentials securely on device if requested
+            if (rememberMe) {
+                await SecureStore.setItemAsync('saved_credentials', JSON.stringify({ email, password }));
+            } else {
+                await SecureStore.deleteItemAsync('saved_credentials');
+            }
+
+            Alert.alert('Sign up', 'Check your email for a confirmation (if enabled).');
+        } catch (e) {
+            console.error('Unexpected sign up error:', e);
+            Alert.alert('Sign up failed', 'Unexpected error');
+        } finally {
+            setLoading(false);
+        }
     };
     const [selectedType, setSelectedType] = useState("");
     const [openDropdown, setOpenDropdown] = useState(false);
@@ -22,7 +93,15 @@ export default function SignupForm() {
                 // EMAIL RELATED STUFF IS HERE */}
             <View style={styles.emailcontainer} >
                 <Text style={styles.text}> Email </Text>
-                <TextInput style={styles.emailtextbox} placeholder="email@example.com" placeholderTextColor="#585756" />
+                <TextInput
+                    style={styles.emailtextbox}
+                    placeholder="email@example.com"
+                    placeholderTextColor="#585756"
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                />
             </View>
 
             {/* // PASSWORD CONTAINER
@@ -35,6 +114,9 @@ export default function SignupForm() {
                         placeholder="Password"
                         placeholderTextColor="#585756"
                         secureTextEntry={!passwordVisible}
+                        value={password}
+                        onChangeText={setPassword}
+                        autoCapitalize="none"
                     />
                     <TouchableOpacity
                         onPress={() => setPasswordVisible(!passwordVisible)}
@@ -85,6 +167,19 @@ export default function SignupForm() {
                 ))}
                 </View>
                 )}
+            </View>
+
+            {/* Remember Me + Sign Up Button */}
+            <View style={styles.thirdcontainer}>
+                <TouchableOpacity style={styles.firsthalf} onPress={() => setRememberMe(!rememberMe)}>
+                    <Text style={{ color: '#FFFFFF', fontSize: 18 }}>{rememberMe ? '☑' : '☐'}</Text>
+                    <Text style={styles.rememberText}>Remember me</Text>
+                </TouchableOpacity>
+                <View style={styles.secondhalf}>
+                    <TouchableOpacity onPress={() => Alert.alert('Forgot password', 'Use the login screen to reset your password.') }>
+                        <Text style={styles.forgotText}>Forgot?</Text>
+                    </TouchableOpacity>
+                </View>
             </View>
 
             {/* Sign Up Button */}
