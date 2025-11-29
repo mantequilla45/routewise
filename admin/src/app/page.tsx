@@ -77,8 +77,10 @@ export default function LoginPage() {
             />
           </p>
 
-          <p className="text-[31px]">Find the Best Jeepney Route in Seconds</p>
-          <p className="text-[23px]">
+          <p className="text-[31px] text-white">
+            Find the Best Jeepney Route in Seconds
+          </p>
+          <p className="text-[23px] text-white">
             RouteWise shows your best jeepney route, total fare, and transfer
             points — automatically.
           </p>
