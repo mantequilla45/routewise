@@ -12,7 +12,12 @@ interface Route {
     start_point_name: string;
     end_point_name: string;
     horizontal_or_vertical_road: boolean;
+    updated_at?: string;
+    created_at?: string;
 }
+
+type SortField = 'route_code' | 'modified_at';
+type SortDirection = 'asc' | 'desc';
 
 export default function RoutesList({ onRouteSelect }: { onRouteSelect?: (route: Route) => void }) {
     const [routes, setRoutes] = useState<Route[]>([]);
@@ -20,6 +25,8 @@ export default function RoutesList({ onRouteSelect }: { onRouteSelect?: (route: 
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
     const [editingRouteId, setEditingRouteId] = useState<string | null>(null);
+    const [sortField, setSortField] = useState<SortField>('modified_at');
+    const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
     useEffect(() => {
         fetchRoutes();
@@ -54,11 +61,61 @@ export default function RoutesList({ onRouteSelect }: { onRouteSelect?: (route: 
         }
     };
 
-    const filteredRoutes = routes.filter(route => 
-        route.route_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        route.start_point_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        route.end_point_name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const handleSort = (field: SortField) => {
+        if (sortField === field) {
+            // Toggle direction if same field
+            setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+        } else {
+            // New field, default to ascending for code, descending for dates
+            setSortField(field);
+            setSortDirection(field === 'route_code' ? 'asc' : 'desc');
+        }
+    };
+
+    const getSortIcon = (field: SortField) => {
+        if (sortField !== field) {
+            return (
+                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+                </svg>
+            );
+        }
+        return sortDirection === 'asc' ? (
+            <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+            </svg>
+        ) : (
+            <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+        );
+    };
+
+    const filteredRoutes = routes
+        .filter(route => 
+            route.route_code.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+        .sort((a, b) => {
+            let aValue: string | number;
+            let bValue: string | number;
+
+            if (sortField === 'route_code') {
+                aValue = a.route_code.toLowerCase();
+                bValue = b.route_code.toLowerCase();
+            } else { // modified_at
+                // Use updated_at if available, otherwise created_at
+                const aDate = a.updated_at || a.created_at || '';
+                const bDate = b.updated_at || b.created_at || '';
+                aValue = new Date(aDate).getTime();
+                bValue = new Date(bDate).getTime();
+            }
+
+            if (sortDirection === 'asc') {
+                return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+            } else {
+                return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+            }
+        });
 
     if (loading) {
         return (
@@ -85,10 +142,24 @@ export default function RoutesList({ onRouteSelect }: { onRouteSelect?: (route: 
                 <table className="w-full text-sm">
                     <thead>
                         <tr className="border-b bg-gray-50">
-                            <th className="text-left p-2 text-black font-semibold">Code</th>
-                            <th className="text-left p-2 text-black font-semibold">Terminal 1</th>
-                            <th className="text-left p-2 text-black font-semibold">Terminal 2</th>
-                            <th className="text-left p-2 text-black font-semibold">Type</th>
+                            <th className="text-left p-2 text-black font-semibold">
+                                <button 
+                                    onClick={() => handleSort('route_code')}
+                                    className="flex items-center gap-1 hover:bg-gray-100 px-2 py-1 rounded -ml-2"
+                                >
+                                    Code
+                                    {getSortIcon('route_code')}
+                                </button>
+                            </th>
+                            <th className="text-left p-2 text-black font-semibold">
+                                <button 
+                                    onClick={() => handleSort('modified_at')}
+                                    className="flex items-center gap-1 hover:bg-gray-100 px-2 py-1 rounded -ml-2"
+                                >
+                                    Modified At
+                                    {getSortIcon('modified_at')}
+                                </button>
+                            </th>
                             <th className="text-left p-2 text-black font-semibold">Actions</th>
                         </tr>
                     </thead>
@@ -96,16 +167,38 @@ export default function RoutesList({ onRouteSelect }: { onRouteSelect?: (route: 
                         {filteredRoutes.map(route => (
                             <tr key={route.id} className="border-b hover:bg-gray-50">
                                 <td className="p-2 font-medium text-black">{route.route_code}</td>
-                                <td className="p-2 text-gray-900">{route.start_point_name}</td>
-                                <td className="p-2 text-gray-900">{route.end_point_name}</td>
-                                <td className="p-2">
-                                    <span className={`px-2 py-1 rounded text-xs ${
-                                        route.horizontal_or_vertical_road 
-                                            ? 'bg-blue-100 text-blue-800' 
-                                            : 'bg-green-100 text-green-800'
-                                    }`}>
-                                        {route.horizontal_or_vertical_road ? 'Horizontal' : 'Vertical'}
-                                    </span>
+                                <td className="p-2 text-gray-900 text-sm">
+                                    {route.updated_at ? (
+                                        <div>
+                                            <div>{new Date(route.updated_at).toLocaleDateString('en-US', {
+                                                year: 'numeric',
+                                                month: 'short',
+                                                day: 'numeric'
+                                            })}</div>
+                                            <div className="text-xs text-gray-500">
+                                                {new Date(route.updated_at).toLocaleTimeString('en-US', {
+                                                    hour: '2-digit',
+                                                    minute: '2-digit'
+                                                })}
+                                            </div>
+                                        </div>
+                                    ) : route.created_at ? (
+                                        <div>
+                                            <div>{new Date(route.created_at).toLocaleDateString('en-US', {
+                                                year: 'numeric',
+                                                month: 'short',
+                                                day: 'numeric'
+                                            })}</div>
+                                            <div className="text-xs text-gray-500">
+                                                {new Date(route.created_at).toLocaleTimeString('en-US', {
+                                                    hour: '2-digit',
+                                                    minute: '2-digit'
+                                                })} (created)
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <span className="text-gray-400">N/A</span>
+                                    )}
                                 </td>
                                 <td className="p-2">
                                     <button
