@@ -11,35 +11,25 @@ type RouteCardProps = {
 };
 
 export default function RouteCard({ route, isSelected = false, onSelect }: Readonly<RouteCardProps>) {
-    const isCrossRoadSuggestion = route.shouldCrossRoad || route.routeId.endsWith('_CROSS');
-    // Extract the actual route code (remove _CROSS suffix if present)
-    const routeCode = route.routeId.replace('_CROSS', '');
-    
     return (
         <TouchableOpacity onPress={onSelect} activeOpacity={0.7}>
             <View style={[
                 styles.routeCard, 
-                isCrossRoadSuggestion && styles.crossRoadCard,
                 isSelected && styles.selectedCard
             ]}>
                 <View style={styles.column1}>
                     <View>
                         <Text style={styles.routeCode}>
-                            {routeCode}
+                            {route.routeId}
                         </Text>
-                        {isCrossRoadSuggestion && (
-                            <Text style={styles.crossRoadIndicator}>
-                                ↔️ Cross to opposite side
-                            </Text>
-                        )}
                     </View>
                     <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
                         <Ionicons 
-                            name={isCrossRoadSuggestion ? "walk-outline" : "compass-outline"} 
+                            name="compass-outline" 
                             size={25} 
-                            color={isCrossRoadSuggestion ? "#FF6B6B" : "#2D2D2D"}
+                            color="#2D2D2D"
                         />
-                        <Text style={[styles.route, isCrossRoadSuggestion && styles.crossRoadText]} numberOfLines={2}>
+                        <Text style={styles.route} numberOfLines={2}>
                             {`${route.startingPoint} - ${route.endPoint}`}
                         </Text>
                     </View>
@@ -89,11 +79,6 @@ const styles = StyleSheet.create({
         gap: '5%',
         position: 'relative',
     },
-    crossRoadCard: {
-        backgroundColor: "#FFE5E5",
-        borderWidth: 2,
-        borderColor: "#FF6B6B",
-    },
     selectedCard: {
         borderWidth: 3,
         borderColor: "#4CAF50",
@@ -121,12 +106,6 @@ const styles = StyleSheet.create({
         fontSize: 24,
         color: "#2D2D2D",
     },
-    crossRoadIndicator: {
-        fontFamily: 'Lexend_400Regular',
-        fontSize: 12,
-        color: "#FF6B6B",
-        marginTop: 2,
-    },
     fare: {
         fontFamily: 'Lexend_600SemiBold',
         fontSize: 30,
@@ -136,23 +115,6 @@ const styles = StyleSheet.create({
         fontFamily: 'Lexend_400Regular',
         fontSize: 16,
         color: "#2D2D2D",
-    },
-    crossRoadText: {
-        color: "#FF6B6B",
-        fontFamily: 'Lexend_500Medium',
-    },
-    crossDistance: {
-        alignItems: 'center',
-    },
-    distanceText: {
-        fontFamily: 'Lexend_600SemiBold',
-        fontSize: 20,
-        color: "#FF6B6B",
-    },
-    distanceLabel: {
-        fontFamily: 'Lexend_400Regular',
-        fontSize: 12,
-        color: "#FF6B6B",
     },
     icon: {
         width: 20,

@@ -129,6 +129,17 @@ export default function EnhancedAddRoutePage() {
             // User can click elsewhere or press Escape to deselect
             // setSelectedPointIndex(null);
         } else {
+            // Check if this is a closed loop
+            const isClosedLoop = mapCoordinates.length > 2 && 
+                Math.abs(mapCoordinates[0].lat - mapCoordinates[mapCoordinates.length - 1].lat) < 0.000001 &&
+                Math.abs(mapCoordinates[0].lng - mapCoordinates[mapCoordinates.length - 1].lng) < 0.000001;
+            
+            if (isClosedLoop) {
+                // Don't allow adding points at the end for closed loops
+                alert("This route is a closed loop. You can only add points between existing segments.\n\nTo add a point:\n1. Select an existing point\n2. Click 'Insert' button\n3. Click on the map where you want the new point");
+                return;
+            }
+            
             // Add new point at the end
             const newIndex = mapCoordinates.length;
             const newCoord = { lat, lng, label: `Point ${newIndex + 1}` };
@@ -431,6 +442,11 @@ export default function EnhancedAddRoutePage() {
                                     <div>
                                         <label className="block text-sm font-semibold text-black mb-1">
                                             Added Points ({mapCoordinates.length})
+                                            {mapCoordinates.length > 2 && 
+                                             Math.abs(mapCoordinates[0].lat - mapCoordinates[mapCoordinates.length - 1].lat) < 0.000001 &&
+                                             Math.abs(mapCoordinates[0].lng - mapCoordinates[mapCoordinates.length - 1].lng) < 0.000001 && (
+                                                <span className="ml-2 text-purple-600 text-xs font-medium">🔄 Closed Loop - Use Insert to add points</span>
+                                            )}
                                         </label>
                                         <div 
                                             id="points-list"
@@ -512,14 +528,26 @@ export default function EnhancedAddRoutePage() {
                                             <button
                                                 type="button"
                                                 onClick={() => {
-                                                    // Add the first point at the end to close the loop
-                                                    const firstPoint = mapCoordinates[0];
-                                                    const lastIndex = mapCoordinates.length;
-                                                    const closingPoint = {
-                                                        ...firstPoint,
-                                                        label: `Point ${lastIndex + 1} (Loop Close)`
-                                                    };
-                                                    setMapCoordinates([...mapCoordinates, closingPoint]);
+                                                    // Show confirmation dialog
+                                                    const confirmed = window.confirm(
+                                                        "⚠️ Closing the Loop\n\n" +
+                                                        "Once you close the loop:\n" +
+                                                        "• You can only add points between existing segments\n" +
+                                                        "• You cannot add points at the end of the route\n" +
+                                                        "• The route will form a continuous loop\n\n" +
+                                                        "Are you sure you want to close the loop?"
+                                                    );
+                                                    
+                                                    if (confirmed) {
+                                                        // Add the first point at the end to close the loop
+                                                        const firstPoint = mapCoordinates[0];
+                                                        const lastIndex = mapCoordinates.length;
+                                                        const closingPoint = {
+                                                            ...firstPoint,
+                                                            label: `Point ${lastIndex + 1} (Loop Close)`
+                                                        };
+                                                        setMapCoordinates([...mapCoordinates, closingPoint]);
+                                                    }
                                                 }}
                                                 className="mt-2 w-full bg-purple-500 text-white px-3 py-2 rounded-md hover:bg-purple-600 transition-colors text-sm font-medium"
                                                 disabled={mapCoordinates.length < 2 || 

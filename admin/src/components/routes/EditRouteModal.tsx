@@ -167,54 +167,95 @@ export default function EditRouteModal({ routeId, isOpen, onClose, onUpdate }: E
                 }));
             });
             
-            // Exit insert mode and deselect
+            // Select the newly inserted point
+            const newPointIndex = indexToEdit + 1;
+            setSelectedPointIndex(newPointIndex);
+            selectedPointRef.current = newPointIndex;
+            
+            // Exit insert mode
             setInsertMode(false);
-            setSelectedPointIndex(null);
-            selectedPointRef.current = null;
             
             // Scroll to the new point
             setTimeout(() => {
                 const pointsList = document.getElementById('edit-points-list');
-                const newElement = document.querySelector(`#edit-point-${indexToEdit + 1}`);
+                const newElement = document.querySelector(`#edit-point-${newPointIndex}`);
                 if (pointsList && newElement) {
                     newElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
             }, 100);
             
         } else if (!insertMode && indexToEdit !== null && indexToEdit >= 0) {
-            // Edit existing point
+            // Edit existing point - only if not the first or last point in a closed loop
             setMapCoordinates(prevCoords => {
                 if (!prevCoords) return [];
-                const updatedCoords = [...prevCoords];
-                updatedCoords[indexToEdit] = {
-                    ...updatedCoords[indexToEdit],
-                    lat,
-                    lng
-                };
-                return updatedCoords;
+                
+                // Check if this is a closed loop (first and last points are the same)
+                const isClosedLoop = prevCoords.length > 2 && 
+                    Math.abs(prevCoords[0].lat - prevCoords[prevCoords.length - 1].lat) < 0.000001 &&
+                    Math.abs(prevCoords[0].lng - prevCoords[prevCoords.length - 1].lng) < 0.000001;
+                
+                // If it's a closed loop and we're editing the first or last point, update both
+                if (isClosedLoop && (indexToEdit === 0 || indexToEdit === prevCoords.length - 1)) {
+                    const updatedCoords = [...prevCoords];
+                    updatedCoords[0] = { ...updatedCoords[0], lat, lng };
+                    updatedCoords[prevCoords.length - 1] = { ...updatedCoords[prevCoords.length - 1], lat, lng };
+                    return updatedCoords;
+                } else {
+                    // Normal edit for non-loop or middle points
+                    const updatedCoords = [...prevCoords];
+                    updatedCoords[indexToEdit] = {
+                        ...updatedCoords[indexToEdit],
+                        lat,
+                        lng
+                    };
+                    return updatedCoords;
+                }
             });
             
             // Deselect after updating
             setSelectedPointIndex(null);
             selectedPointRef.current = null;
         } else {
-            // Add new point at the end
-            const newIndex = mapCoordinates?.length || 0;
-            
+            // Add new point at the end (but before the closing point if it's a closed loop)
             setMapCoordinates(prev => {
-                const currentLength = prev?.length || 0;
-                const newCoord = { lat, lng, label: `Point ${currentLength + 1}` };
-                const updated = [...(prev || []), newCoord];
-                return updated;
+                if (!prev || prev.length === 0) {
+                    // First point
+                    return [{ lat, lng, label: 'Point 1' }];
+                }
+                
+                // Check if this is a closed loop
+                const isClosedLoop = prev.length > 2 && 
+                    Math.abs(prev[0].lat - prev[prev.length - 1].lat) < 0.000001 &&
+                    Math.abs(prev[0].lng - prev[prev.length - 1].lng) < 0.000001;
+                
+                if (isClosedLoop) {
+                    // Insert before the last point (which is the closing point)
+                    const newPoint = { lat, lng, label: '' };
+                    const updatedCoords = [
+                        ...prev.slice(0, prev.length - 1),
+                        newPoint,
+                        prev[prev.length - 1]
+                    ];
+                    // Re-label all points
+                    return updatedCoords.map((coord, i) => ({
+                        ...coord,
+                        label: i === updatedCoords.length - 1 ? `Point ${updatedCoords.length} (Loop Close)` : `Point ${i + 1}`
+                    }));
+                } else {
+                    // Normal append at the end
+                    const currentLength = prev.length;
+                    const newCoord = { lat, lng, label: `Point ${currentLength + 1}` };
+                    return [...prev, newCoord];
+                }
             });
             
-            // Don't auto-select when adding new points at the end
-            // Just scroll to show the new point
+            // Scroll to show the new point
             setTimeout(() => {
                 const pointsList = document.getElementById('edit-points-list');
-                const newElement = document.querySelector(`#edit-point-${newIndex}`);
-                if (pointsList && newElement) {
-                    newElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                const points = pointsList?.querySelectorAll('[id^="edit-point-"]');
+                if (points && points.length > 0) {
+                    const lastPoint = points[points.length - 1];
+                    lastPoint.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
             }, 100);
         }
@@ -472,7 +513,15 @@ export default function EditRouteModal({ routeId, isOpen, onClose, onUpdate }: E
                                     <div>
                                         <label className="block text-sm font-semibold text-gray-700 mb-1">
                                             Added Points ({mapCoordinates?.length || 0})
+                                            {mapCoordinates && mapCoordinates.length > 2 && 
+                                             Math.abs(mapCoordinates[0].lat - mapCoordinates[mapCoordinates.length - 1].lat) < 0.000001 &&
+                                             Math.abs(mapCoordinates[0].lng - mapCoordinates[mapCoordinates.length - 1].lng) < 0.000001 && (
+                                                <span className="ml-2 text-purple-600 text-xs font-medium">🔄 Closed Loop</span>
+                                            )}
                                         </label>
+                                        <div className="mb-2 text-xs text-gray-600">
+                                            💡 Tip: Select a point and click "Insert" to add a new point after it. For closed loops, new points are added before the closing point.
+                                        </div>
                                         <div 
                                             id="edit-points-list"
                                             className="space-y-2 max-h-40 overflow-y-auto border border-gray-200 rounded-lg p-2"
