@@ -4,7 +4,7 @@ import { MapPointsContext, MapPointsProvider } from '@/context/map-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack } from 'expo-router';
 import { useContext, useEffect, useRef, useState } from 'react';
-import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, StyleSheet, Text, TouchableOpacity, View, PanResponder } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 function MapScreenContent() {
@@ -15,6 +15,7 @@ function MapScreenContent() {
     const mapRef = useRef<NativeMapRef>(null);
     const insets = useSafeAreaInsets();
     const animatedHeight = useRef(new Animated.Value(1)).current;
+    const swipeTranslateY = useRef(new Animated.Value(0)).current;
 
     // Animate minimize/maximize based on pin placement
     useEffect(() => {
@@ -26,6 +27,49 @@ function MapScreenContent() {
         
         setPrevPinPlacement(isPinPlacementEnabled);
     }, [isPinPlacementEnabled]);
+
+    // Create pan responder for swipe down gesture
+    const panResponder = useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => false,
+            onMoveShouldSetPanResponder: (_, gestureState) => {
+                // Only respond to significant downward swipes
+                return gestureState.dy > 10 && Math.abs(gestureState.dx) < 20;
+            },
+            onPanResponderMove: (_, gestureState) => {
+                // Only allow downward movement
+                if (gestureState.dy > 0) {
+                    swipeTranslateY.setValue(gestureState.dy);
+                }
+            },
+            onPanResponderRelease: (_, gestureState) => {
+                // If swiped down more than 150 pixels or with velocity, minimize
+                if (gestureState.dy > 150 || gestureState.vy > 0.5) {
+                    Animated.parallel([
+                        Animated.timing(swipeTranslateY, {
+                            toValue: 500,
+                            duration: 200,
+                            useNativeDriver: true,
+                        }),
+                        Animated.timing(animatedHeight, {
+                            toValue: 0,
+                            duration: 200,
+                            useNativeDriver: false,
+                        })
+                    ]).start(() => {
+                        setIsPinPlacementEnabled(true); // Enter pin placement mode
+                        swipeTranslateY.setValue(0);
+                    });
+                } else {
+                    // Snap back to position
+                    Animated.spring(swipeTranslateY, {
+                        toValue: 0,
+                        useNativeDriver: true,
+                    }).start();
+                }
+            },
+        })
+    ).current;
 
 
     const handleConfirmLocation = () => {
