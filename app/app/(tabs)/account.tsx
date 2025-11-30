@@ -233,9 +233,9 @@ export default function Account() {
                 <View style={styles.profileSection}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 15 }}>
                         <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Account Information</Text>
-                        <TouchableOpacity onPress={() => isEditingSection ? handleSaveAll() : setIsEditingSection(true)} style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 4 }}>
-                            <Ionicons name="pencil" size={16} color="#4CAF50" />
-                            <Text style={{ marginLeft: 4, fontSize: 12, color: '#4CAF50', fontFamily: 'Lexend_600SemiBold' }}>{isEditingSection ? 'Save' : 'Edit'}</Text>
+                        <TouchableOpacity onPress={() => isEditingSection ? handleSaveAll() : setIsEditingSection(true)} style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 4, backgroundColor: '#FFCC66', borderRadius: 8}}>
+                            <Ionicons name="pencil" size={16} color="#000000" />
+                            <Text style={{ marginLeft: 2, fontSize: 14, color: '#000000', fontFamily: 'Lexend_600SemiBold' }}>{isEditingSection ? 'Save' : 'Edit'}</Text>
                         </TouchableOpacity>
                     </View>
 
@@ -298,6 +298,12 @@ export default function Account() {
                         <Text style={styles.infoValue}>{isVerified ? 'Yes' : 'No'}</Text>
                     </View>
 
+                    <View style={styles.actionSection}>
+                        <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
+                            <Text style={styles.signOutText}>Sign Out</Text>
+                        </TouchableOpacity>
+                    </View>
+
                     <Modal
                         visible={isCommuterModalVisible}
                         transparent={true}
@@ -332,11 +338,7 @@ export default function Account() {
                     </Modal>
                 </View>
 
-                <View style={styles.actionSection}>
-                    <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
-                        <Text style={styles.signOutText}>Sign Out</Text>
-                    </TouchableOpacity>
-                </View>
+                
             </ScrollView>
         );
     }
@@ -368,7 +370,6 @@ const styles = StyleSheet.create({
         paddingHorizontal: 40,
         paddingTop: 100,
         gap: 12,
-       
     },
     logo: {
         width: '100%',
@@ -391,6 +392,7 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#f5f5f5',
         marginTop: 50,
+        
         
     },
     profileHeader: {
@@ -467,7 +469,7 @@ const styles = StyleSheet.create({
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.15,
-        shadowRadius: 6,
+        shadowRadius: 12,
         elevation: 5,
     },
     sectionTitle: {
@@ -506,14 +508,14 @@ const styles = StyleSheet.create({
         padding: 0,
     },
     actionSection: {
-        paddingHorizontal: 20,
-        paddingVertical: 30,
+        paddingVertical: 10,
     },
     signOutButton: {
         backgroundColor: '#f44336',
         paddingVertical: 15,
         borderRadius: 8,
         alignItems: 'center',
+        width: '100%',
     },
     signOutText: {
         color: '#fff',
