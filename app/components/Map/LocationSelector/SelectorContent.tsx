@@ -166,145 +166,137 @@ export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{
     };
 
     return (
-        <View style={{ flex: 1 }}>
-            <View style={styles.container}>
-                <View style={styles.bottomSheetTopRow}>
-                    <Text style={styles.bottomSheetTitleText}>
-                        {!pointA ? "Select your first location" :
-                            !pointB ? "Select your second location" :
-                                "Directions"}
-                    </Text>
-                    {(pointA || pointB) && (
-                        <TouchableOpacity onPress={onClear} style={styles.clearButton}>
-                            <Ionicons name="refresh-outline" color="white" size={20} />
-                        </TouchableOpacity>
-                    )}
-                </View>
-
-                <View style={styles.bottomSheetRow}>
-                    <View style={styles.pointInputBox}>
-                        <View style={styles.pointInputContainer}>
-                            <TouchableOpacity onPress={() => {
-                                setIsPinPlacementEnabled(true);
-                                setIsPointAB(true);
-                                setWasSelectingFirstLocation(true);
-                                setShowBottomSheet(false);
-                            }}>
-                                <View style={styles.pointInputRow}>
-                                    <View style={styles.pointInputBlock}>
-                                        <View style={styles.pointInputIconLeft}>
-                                            <Ionicons name={'navigate-circle-outline'} color="blue" size={18} />
-                                        </View>
-                                        <Text style={styles.pointInputText}
-                                            numberOfLines={1}
-                                            ellipsizeMode="tail">
-                                            {pointA ? latLongStringifier(pointA) : "Select starting point"}
-                                        </Text>
-                                    </View>
-
-                                    <View style={[styles.pointInputBlock, { justifyContent: 'flex-end' }]}>
-                                        <Text style={styles.pointPickerText}
-                                            numberOfLines={1}>
-                                            Select on Map
-                                        </Text>
-                                        <View style={styles.pointInputIconRight}>
-                                            <Ionicons name={'globe-outline'} color={'black'} size={16} />
-                                        </View>
-                                    </View>
-                                </View>
-
-                            </TouchableOpacity>
-
-                            <View style={styles.line}></View>
-
-                            <TouchableOpacity onPress={() => {
-                                setIsPinPlacementEnabled(true);
-                                setIsPointAB(false);
-                                setShowBottomSheet(false);
-                            }}>
-                                <View style={styles.pointInputRow}>
-                                    <View style={styles.pointInputBlock}>
-                                        <View style={styles.pointInputIconLeft}>
-                                            <Ionicons name={'location-outline'} color="blue" size={18} />
-                                        </View>
-                                        <Text style={styles.pointInputText}
-                                            numberOfLines={1}
-                                            ellipsizeMode="tail">
-                                            {pointB ? latLongStringifier(pointB) : "Select destination"}
-                                        </Text>
-
-                                    </View>
-                                    <View style={[styles.pointInputBlock, { justifyContent: 'flex-end' }]}>
-                                        <Text style={styles.pointPickerText}
-                                            numberOfLines={1}>
-                                            Select on Map
-                                        </Text>
-                                        <View style={styles.pointInputIconRight}>
-                                            <Ionicons name={'globe-outline'} color={'black'} size={16} />
-                                        </View>
-                                    </View>
-                                </View>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </View>
-
-                <View style={styles.bottomSheetRow}>
-                    <TouchableOpacity style={styles.calculateButton} onPress={onCalculate}>
-                        <Text style={styles.calculateButtonText}>Find Jeeps</Text>
+        <View style={styles.container}>
+            <View style={styles.bottomSheetTopRow}>
+                <Text style={styles.bottomSheetTitleText}>
+                    {!pointA ? "Select your first location" :
+                        !pointB ? "Select your second location" :
+                            "Directions"}
+                </Text>
+                {(pointA || pointB) && (
+                    <TouchableOpacity onPress={onClear} style={styles.clearButton}>
+                        <Ionicons name="refresh-outline" color="white" size={20} />
                     </TouchableOpacity>
-                </View>
-
-                {results && results.length > 0 ? (
-                    <View style={styles.routeList}>
-                        <ScrollView
-                            style={{ flex: 1 }}
-                            contentContainerStyle={styles.routeCardContainer}
-                            showsVerticalScrollIndicator={true}
-                            nestedScrollEnabled={true}
-                            scrollEnabled={true}
-                        >
-                            <Text style={{ color: 'white', fontFamily: 'Lexend_400Regular' }}>Results</Text>
-                            {results.map((route, index) => {
-                                console.log(`Rendering route card ${index}: ${route.routeId}`);
-                                return (
-                                    <RouteCard
-                                        key={`route-${index}-${route.routeId}`}
-                                        route={route}
-                                        isSelected={selectedRouteIndex === index}
-                                        onSelect={() => handleRouteSelect(index)}
-                                    />
-                                );
-                            })}
-                        </ScrollView>
-                    </View>
-                ) : (
-                    <View style={styles.routeList}>
-                        <Text style={{ color: '#666', textAlign: 'center', padding: 20 }}>
-                            {!pointA || !pointB ? 'Select both locations to see routes' : 'No routes found'}
-                        </Text>
-                    </View>
                 )}
             </View>
+
+            <View style={styles.bottomSheetRow}>
+                <View style={styles.pointInputBox}>
+                    <View style={styles.pointInputContainer}>
+                        <TouchableOpacity onPress={() => {
+                            setIsPinPlacementEnabled(true);
+                            setIsPointAB(true);
+                            setWasSelectingFirstLocation(true);
+                            setShowBottomSheet(false);
+                        }}>
+                            <View style={styles.pointInputRow}>
+                                <View style={styles.pointInputBlock}>
+                                    <View style={styles.pointInputIconLeft}>
+                                        <Ionicons name={'navigate-circle-outline'} color="blue" size={18} />
+                                    </View>
+                                    <Text style={styles.pointInputText}
+                                        numberOfLines={1}
+                                        ellipsizeMode="tail">
+                                        {pointA ? latLongStringifier(pointA) : "Select starting point"}
+                                    </Text>
+                                </View>
+
+                                <View style={[styles.pointInputBlock, { justifyContent: 'flex-end' }]}>
+                                    <Text style={styles.pointPickerText}
+                                        numberOfLines={1}>
+                                        Select on Map
+                                    </Text>
+                                    <View style={styles.pointInputIconRight}>
+                                        <Ionicons name={'globe-outline'} color={'black'} size={16} />
+                                    </View>
+                                </View>
+                            </View>
+
+                        </TouchableOpacity>
+
+                        <View style={styles.line}></View>
+
+                        <TouchableOpacity onPress={() => {
+                            setIsPinPlacementEnabled(true);
+                            setIsPointAB(false);
+                            setShowBottomSheet(false);
+                        }}>
+                            <View style={styles.pointInputRow}>
+                                <View style={styles.pointInputBlock}>
+                                    <View style={styles.pointInputIconLeft}>
+                                        <Ionicons name={'location-outline'} color="blue" size={18} />
+                                    </View>
+                                    <Text style={styles.pointInputText}
+                                        numberOfLines={1}
+                                        ellipsizeMode="tail">
+                                        {pointB ? latLongStringifier(pointB) : "Select destination"}
+                                    </Text>
+
+                                </View>
+                                <View style={[styles.pointInputBlock, { justifyContent: 'flex-end' }]}>
+                                    <Text style={styles.pointPickerText}
+                                        numberOfLines={1}>
+                                        Select on Map
+                                    </Text>
+                                    <View style={styles.pointInputIconRight}>
+                                        <Ionicons name={'globe-outline'} color={'black'} size={16} />
+                                    </View>
+                                </View>
+                            </View>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </View>
+
+            <View style={styles.bottomSheetRow}>
+                <TouchableOpacity style={styles.calculateButton} onPress={onCalculate}>
+                    <Text style={styles.calculateButtonText}>Find Jeeps</Text>
+                </TouchableOpacity>
+            </View>
+
+            {results && results.length > 0 && (
+                <View style={styles.routeList}>
+                    <ScrollView
+                        style={{ flex: 1 }}
+                        contentContainerStyle={styles.routeCardContainer}
+                        showsVerticalScrollIndicator={true}
+                        nestedScrollEnabled={true}
+                        scrollEnabled={true}
+                    >
+                        <Text style={{ color: 'white', fontFamily: 'Lexend_400Regular', marginBottom: 10 }}>Results</Text>
+                        {results.map((route, index) => {
+                            console.log(`Rendering route card ${index}: ${route.routeId}`);
+                            return (
+                                <RouteCard
+                                    key={`route-${index}-${route.routeId}`}
+                                    route={route}
+                                    isSelected={selectedRouteIndex === index}
+                                    onSelect={() => handleRouteSelect(index)}
+                                />
+                            );
+                        })}
+                    </ScrollView>
+                </View>
+            )}
         </View>
     )
 }
 
 const styles = StyleSheet.create({
     container: {
-        height: 100
+        padding: 5
     },
     bottomSheetTopRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 16,
+        marginBottom: 12,
     },
 
     bottomSheetTitleText: {
         color: 'white',
         textAlign: 'left',
-        fontSize: 24,
+        fontSize: 20,
         fontWeight: '600',
         fontFamily: 'Lexend_500Medium',
         flex: 1,
@@ -313,20 +305,10 @@ const styles = StyleSheet.create({
     clearButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(255, 255, 255, 0.2)',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
+        padding: 6,
         borderRadius: 16,
         gap: 4,
     },
-
-    clearButtonText: {
-        color: '#007AFF',
-        fontSize: 14,
-        fontWeight: '600',
-        fontFamily: 'Lexend_500Medium'
-    },
-
     closeButton: {
         width: 32,
         height: 32,
@@ -340,8 +322,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'flex-start',
         alignItems: 'center',
-        marginBottom: 12,
-
+        marginBottom: 10,
     },
 
     pointInputBox: {
@@ -428,11 +409,9 @@ const styles = StyleSheet.create({
     },
 
     routeList: {
-        marginTop: 12,
-        marginBottom: 12,
+        marginTop: 10,
         width: '100%',
-        minHeight: 400,
-        maxHeight: 800,
+        maxHeight: 400,
     },
 
     routeCardContainer: {

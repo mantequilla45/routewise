@@ -1,11 +1,10 @@
 import MapModalContent from '@/components/Map/LocationSelector/SelectorContent';
 import NativeMap, { NativeMapRef } from '@/components/Map/NativeMap';
-import SwipeModal from '@/components/SwipeModal';
 import { MapPointsContext, MapPointsProvider } from '@/context/map-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack } from 'expo-router';
 import { useContext, useEffect, useRef, useState } from 'react';
-import { PanResponder, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 function MapScreenContent() {
@@ -15,35 +14,19 @@ function MapScreenContent() {
     const [isSnapping, setIsSnapping] = useState(false)
     const mapRef = useRef<NativeMapRef>(null);
     const insets = useSafeAreaInsets();
+    const animatedHeight = useRef(new Animated.Value(1)).current;
 
-    // Auto-reopen modal after location selection
+    // Animate minimize/maximize based on pin placement
     useEffect(() => {
-        if (prevPinPlacement && !isPinPlacementEnabled) {
-            // Pin placement just finished, reopen the modal
-            setTimeout(() => {
-                setShowBottomSheet(true);
-            }, 300);
-        }
+        Animated.timing(animatedHeight, {
+            toValue: isPinPlacementEnabled ? 0 : 1,
+            duration: 300,
+            useNativeDriver: false,
+        }).start();
+        
         setPrevPinPlacement(isPinPlacementEnabled);
-    }, [isPinPlacementEnabled, prevPinPlacement]);
+    }, [isPinPlacementEnabled]);
 
-    const panResponder = useRef(
-        PanResponder.create({
-            onStartShouldSetPanResponder: (_, g) => {
-                return Math.abs(g.dy) > 10 && g.dy < 0;
-            },
-
-            onMoveShouldSetPanResponder: (_, g) => {
-                return Math.abs(g.dy) > 10 && g.dy < 0;
-            },
-
-            onPanResponderRelease: (_, g) => {
-                if (g.dy < -50) {
-                    setShowBottomSheet(true);
-                }
-            }
-        })
-    ).current;
 
     const handleConfirmLocation = () => {
         if (mapRef.current) {
@@ -54,7 +37,11 @@ function MapScreenContent() {
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
             <Stack.Screen options={{ headerShown: false }} />
-            <NativeMap ref={mapRef} />
+            
+            {/* Map in background, takes full screen */}
+            <View style={styles.mapContainer}>
+                <NativeMap ref={mapRef} />
+            </View>
 
             {/* Pin placement mode indicator */}
             {isPinPlacementEnabled && (
@@ -98,31 +85,21 @@ function MapScreenContent() {
                 </View>
             )}
 
-            <View
-                style={{
-                    position: "absolute",
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                }}
-                {...panResponder.panHandlers}
-            />
-            {!isPinPlacementEnabled && (
-                <TouchableOpacity
-                    style={styles.arrowButton}
-                    onPress={() => setShowBottomSheet(true)}
-                    activeOpacity={0.8}
-                >
-                    <Ionicons name="chevron-up" size={24} color="#303030" />
-                </TouchableOpacity>
-            )}
-            <SwipeModal
-                isVisible={showBottomSheet}
-                onClose={() => setShowBottomSheet(false)}
-                height={'80%'}
-            >
-                <MapModalContent exit={() => setShowBottomSheet(false)} setShowBottomSheet={setShowBottomSheet}></MapModalContent>
-            </SwipeModal>
+            {/* Location selector at bottom, above tabs */}
+            <Animated.View style={[
+                styles.locationSelector,
+                {
+                    transform: [{
+                        translateY: animatedHeight.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [500, 0] // Slide down when minimized
+                        })
+                    }],
+                    opacity: animatedHeight
+                }
+            ]}>
+                <MapModalContent exit={() => setShowBottomSheet(false)} setShowBottomSheet={setShowBottomSheet} />
+            </Animated.View>
         </View>
     );
 }
@@ -138,23 +115,28 @@ export default function MapScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        position: 'relative',
     },
-    arrowButton: {
+    mapContainer: {
         position: 'absolute',
-        bottom: 40,
-        alignSelf: 'center',
-        backgroundColor: '#FFCC66',
-        width: 50,
-        height: 50,
-        borderRadius: 25,
-        justifyContent: 'center',
-        alignItems: 'center',
-        elevation: 5,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 3.84,
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 0, // Ensure map is in background
+    },
+    locationSelector: {
+        position: 'absolute',
+        bottom: 0, // Sit at bottom, let content push it up
+        left: 0,
+        right: 0,
+        backgroundColor: '#303030',
+        borderTopLeftRadius: 30,
+        borderTopRightRadius: 30,
+        paddingHorizontal: 20,
+        paddingTop: 15,
+        paddingBottom: 80, // Add padding for tab bar
+        zIndex: 10, // Above map
+        elevation: 10, // For Android
     },
     pinPlacementIndicator: {
         position: 'absolute',
