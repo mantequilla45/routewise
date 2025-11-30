@@ -238,12 +238,12 @@ export default function Account() {
                             <Text style={{ marginLeft: 4, fontSize: 12, color: '#4CAF50', fontFamily: 'Lexend_600SemiBold' }}>{isEditingSection ? 'Save' : 'Edit'}</Text>
                         </TouchableOpacity>
                     </View>
-                    <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>Email</Text>
-                        <Text style={styles.infoValue}>{user.email}</Text>
-                    </View>
+
+                    {/*Full Name */}
                     <View style={[styles.infoRow, isEditingSection && styles.infoRowActive]}>
-                        <Text style={styles.infoLabel}>Name</Text>
+                        <Text style={styles.infoLabel}>
+                            {isEditingSection ? 'Full Name**' : 'Full Name'}
+                        </Text>
                         {isEditingSection && isEditingName ? (
                             <TextInput
                                 ref={nameInputRef}
@@ -268,12 +268,11 @@ export default function Account() {
                             </View>
                         )}
                     </View>
-                    <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>Email Verified</Text>
-                        <Text style={styles.infoValue}>{isVerified ? 'Yes' : 'No'}</Text>
-                    </View>
+                    {/*Commuter Type */}
                     <View style={[styles.infoRow, isEditingSection && styles.infoRowActive]}>
-                        <Text style={styles.infoLabel}>Commuter Type</Text>
+                        <Text style={styles.infoLabel}>
+                            {isEditingSection ? 'Commuter Type**' : 'Commuter Type'}
+                        </Text>
                         {isEditingSection ? (
                             <TouchableOpacity onPress={() => setIsCommuterModalVisible(true)} style={{ flex: 1, alignItems: 'flex-end' }}>
                                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -287,6 +286,16 @@ export default function Account() {
                                 {isSavingCommuter && <ActivityIndicator size="small" style={{ marginLeft: 8 }} />}
                             </View>
                         )}
+                    </View>
+                    {/* EMAIL */}
+                    <View style={styles.infoRow}>
+                        <Text style={styles.infoLabel}>Email</Text>
+                        <Text style={styles.infoValue}>{user.email}</Text>
+                    </View>
+                    {/* EMAIL VERIFIED */}
+                    <View style={styles.infoRow}>
+                        <Text style={styles.infoLabel}>Email Verified</Text>
+                        <Text style={styles.infoValue}>{isVerified ? 'Yes' : 'No'}</Text>
                     </View>
 
                     <Modal
@@ -359,6 +368,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 40,
         paddingTop: 100,
         gap: 12,
+       
     },
     logo: {
         width: '100%',
@@ -380,7 +390,8 @@ const styles = StyleSheet.create({
     profileContainer: {
         flex: 1,
         backgroundColor: '#f5f5f5',
-        marginTop: 50
+        marginTop: 50,
+        
     },
     profileHeader: {
         backgroundColor: '#fff',
@@ -388,6 +399,15 @@ const styles = StyleSheet.create({
         paddingVertical: 30,
         borderBottomWidth: 1,
         borderBottomColor: '#e0e0e0',
+        borderRadius: 12,
+        width: '90%',
+        alignSelf: 'center',   // <-- Center this child horizontally
+
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 6,
+        elevation: 5,
     },
     avatarContainer: {
         marginBottom: 15,
@@ -414,6 +434,9 @@ const styles = StyleSheet.create({
         fontSize: 24,
         fontFamily: 'Lexend_600SemiBold',
         marginBottom: 5,
+        backgroundColor: '#FFCC66',
+        paddingHorizontal: 10,
+        borderRadius: 10,
     },
     userEmail: {
         fontSize: 16,
@@ -437,6 +460,15 @@ const styles = StyleSheet.create({
         marginTop: 20,
         paddingVertical: 20,
         paddingHorizontal: 20,
+        borderRadius: 12,
+        width: '90%',
+        alignSelf: 'center',   // <-- Center this child horizontally
+        
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 6,
+        elevation: 5,
     },
     sectionTitle: {
         fontSize: 18,
