@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
         borderTopRightRadius: 30,
         paddingHorizontal: 20,
         paddingTop: 15,
-        paddingBottom: 80, // Add padding for tab bar
+        paddingBottom: 20, // Add padding for tab bar
         zIndex: 10, // Above map
         elevation: 10, // For Android
     },

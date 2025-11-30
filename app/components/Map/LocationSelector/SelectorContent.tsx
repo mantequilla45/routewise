@@ -411,6 +411,7 @@ const styles = StyleSheet.create({
     routeList: {
         marginTop: 10,
         width: '100%',
+        minHeight: 200,
         maxHeight: 400,
     },
 
