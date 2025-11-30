@@ -55,18 +55,18 @@ function MapScreenContent() {
         <View style={[styles.container, { paddingTop: insets.top }]}>
             <Stack.Screen options={{ headerShown: false }} />
             <NativeMap ref={mapRef} />
-            
+
             {/* Pin placement mode indicator */}
             {isPinPlacementEnabled && (
                 <View style={styles.pinPlacementIndicator}>
                     <View style={styles.pinPlacementContent}>
                         <Ionicons name="location" size={24} color="#007AFF" />
                         <Text style={styles.pinPlacementText}>
-                            Move map to position crosshair at {isPointAB ? 
-                                (!pointA ? 'starting point' : 'starting point (updating)') : 
+                            Move map to position crosshair at {isPointAB ?
+                                (!pointA ? 'starting point' : 'starting point (updating)') :
                                 (!pointB ? 'destination' : 'destination (updating)')}
                         </Text>
-                        <TouchableOpacity 
+                        <TouchableOpacity
                             onPress={() => {
                                 setIsPinPlacementEnabled(false);
                                 setShowBottomSheet(true);
@@ -76,16 +76,16 @@ function MapScreenContent() {
                             <Text style={styles.cancelButtonText}>Cancel</Text>
                         </TouchableOpacity>
                     </View>
-                    
+
                     {/* Crosshair in center of map */}
                     <View style={styles.crosshairContainer}>
                         <View style={styles.crosshairVertical} />
                         <View style={styles.crosshairHorizontal} />
                         <View style={styles.crosshairCenter} />
                     </View>
-                    
+
                     {/* Confirm button at the bottom */}
-                    <TouchableOpacity 
+                    <TouchableOpacity
                         style={styles.confirmLocationButton}
                         onPress={handleConfirmLocation}
                         activeOpacity={0.8}
@@ -97,7 +97,7 @@ function MapScreenContent() {
                     </TouchableOpacity>
                 </View>
             )}
-            
+
             <View
                 style={{
                     position: "absolute",

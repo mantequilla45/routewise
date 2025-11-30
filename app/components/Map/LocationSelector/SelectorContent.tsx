@@ -37,16 +37,16 @@ export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{
         console.log(`Route card clicked: index ${index}, current selected: ${selectedRouteIndex}`);
         console.log(`Current allRoutes array length: ${allRoutes.length}`);
         console.log(`allRoutes contents:`, allRoutes.map((r, i) => `[${i}]: ${r.id}, ${r.coordinates.length} points`));
-        
+
         // Find the corresponding route in results
         const selectedResult = results[index];
         if (!selectedResult) {
             console.warn(`No result found at index ${index}`);
             return;
         }
-        
+
         setSelectedRouteIndex(index);
-        
+
         // Since we now create polylines for all routes with matching indices, we can use the index directly
         if (index < allRoutes.length && allRoutes[index]) {
             console.log(`Found polyline at index ${index}:`, allRoutes[index].id, `with ${allRoutes[index].coordinates.length} coordinates`);
@@ -70,10 +70,10 @@ export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{
 
             if (Array.isArray(routes) && routes.length > 0) {
                 setResults(routes);
-                
+
                 // Build polylines for ALL routes to maintain consistent indexing
                 const googlePolylineRoutes: GoogleMapsPolyline[] = [];
-                
+
                 routes.forEach((r, resultIndex) => {
                     // Create a polyline for every route, even if empty
                     if (r.latLng && r.latLng.length > 0) {
@@ -87,7 +87,7 @@ export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{
                             width: 16,
                             geodesic: true
                         };
-                        
+
                         googlePolylineRoutes.push(polyline);
                         console.log(`Created polyline for result ${resultIndex} (${r.routeId})`);
                     } else {
@@ -103,13 +103,13 @@ export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{
                         console.log(`Created empty polyline for result ${resultIndex} (${r.routeId})`);
                     }
                 });
-                
+
                 console.log(`Created ${googlePolylineRoutes.length} polylines from ${routes.length} results`);
-                
+
                 // Store all routes (no need for index map anymore since indices match directly)
                 console.log(`Setting allRoutes with ${googlePolylineRoutes.length} polylines`);
                 setAllRoutes(googlePolylineRoutes);
-                
+
                 // Display the first valid route if available
                 if (googlePolylineRoutes.length > 0) {
                     setRoutes([googlePolylineRoutes[0]]);
@@ -154,7 +154,7 @@ export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{
         setRoutes([]); // Clear polylines from map
         setAllRoutes([]); // Clear stored routes
         setSelectedRouteIndex(null); // Clear selection
-        
+
         // Use a small delay to ensure routes are cleared before points
         setTimeout(() => {
             setPointA(null);
@@ -167,17 +167,16 @@ export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{
 
     return (
         <View style={{ flex: 1 }}>
-            <View>
+            <View style={styles.container}>
                 <View style={styles.bottomSheetTopRow}>
                     <Text style={styles.bottomSheetTitleText}>
-                        {!pointA ? "Select your first location" : 
-                         !pointB ? "Select your second location" : 
-                         "Directions"}
+                        {!pointA ? "Select your first location" :
+                            !pointB ? "Select your second location" :
+                                "Directions"}
                     </Text>
                     {(pointA || pointB) && (
                         <TouchableOpacity onPress={onClear} style={styles.clearButton}>
-                            <Ionicons name="refresh-outline" color="#007AFF" size={20} />
-                            <Text style={styles.clearButtonText}>Clear</Text>
+                            <Ionicons name="refresh-outline" color="white" size={20} />
                         </TouchableOpacity>
                     )}
                 </View>
@@ -252,7 +251,7 @@ export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{
 
                 <View style={styles.bottomSheetRow}>
                     <TouchableOpacity style={styles.calculateButton} onPress={onCalculate}>
-                        <Text style={styles.calculateButtonText}>Calculate Price</Text>
+                        <Text style={styles.calculateButtonText}>Find Jeeps</Text>
                     </TouchableOpacity>
                 </View>
 
@@ -265,12 +264,13 @@ export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{
                             nestedScrollEnabled={true}
                             scrollEnabled={true}
                         >
+                            <Text style={{ color: 'white', fontFamily: 'Lexend_400Regular' }}>Results</Text>
                             {results.map((route, index) => {
                                 console.log(`Rendering route card ${index}: ${route.routeId}`);
                                 return (
-                                    <RouteCard 
-                                        key={`route-${index}-${route.routeId}`} 
-                                        route={route} 
+                                    <RouteCard
+                                        key={`route-${index}-${route.routeId}`}
+                                        route={route}
                                         isSelected={selectedRouteIndex === index}
                                         onSelect={() => handleRouteSelect(index)}
                                     />
@@ -291,6 +291,9 @@ export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{
 }
 
 const styles = StyleSheet.create({
+    container: {
+        height: 100
+    },
     bottomSheetTopRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -428,8 +431,8 @@ const styles = StyleSheet.create({
         marginTop: 12,
         marginBottom: 12,
         width: '100%',
-        minHeight: 200,
-        maxHeight: 400,
+        minHeight: 400,
+        maxHeight: 800,
     },
 
     routeCardContainer: {
