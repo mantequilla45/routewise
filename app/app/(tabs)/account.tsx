@@ -299,9 +299,12 @@ export default function Account() {
                     </View>
 
                     <View style={styles.actionSection}>
-                        <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
+                    <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
+                        <View style={styles.signOutContent}>
+                        <Ionicons name="log-out-outline" size={20} color="#fff" />
                             <Text style={styles.signOutText}>Sign Out</Text>
-                        </TouchableOpacity>
+                        </View>
+                    </TouchableOpacity>
                     </View>
 
                     <Modal
@@ -515,11 +518,17 @@ const styles = StyleSheet.create({
         paddingVertical: 15,
         borderRadius: 8,
         alignItems: 'center',
-        width: '100%',
+        justifyContent: 'center', // make sure content is centered
+    },
+    signOutContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        color: '#fff',
     },
     signOutText: {
         color: '#fff',
         fontSize: 16,
         fontFamily: 'Lexend_600SemiBold',
+        marginLeft: 8, // space between icon and text
     },
 });
