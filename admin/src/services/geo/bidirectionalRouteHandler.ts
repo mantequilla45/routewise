@@ -43,50 +43,149 @@ export async function analyzeBidirectionalRoute(
     }
 
     const sql = `
-        WITH route_analysis AS (
+        WITH route_info AS (
             SELECT
                 id,
                 route_code,
-                
-                -- Forward direction calculation
-                ST_LineLocatePoint(geom_forward, ST_SetSRID(ST_MakePoint($1, $2), 4326)) as loc_a_forward,
-                ST_LineLocatePoint(geom_forward, ST_SetSRID(ST_MakePoint($3, $4), 4326)) as loc_b_forward,
-                
-                -- Get the actual geometry
-                geom_forward
-                
+                geom_forward,
+                ST_LineLocatePoint(geom_forward, ST_SetSRID(ST_MakePoint($1, $2), 4326)) as loc_a,
+                ST_LineLocatePoint(geom_forward, ST_SetSRID(ST_MakePoint($3, $4), 4326)) as loc_b,
+                -- Check if route is closed (first point equals last point)
+                ST_Equals(ST_StartPoint(geom_forward), ST_EndPoint(geom_forward)) as is_closed_loop
             FROM jeepney_routes
             WHERE id = $5
         ),
-        distance_calc AS (
+        -- Find alternative points within 50 meters for opposite side of road
+        close_points AS (
+            SELECT 
+                generate_series(0.0, 1.0, 0.001) as position
+            FROM route_info
+        ),
+        alternative_starts AS (
+            -- Don't look for alternative starts for now - focus on destination fix
+            SELECT NULL::float as alt_loc, NULL::float as distance_to_a
+            FROM route_info
+            LIMIT 1
+        ),
+        alternative_ends AS (
+            -- Find ANY point within 50m of destination that comes EARLIER on the route
+            -- This stops the route at the first nearby point (opposite side of road)
+            SELECT 
+                cp.position as alt_loc,
+                ST_Distance(
+                    ST_LineInterpolatePoint(ri.geom_forward, cp.position)::geography,
+                    ST_SetSRID(ST_MakePoint($3, $4), 4326)::geography
+                ) as distance_to_b
+            FROM close_points cp, route_info ri
+            WHERE ST_Distance(
+                ST_LineInterpolatePoint(ri.geom_forward, cp.position)::geography,
+                ST_SetSRID(ST_MakePoint($3, $4), 4326)::geography
+            ) < 50  -- Within 50 meters of destination
+            AND cp.position > ri.loc_a  -- Must be after the start point
+            AND cp.position < ri.loc_b  -- Must come BEFORE the pinned destination
+            ORDER BY cp.position  -- Get the FIRST occurrence along the route
+            LIMIT 1
+        ),
+        optimized_points AS (
             SELECT
-                *,
-                -- Forward route distance (only if A comes before B)
-                CASE
-                    WHEN loc_a_forward < loc_b_forward THEN
-                        ST_Length(
-                            ST_LineSubstring(geom_forward, loc_a_forward, loc_b_forward)::geography
-                        )
-                    ELSE NULL
-                END as forward_segment_distance,
-                
-                -- Get the segment geometry for forward direction (A to B)
-                CASE
-                    WHEN loc_a_forward < loc_b_forward THEN
-                        ST_AsGeoJSON(ST_LineSubstring(geom_forward, loc_a_forward, loc_b_forward))
-                    ELSE NULL
-                END as forward_segment_geojson
-                
-            FROM route_analysis
+                id,
+                route_code,
+                is_closed_loop,
+                loc_a,
+                loc_b,
+                geom_forward,
+                -- Use optimized points ONLY when they help avoid long loops
+                CASE 
+                    -- If we found a later starting point (opposite side), use it
+                    WHEN alt_start.alt_loc IS NOT NULL THEN
+                        alt_start.alt_loc  -- Use the later starting point (opposite side of road)
+                    ELSE 
+                        loc_a  -- Use original
+                END as final_loc_a,
+                CASE 
+                    -- If we found a closer cutoff point for the destination, use it
+                    WHEN alt_end.alt_loc IS NOT NULL THEN
+                        alt_end.alt_loc  -- Use the earlier cutoff point (opposite side of road)
+                    ELSE 
+                        loc_b  -- Use original
+                END as final_loc_b,
+                -- Keep debug info
+                alt_start.alt_loc as alt_start_loc,
+                alt_end.alt_loc as alt_end_loc,
+                alt_start.distance_to_a as alt_start_distance,
+                alt_end.distance_to_b as alt_end_distance
+            FROM route_info
+            LEFT JOIN alternative_starts alt_start ON true
+            LEFT JOIN alternative_ends alt_end ON true
         )
         SELECT
             id,
             route_code,
-            forward_segment_distance,
-            forward_segment_geojson,
-            loc_a_forward,
-            loc_b_forward
-        FROM distance_calc;
+            is_closed_loop,
+            loc_a,
+            loc_b,
+            final_loc_a,
+            final_loc_b,
+            -- Calculate distance using the final optimized points
+            CASE
+                WHEN is_closed_loop THEN
+                    CASE
+                        WHEN final_loc_a <= final_loc_b THEN
+                            -- Simple forward path
+                            ST_Length(ST_LineSubstring(geom_forward, final_loc_a, final_loc_b)::geography)
+                        ELSE
+                            -- Need to go around the loop (A to end, then start to B)
+                            ST_Length(
+                                ST_LineMerge(
+                                    ST_Collect(
+                                        ST_LineSubstring(geom_forward, final_loc_a, 1.0),
+                                        ST_LineSubstring(geom_forward, 0.0, final_loc_b)
+                                    )
+                                )::geography
+                            )
+                    END
+                ELSE
+                    -- Non-loops: only allow forward direction
+                    CASE
+                        WHEN final_loc_a < final_loc_b THEN
+                            ST_Length(ST_LineSubstring(geom_forward, final_loc_a, final_loc_b)::geography)
+                        ELSE NULL
+                    END
+            END as forward_segment_distance,
+            
+            -- Get geometry using the final optimized points
+            CASE
+                WHEN is_closed_loop THEN
+                    CASE
+                        WHEN final_loc_a <= final_loc_b THEN
+                            -- Simple forward path
+                            ST_AsGeoJSON(ST_LineSubstring(geom_forward, final_loc_a, final_loc_b))
+                        ELSE
+                            -- Need to go around the loop (A to end, then start to B)
+                            ST_AsGeoJSON(
+                                ST_LineMerge(
+                                    ST_Collect(
+                                        ST_LineSubstring(geom_forward, final_loc_a, 1.0),
+                                        ST_LineSubstring(geom_forward, 0.0, final_loc_b)
+                                    )
+                                )
+                            )
+                    END
+                ELSE
+                    -- Non-loops: only allow forward direction
+                    CASE
+                        WHEN final_loc_a < final_loc_b THEN
+                            ST_AsGeoJSON(ST_LineSubstring(geom_forward, final_loc_a, final_loc_b))
+                        ELSE NULL
+                    END
+            END as forward_segment_geojson,
+            
+            -- Debug info
+            alt_start_loc,
+            alt_end_loc,
+            alt_start_distance,
+            alt_end_distance
+        FROM optimized_points;
     `;
 
     try {
@@ -102,6 +201,30 @@ export async function analyzeBidirectionalRoute(
         
         if (!result) return null;
 
+        // Debug logging for optimization
+        console.log(`\n=== Smart Route ${result.route_code} Debug ===`);
+        console.log(`Closed loop: ${result.is_closed_loop}`);
+        console.log(`Original positions: A@${(result.loc_a * 100).toFixed(1)}%, B@${(result.loc_b * 100).toFixed(1)}%`);
+        
+        // Check if optimization is needed
+        const needsOptimization = result.is_closed_loop && result.loc_a > result.loc_b;
+        if (needsOptimization) {
+            console.log(`⚠️ OPTIMIZATION NEEDED: A > B on closed loop`);
+        }
+        
+        if (result.alt_start_loc && result.final_loc_a !== result.loc_a) {
+            console.log(`✅ Using alternative START @ ${(result.alt_start_loc * 100).toFixed(1)}% (was ${(result.loc_a * 100).toFixed(1)}%), distance: ${result.alt_start_distance?.toFixed(0)}m`);
+        }
+        if (result.alt_end_loc && result.final_loc_b !== result.loc_b) {
+            console.log(`✅ Using alternative END @ ${(result.alt_end_loc * 100).toFixed(1)}% (was ${(result.loc_b * 100).toFixed(1)}%), distance: ${result.alt_end_distance?.toFixed(0)}m`);
+        }
+        
+        console.log(`Final positions: A@${(result.final_loc_a * 100).toFixed(1)}%, B@${(result.final_loc_b * 100).toFixed(1)}%`);
+        
+        if (needsOptimization && result.final_loc_a === result.loc_a && result.final_loc_b === result.loc_b) {
+            console.log(`❌ WARNING: No optimization applied despite A > B!`);
+        }
+
         // Calculate direct distance between the two points
         const directDistance = calculateDirectDistance(
             { latitude: routeA.snapped_forward_lat, longitude: routeA.snapped_forward_lon },
@@ -110,10 +233,12 @@ export async function analyzeBidirectionalRoute(
 
         // Only process if the route goes in the correct direction
         if (!result.forward_segment_distance || !result.forward_segment_geojson) {
+            console.log(`Route ${result.route_code}: No valid segment (wrong direction)`);
             return null;
         }
 
         const forwardDistance = result.forward_segment_distance;
+        console.log(`Route ${result.route_code}: Valid segment, distance: ${forwardDistance.toFixed(0)}m`);
 
         // Remove cross-road detection - just return the route
         return {

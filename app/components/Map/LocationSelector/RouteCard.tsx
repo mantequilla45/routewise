@@ -14,7 +14,7 @@ export default function RouteCard({ route, isSelected = false, onSelect }: Reado
     return (
         <TouchableOpacity onPress={onSelect} activeOpacity={0.7}>
             <View style={[
-                styles.routeCard, 
+                styles.routeCard,
                 isSelected && styles.selectedCard
             ]}>
                 <View style={styles.column1}>
@@ -24,46 +24,11 @@ export default function RouteCard({ route, isSelected = false, onSelect }: Reado
                         </Text>
                     </View>
                     <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
-                        <Ionicons 
-                            name="compass-outline" 
-                            size={25} 
-                            color="#2D2D2D"
-                        />
-                        <Text style={styles.route} numberOfLines={2}>
-                            {`${route.startingPoint} - ${route.endPoint}`}
-                        </Text>
                     </View>
                 </View>
                 <View style={styles.column2}>
-                    <Ionicons name="bookmark-outline" size={25} />
                     <Text style={styles.fare}>P{route.fare}</Text>
                 </View>
-                {isSelected && (
-                    <View style={styles.selectedIndicator}>
-                        <Ionicons name="checkmark-circle" size={25} color="#4CAF50" />
-                    </View>
-                )}
-
-                {/*<View style={styles.routeCardInnerPadding}>
-                <View style={styles.routeCardType}>
-                    <Text style={styles.routeCardFieldOutputLarge}>{route.routeId}</Text>
-                </View>
-                <View style={styles.routeName}>
-                    <Text style={styles.routeCardFieldName}>Route:</Text>
-                    <Text style={styles.routeCardFieldOutputLarge} numberOfLines={1}>
-                        {route.startingPoint} - {route.endPoint}
-                    </Text>
-                </View>
-                <View style={styles.routeSave}></View>
-            </View>
-            <View style={styles.routeCardInnerPadding}>
-                <View>
-                    <Text style={styles.routeCardFieldName}>Fare Rate:</Text>
-                    <Text style={styles.routeCardSmallText}>Distance: {route.distanceMeters.toFixed(2)} meters </Text>
-                    <Text style={styles.routeCardSmallText}>PWD / Senior / Student: {route.fare - (route.fare * 0.2)}</Text>
-                    <Text style={styles.routeCardSmallText}>Reg: {route.fare}</Text>
-                </View>
-            </View> */}
             </View>
         </TouchableOpacity>
     );
@@ -71,16 +36,17 @@ export default function RouteCard({ route, isSelected = false, onSelect }: Reado
 
 const styles = StyleSheet.create({
     routeCard: {
+        borderWidth: 3,
         width: "100%",
         backgroundColor: "#FFCC66",
-        borderRadius: 15,
+        borderRadius: 10,
         flexDirection: "row",
-        padding: 25,
-        gap: '5%',
+        paddingHorizontal: 25,
+        paddingVertical: 15,
         position: 'relative',
+        borderColor: "#FFCC66",
     },
     selectedCard: {
-        borderWidth: 3,
         borderColor: "#4CAF50",
         backgroundColor: "#E8F5E9",
     },
@@ -90,20 +56,16 @@ const styles = StyleSheet.create({
         right: 10,
     },
     column1: {
-        width: '75%',
-        gap: 10,
-        overflow: 'hidden',
+        width: '50%',
     },
     column2: {
-        width: '20%',
+        width: '50%',
         alignItems: 'flex-end',
-        paddingRight: 5,
-        gap: 10,
         justifyContent: 'space-between',
     },
     routeCode: {
         fontFamily: 'Lexend_600SemiBold',
-        fontSize: 24,
+        fontSize: 32,
         color: "#2D2D2D",
     },
     fare: {

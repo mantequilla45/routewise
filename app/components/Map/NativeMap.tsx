@@ -69,8 +69,7 @@ const NativeMap = forwardRef<NativeMapRef>((props, ref) => {
     markers.push({
       coordinates: pointA,
       title: 'Starting Point',
-      snippet: 'Your journey begins here',
-      pinColor: '#4CAF50' // Green for start
+      snippet: 'Your journey begins here'
     });
   }
 
@@ -78,8 +77,7 @@ const NativeMap = forwardRef<NativeMapRef>((props, ref) => {
     markers.push({
       coordinates: pointB,
       title: 'Destination',
-      snippet: 'Your journey ends here',
-      pinColor: '#F44336' // Red for destination
+      snippet: 'Your journey ends here'
     });
   }
 
