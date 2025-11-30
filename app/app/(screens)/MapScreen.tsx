@@ -12,6 +12,7 @@ function MapScreenContent() {
     const { isPinPlacementEnabled, setIsPinPlacementEnabled, isPointAB, pointA, pointB } = useContext(MapPointsContext);
     const [showBottomSheet, setShowBottomSheet] = useState(true)
     const [prevPinPlacement, setPrevPinPlacement] = useState(false)
+    const [isSnapping, setIsSnapping] = useState(false)
     const mapRef = useRef<NativeMapRef>(null);
     const insets = useSafeAreaInsets();
 
@@ -256,5 +257,9 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: '600',
         fontFamily: 'Lexend_600SemiBold',
+    },
+    confirmLocationButtonDisabled: {
+        backgroundColor: '#9E9E9E',
+        opacity: 0.7,
     },
 });

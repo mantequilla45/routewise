@@ -68,9 +68,11 @@ export async function GET() {
                 route_code,
                 start_point_name,
                 end_point_name,
-                ST_AsGeoJSON(geom_forward)::json as forward_geojson
+                ST_AsGeoJSON(geom_forward)::json as forward_geojson,
+                created_at,
+                updated_at
             FROM jeepney_routes
-            ORDER BY route_code;
+            ORDER BY updated_at DESC NULLS LAST, created_at DESC;
         `;
 
         const routes = await query(sql);

@@ -69,18 +69,36 @@ export async function findNearestRoutesPoints(latLng: LatLng) {
             geom_forward::geography,
             ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography
         ) AS distance_forward,
-        ST_X(
-            ST_ClosestPoint(
-            geom_forward,
-            ST_SetSRID(ST_MakePoint($1, $2), 4326)
-            )
-        ) AS snapped_forward_lon,
-        ST_Y(
-            ST_ClosestPoint(
-            geom_forward,
-            ST_SetSRID(ST_MakePoint($1, $2), 4326)
-            )
-        ) AS snapped_forward_lat
+        -- Only snap if we're very close to the route (within 50 meters)
+        -- Otherwise use the user's actual point
+        CASE
+            WHEN ST_Distance(
+                geom_forward::geography,
+                ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography
+            ) < 50 THEN
+                ST_X(
+                    ST_ClosestPoint(
+                        geom_forward,
+                        ST_SetSRID(ST_MakePoint($1, $2), 4326)
+                    )
+                )
+            ELSE
+                $1  -- Use original longitude
+        END AS snapped_forward_lon,
+        CASE
+            WHEN ST_Distance(
+                geom_forward::geography,
+                ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography
+            ) < 50 THEN
+                ST_Y(
+                    ST_ClosestPoint(
+                        geom_forward,
+                        ST_SetSRID(ST_MakePoint($1, $2), 4326)
+                    )
+                )
+            ELSE
+                $2  -- Use original latitude
+        END AS snapped_forward_lat
         
         FROM jeepney_routes
         
@@ -143,17 +161,73 @@ async function calculateRouteDistances(
                 ST_Equals(ST_StartPoint(geom_forward), ST_EndPoint(geom_forward)) as is_closed_loop
             FROM jeepney_routes
             WHERE id = $5
+        ),
+        -- Find if there's a point on the route very close to point A (other side of road)
+        nearby_points AS (
+            SELECT
+                ST_LineLocatePoint(geom_forward, 
+                    ST_ClosestPoint(geom_forward, ST_SetSRID(ST_MakePoint($1, $2), 4326))
+                ) as route_position,
+                ST_Distance(
+                    ST_ClosestPoint(geom_forward, ST_SetSRID(ST_MakePoint($1, $2), 4326))::geography,
+                    ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography
+                ) as distance_meters
+            FROM jeepney_routes
+            WHERE id = $5
+        ),
+        -- Get all points along the route that are close to point A
+        close_points AS (
+            SELECT 
+                generate_series(0.0, 1.0, 0.001) as position
+            FROM route_info
+        ),
+        alternative_starts AS (
+            SELECT 
+                cp.position as alt_loc,
+                ST_Distance(
+                    ST_LineInterpolatePoint(ri.geom_forward, cp.position)::geography,
+                    ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography
+                ) as distance_to_a
+            FROM close_points cp, route_info ri
+            WHERE ST_Distance(
+                ST_LineInterpolatePoint(ri.geom_forward, cp.position)::geography,
+                ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography
+            ) < 50  -- Within 50 meters (other side of road)
+            AND cp.position != ri.loc_a  -- Not the same point
+            ORDER BY 
+                -- Prefer points that would give shorter routes
+                CASE 
+                    WHEN cp.position < ri.loc_a AND cp.position < ri.loc_b AND ri.loc_b < ri.loc_a THEN 0
+                    WHEN cp.position > ri.loc_a AND cp.position < ri.loc_b THEN 1
+                    ELSE 2
+                END,
+                distance_to_a
+            LIMIT 1
         )
         SELECT
             route_code,
             is_closed_loop,
-            loc_a,
+            -- Use alternative start point if it gives a shorter route
+            CASE 
+                WHEN alt.alt_loc IS NOT NULL AND is_closed_loop AND loc_a > loc_b THEN
+                    -- Check if using alt point would be shorter
+                    CASE
+                        WHEN alt.alt_loc < loc_b THEN alt.alt_loc
+                        ELSE loc_a
+                    END
+                ELSE loc_a
+            END as final_loc_a,
             loc_b,
-            -- Calculate segment length - ONLY in forward direction
+            alt.alt_loc as alternative_start,
+            alt.distance_to_a as alt_distance,
+            -- Calculate segment length using the optimal starting point
             CASE
                 WHEN is_closed_loop THEN
-                    -- For closed loops, always go forward along the route
+                    -- For closed loops, use alternative start if it's better
                     CASE
+                        WHEN alt.alt_loc IS NOT NULL AND loc_a > loc_b AND alt.alt_loc < loc_b THEN
+                            -- Use alternative start point for shorter route
+                            ST_Length(ST_LineSubstring(geom_forward, alt.alt_loc, loc_b)::geography)
                         WHEN loc_a <= loc_b THEN
                             -- Simple forward path from A to B
                             ST_Length(ST_LineSubstring(geom_forward, loc_a, loc_b)::geography)
@@ -178,11 +252,14 @@ async function calculateRouteDistances(
                     END
             END AS segment_length_meters,
             
-            -- Get the geometry path - ONLY forward direction
+            -- Get the geometry path using the optimal starting point
             CASE
                 WHEN is_closed_loop THEN
-                    -- For closed loops, always go forward
+                    -- For closed loops, use alternative start if it's better
                     CASE
+                        WHEN alt.alt_loc IS NOT NULL AND loc_a > loc_b AND alt.alt_loc < loc_b THEN
+                            -- Use alternative start point for shorter route
+                            ST_AsGeoJSON(ST_LineSubstring(geom_forward, alt.alt_loc, loc_b))
                         WHEN loc_a <= loc_b THEN
                             -- Simple forward path from A to B
                             ST_AsGeoJSON(ST_LineSubstring(geom_forward, loc_a, loc_b))
@@ -211,6 +288,7 @@ async function calculateRouteDistances(
             CASE
                 WHEN is_closed_loop THEN 
                     CASE
+                        WHEN alt.alt_loc IS NOT NULL AND loc_a > loc_b AND alt.alt_loc < loc_b THEN 'used_opposite_side'
                         WHEN loc_a <= loc_b THEN 'forward_direct'
                         ELSE 'forward_wrapped'
                     END
@@ -218,7 +296,8 @@ async function calculateRouteDistances(
                 WHEN loc_a > loc_b THEN 'wrong_direction_rejected'
                 ELSE 'same_point'
             END AS direction_status
-        FROM route_info;
+        FROM route_info
+        LEFT JOIN alternative_starts alt ON true;
         `;
 
         const params = [
@@ -234,12 +313,17 @@ async function calculateRouteDistances(
             
             // Only include routes that have a valid segment
             if (row.segment_length_meters !== null && row.segment_geojson !== null) {
+                // Log when we use the opposite side optimization
+                if (row.direction_status === 'used_opposite_side') {
+                    console.log(`Route ${routeA.route_code}: Using opposite side of road to avoid long loop. Cross distance: ${row.alt_distance?.toFixed(0)}m`);
+                }
+                
                 results.push({
                     routeId: routeA.route_code,
                     distanceMeters: row.segment_length_meters,
                     segmentGeoJSON: row.segment_geojson
                 });
-                console.log(`Route ${routeA.route_code}: ${row.direction_status} - distance: ${row.segment_length_meters?.toFixed(0)}m (A@${(row.loc_a * 100).toFixed(1)}% → B@${(row.loc_b * 100).toFixed(1)}%)`);
+                console.log(`Route ${routeA.route_code}: ${row.direction_status} - distance: ${row.segment_length_meters?.toFixed(0)}m (A@${(row.final_loc_a * 100).toFixed(1)}% → B@${(row.loc_b * 100).toFixed(1)}%)`);
             } else if (row.direction_status === 'wrong_direction_rejected' && !row.is_closed_loop) {
                 // Only track as skipped if it's not a closed loop and wrong direction
                 if (skippedRoutes && !skippedRoutes.includes(routeA.route_code)) {
