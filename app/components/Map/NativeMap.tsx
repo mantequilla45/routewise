@@ -47,15 +47,15 @@ const NativeMap = forwardRef<NativeMapRef>((props, ref) => {
 
       console.log('Setting location at center:', currentCenter);
 
-      // Set the point at the current center (crosshair position)
+      // Just set the point without snapping - we'll snap when calculating routes
       if (isPointAB) {
         setPointA(currentCenter);
         setLastSelectedPoint('A');
-        console.log('Set point A at crosshair:', currentCenter);
+        console.log('Set point A:', currentCenter);
       } else {
         setPointB(currentCenter);
         setLastSelectedPoint('B');
-        console.log('Set point B at crosshair:', currentCenter);
+        console.log('Set point B:', currentCenter);
       }
 
       // Disable pin placement after selecting a location
