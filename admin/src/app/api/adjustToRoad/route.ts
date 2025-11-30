@@ -4,7 +4,7 @@ const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
 export async function POST(request: NextRequest) {
     try {
-        const { point, nearbyPoint } = await request.json();
+        const { point } = await request.json();
         
         if (!point || !point.latitude || !point.longitude) {
             return NextResponse.json(
@@ -117,7 +117,12 @@ export async function POST(request: NextRequest) {
     }
 }
 
-function calculateDistance(point1: any, point2: any): number {
+interface Point {
+    latitude: number;
+    longitude: number;
+}
+
+function calculateDistance(point1: Point, point2: Point): number {
     const R = 6371; // Earth's radius in km
     const dLat = (point2.latitude - point1.latitude) * Math.PI / 180;
     const dLon = (point2.longitude - point1.longitude) * Math.PI / 180;

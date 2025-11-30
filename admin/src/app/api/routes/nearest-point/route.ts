@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
 
             routes?.forEach(route => {
                 if (route.route_path && Array.isArray(route.route_path)) {
-                    route.route_path.forEach((point: any, index: number) => {
+                    route.route_path.forEach((point: unknown, index: number) => {
                         if (Array.isArray(point) && point.length >= 2) {
                             const pointLat = point[1];
                             const pointLng = point[0];
@@ -89,11 +89,12 @@ export async function POST(request: NextRequest) {
                 });
             }
 
+            const foundPoint = nearestPoint as RoutePoint;
             return NextResponse.json({
                 found: true,
                 original: { latitude, longitude },
-                nearest: nearestPoint,
-                snapped: nearestPoint.distance < 0.05 // Snap if within 50 meters
+                nearest: foundPoint,
+                snapped: foundPoint.distance < 0.05 // Snap if within 50 meters
             });
         }
 
