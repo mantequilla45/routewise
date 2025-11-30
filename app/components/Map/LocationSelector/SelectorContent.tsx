@@ -8,10 +8,8 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View 
 import RouteCard from "./RouteCard";
 
 export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{ exit: () => void, setShowBottomSheet: (value: boolean) => void }>) {
-    const { setIsPointAB, setIsPinPlacementEnabled, pointA, pointB, setPointA, setPointB, setRoutes, results, setResults, isPinPlacementEnabled, selectedRouteIndex, setSelectedRouteIndex } = useContext(MapPointsContext)
+    const { setIsPointAB, setIsPinPlacementEnabled, pointA, pointB, setPointA, setPointB, setRoutes, allRoutes, setAllRoutes, results, setResults, isPinPlacementEnabled, selectedRouteIndex, setSelectedRouteIndex } = useContext(MapPointsContext)
     const [wasSelectingFirstLocation, setWasSelectingFirstLocation] = useState(false)
-    const [allRoutes, setAllRoutes] = useState<GoogleMapsPolyline[]>([]); // Store all routes
-    const [routeIndexMap, setRouteIndexMap] = useState<Map<number, number>>(new Map()); // Map result index to polyline index
 
     // Auto-open second location selection after first location is selected
     useEffect(() => {
@@ -26,9 +24,19 @@ export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{
         }
     }, [pointA, isPinPlacementEnabled, wasSelectingFirstLocation]);
 
+    // Monitor allRoutes changes
+    useEffect(() => {
+        console.log(`allRoutes updated: now contains ${allRoutes.length} polylines`);
+        if (allRoutes.length > 0) {
+            console.log(`allRoutes polyline IDs:`, allRoutes.map(r => r.id));
+        }
+    }, [allRoutes]);
+
     // Handle route selection
     const handleRouteSelect = (index: number) => {
         console.log(`Route card clicked: index ${index}, current selected: ${selectedRouteIndex}`);
+        console.log(`Current allRoutes array length: ${allRoutes.length}`);
+        console.log(`allRoutes contents:`, allRoutes.map((r, i) => `[${i}]: ${r.id}, ${r.coordinates.length} points`));
         
         // Find the corresponding route in results
         const selectedResult = results[index];
@@ -39,13 +47,14 @@ export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{
         
         setSelectedRouteIndex(index);
         
-        // Use the pre-calculated index map
-        const polylineIndex = routeIndexMap.get(index);
-        if (polylineIndex !== undefined && polylineIndex < allRoutes.length) {
-            setRoutes([allRoutes[polylineIndex]]);
-            console.log(`Selected route ${index}: ${selectedResult.routeId}, showing polyline ${polylineIndex}`);
+        // Since we now create polylines for all routes with matching indices, we can use the index directly
+        if (index < allRoutes.length && allRoutes[index]) {
+            console.log(`Found polyline at index ${index}:`, allRoutes[index].id, `with ${allRoutes[index].coordinates.length} coordinates`);
+            setRoutes([allRoutes[index]]);
+            console.log(`Selected route ${index}: ${selectedResult.routeId}, showing polyline at index ${index}`);
         } else {
             console.warn(`No polyline found for route ${selectedResult.routeId} at index ${index}`);
+            console.warn(`allRoutes length: ${allRoutes.length}, requested index: ${index}`);
             setRoutes([]);
         }
     };
@@ -62,20 +71,14 @@ export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{
             if (Array.isArray(routes) && routes.length > 0) {
                 setResults(routes);
                 
-                // Build index map and filter routes
-                const indexMap = new Map<number, number>();
+                // Build polylines for ALL routes to maintain consistent indexing
                 const googlePolylineRoutes: GoogleMapsPolyline[] = [];
-                let polylineIndex = 0;
                 
                 routes.forEach((r, resultIndex) => {
-                    // Check if this route has a valid polyline
+                    // Create a polyline for every route, even if empty
                     if (r.latLng && r.latLng.length > 0) {
-                        // Map the result index to the polyline index
-                        indexMap.set(resultIndex, polylineIndex);
-                        
-                        // Create the polyline
                         const polyline: GoogleMapsPolyline = {
-                            id: `route_${polylineIndex}`,
+                            id: `route_${resultIndex}`,
                             coordinates: r.latLng.map(coord => ({
                                 latitude: coord.latitude,
                                 longitude: coord.longitude
@@ -86,18 +89,25 @@ export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{
                         };
                         
                         googlePolylineRoutes.push(polyline);
-                        polylineIndex++;
-                        
-                        console.log(`Mapped result ${resultIndex} (${r.routeId}) to polyline ${polylineIndex - 1}`);
+                        console.log(`Created polyline for result ${resultIndex} (${r.routeId})`);
                     } else {
-                        console.log(`Result ${resultIndex} (${r.routeId}) has no valid polyline`);
+                        // Push empty polyline to maintain index consistency
+                        const emptyPolyline: GoogleMapsPolyline = {
+                            id: `route_${resultIndex}_empty`,
+                            coordinates: [],
+                            color: '#33ff00',
+                            width: 16,
+                            geodesic: true
+                        };
+                        googlePolylineRoutes.push(emptyPolyline);
+                        console.log(`Created empty polyline for result ${resultIndex} (${r.routeId})`);
                     }
                 });
                 
                 console.log(`Created ${googlePolylineRoutes.length} polylines from ${routes.length} results`);
                 
-                // Store the index map and routes
-                setRouteIndexMap(indexMap);
+                // Store all routes (no need for index map anymore since indices match directly)
+                console.log(`Setting allRoutes with ${googlePolylineRoutes.length} polylines`);
                 setAllRoutes(googlePolylineRoutes);
                 
                 // Display the first valid route if available
@@ -138,11 +148,11 @@ export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{
 
     const onClear = () => {
         // Clear all points and routes
-        console.log("Clearing map...");
+        console.log("Clearing map... (onClear called)");
+        console.trace("onClear call stack"); // This will show what called onClear
         setResults([]); // Clear route results first
         setRoutes([]); // Clear polylines from map
         setAllRoutes([]); // Clear stored routes
-        setRouteIndexMap(new Map()); // Clear index map
         setSelectedRouteIndex(null); // Clear selection
         
         // Use a small delay to ensure routes are cleared before points
