@@ -210,7 +210,7 @@ export default function RoutesList({
             {filteredRoutes.map((route) => (
               <tr
                 key={route.id}
-                className="border-b bg-white hover:bg-gray-50 border-bl-xl border-br-xl"
+                className="border-b bg-white border-bl-xl border-br-xl"
               >
                 <td className="p-2 font-medium text-black">
                   {route.route_code}
