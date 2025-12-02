@@ -1081,7 +1081,7 @@ export default function EnhancedAddRoutePage() {
                                           contribution.id
                                         )
                                       }
-                                      className="px-3 py-1 text-sm bg-yellow-500 text-white rounded hover:bg-yellow-600"
+                                      className="px-3 py-1 text-sm bg-[#FFCC66] text-white rounded hover:bg-[#CC9933]"
                                     >
                                       Edit
                                     </button>
@@ -1117,7 +1117,7 @@ export default function EnhancedAddRoutePage() {
                               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                                 {/* Left side - Details and Controls */}
                                 <div className="space-y-4">
-                                  <div className="bg-gray-50 p-4 rounded-lg">
+                                  <div className="p-4 rounded-lg">
                                     <h4 className="font-semibold mb-3 text-lg">
                                       Route Details
                                     </h4>
