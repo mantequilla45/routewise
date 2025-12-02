@@ -42,43 +42,39 @@ export async function updateSession(request: NextRequest) {
   const user = data?.claims;
   const pathname = request.nextUrl.pathname;
 
-  // if (
-  //   pathname !== '/' &&
-  //   !user &&
-  //   !pathname.startsWith('/auth')
-  // ) {
-  //   const url = request.nextUrl.clone()
-  //   url.pathname = '/'
-  //   return NextResponse.redirect(url)
-  // }
-
-  // if (pathname === '/' && user) {
-  //   const url = request.nextUrl.clone()
-  //   url.pathname = '/dashboard'
-  //   return NextResponse.redirect(url)
-  // }
-
-  const protectedPath = "/dashboard";
-  const loginPath = "/";
-  const isDashboardRoute = pathname.startsWith(protectedPath);
-  const isAuthRoute = pathname.startsWith("/auth") || pathname === loginPath;
-
-  // Scenario A: Unauthenticated User trying to access Dashboard (Redundant due to page guard, but good practice)
-  // If the server guard works, this line is less critical for /dashboard security.
-  // We remove this block because the Server Guard handles it, which simplifies middleware for deployment stability.
-
-  if (!user && isDashboardRoute) {
+  if (pathname !== "/" && !user && !pathname.startsWith("/auth")) {
     const url = request.nextUrl.clone();
-    url.pathname = loginPath;
+    url.pathname = "/";
     return NextResponse.redirect(url);
   }
 
-  // 🚀 SCENARIO B: Authenticated User trying to access Login/Root
-  if (user && isAuthRoute) {
+  if (pathname === "/" && user) {
     const url = request.nextUrl.clone();
-    url.pathname = protectedPath; // Redirect to /dashboard
+    url.pathname = "/dashboard";
     return NextResponse.redirect(url);
   }
+
+  // const protectedPath = "/dashboard";
+  // const loginPath = "/";
+  // const isDashboardRoute = pathname.startsWith(protectedPath);
+  // const isAuthRoute = pathname.startsWith("/auth") || pathname === loginPath;
+
+  // // Scenario A: Unauthenticated User trying to access Dashboard (Redundant due to page guard, but good practice)
+  // // If the server guard works, this line is less critical for /dashboard security.
+  // // We remove this block because the Server Guard handles it, which simplifies middleware for deployment stability.
+
+  // if (!user && isDashboardRoute) {
+  //   const url = request.nextUrl.clone();
+  //   url.pathname = loginPath;
+  //   return NextResponse.redirect(url);
+  // }
+
+  // // 🚀 SCENARIO B: Authenticated User trying to access Login/Root
+  // if (user && isAuthRoute) {
+  //   const url = request.nextUrl.clone();
+  //   url.pathname = protectedPath; // Redirect to /dashboard
+  //   return NextResponse.redirect(url);
+  // }
 
   // IMPORTANT: You *must* return the supabaseResponse object as it is.
   // If you're creating a new response object with NextResponse.next() make sure to:
