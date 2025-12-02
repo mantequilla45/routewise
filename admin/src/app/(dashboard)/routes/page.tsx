@@ -1029,19 +1029,19 @@ export default function EnhancedAddRoutePage() {
                       return (
                         <div
                           key={contribution.id}
-                          className="border rounded-lg p-4 hover:bg-gray-50"
+                          className="border-[#CC9933] border-2 rounded-lg p-4"
                         >
                           <div className="flex justify-between items-start mb-4">
                             <div>
-                              <h3 className="text-lg font-semibold text-gray-900">
+                              <h3 className="text-lg font-semibold text-white">
                                 Route {contribution.route_code}
                               </h3>
-                              <p className="text-sm text-gray-600">
+                              <p className="text-sm text-gray-400">
                                 Contributed by: {contribution.contributor_name}
                                 {contribution.contributor_email &&
                                   ` (${contribution.contributor_email})`}
                               </p>
-                              <p className="text-xs text-gray-500">
+                              <p className="text-xs text-gray-400">
                                 Submitted:{" "}
                                 {new Date(
                                   contribution.created_at

@@ -208,7 +208,10 @@ export default function RoutesList({
           </thead>
           <tbody>
             {filteredRoutes.map((route) => (
-              <tr key={route.id} className="border-b hover:bg-gray-50">
+              <tr
+                key={route.id}
+                className="border-b bg-white hover:bg-gray-50 border-bl-xl border-br-xl"
+              >
                 <td className="p-2 font-medium text-black">
                   {route.route_code}
                 </td>
