@@ -137,14 +137,14 @@ export default function DashboardPage() {
     return colors[color as keyof typeof colors];
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-[#1f1f1f]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FFCC66]"></div>
-        <p className="ml-4 text-white">Loading dashboard data...</p>
-      </div>
-    );
-  }
+  // if (isLoading) {
+  //   return (
+  //     <div className="flex items-center justify-center h-screen bg-[#2D2D2D]">
+  //       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FFCC66]"></div>
+  //       <p className="ml-4 text-white">Loading dashboard data...</p>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="space-y-6">

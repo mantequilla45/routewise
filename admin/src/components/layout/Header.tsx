@@ -6,7 +6,7 @@ export default function Header() {
   const [showNotifications, setShowNotifications] = useState(false);
 
   return (
-    <header className="bg-[#2D2D2D] px-6 py-4 shadow-sm sticky top-0 left-0 flex flex-col">
+    <header className="bg-[#2D2D2D] px-6 py-4 border-b-2 border-[#404040] sticky top-0 left-0 flex flex-col z-50">
       <div className="flex items-center justify-between">
         {/* Search Bar */}
         <div className="flex-1 max-w-3xl text-[#FFCC66] text-xl">

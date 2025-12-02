@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ReactElement } from "react";
+import { ReactElement, useState, useEffect } from "react";
 import {
   Home,
   MapPin,
@@ -26,7 +26,26 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
+  const [currentPath, setCurrentPath] = useState("");
   const pathname = usePathname();
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setCurrentPath(window.location.pathname);
+    }
+  }, []);
+
+  const handleLogout = () => {
+    // 1. Clear authentication token (if stored client-side)
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("authToken");
+    }
+    // 2. Redirect to the root/login page
+    if (typeof window !== "undefined") {
+      window.location.pathname = "/";
+    }
+    // NOTE: In a real app, this should follow a successful call to `supabase.auth.signOut()`
+  };
 
   const navItems: NavItem[] = [
     {
@@ -159,21 +178,28 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
       <div className="p-2 border-t">
         <div
           className={`flex items-center space-x-3 p-3 rounded-xl transition-all group ${
-            isCollapsed ? "justify-left w-full" : ""
+            isCollapsed ? "justify-start w-full" : ""
           }`}
         >
           <div className="w-10 h-10 min-w-10 min-h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-md">
             <span className="text-white font-semibold text-sm">A</span>
           </div>
+
           {!isCollapsed && (
             <div className="flex-1">
-              <p className="text-sm font-medium text-white">Admin</p>
-              <p className="text-xs text-gray-400">admin@routewise.com</p>
+              <p className="text-sm font-medium text-white flex justify-start">
+                Admin
+              </p>
+              <p className="text-xs text-gray-400 flex justify-start">
+                admin@routewise.com
+              </p>
             </div>
           )}
-          {!isCollapsed && (
-            <LogOut className="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
-          )}
+          <button onClick={handleLogout}>
+            {!isCollapsed && (
+              <LogOut className="w-4 h-4 text-gray-400 hover:text-gray-900 transition-colors cursor-pointer" />
+            )}
+          </button>
         </div>
       </div>
     </aside>
