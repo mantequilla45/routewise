@@ -2,27 +2,25 @@
 
 import { useState, useEffect } from "react";
 
+interface RecentRoute {
+  id: string;
+  route_code: string;
+  created_at: string;
+  distance?: number;
+  start_point_name?: string;
+  end_point_name?: string;
+}
+
 export default function DashboardPage() {
+  const [recentRoutes, setRecentRoutes] = useState<RecentRoute[]>([]);
   const [stats, setStats] = useState({
     totalRoutes: 0,
     // activeDrivers: 0,
     todayTrips: 0,
     // revenue: 0,
   });
-  interface RecentRoute {
-    id: string;
-    route_code: string;
-    created_at: string;
-    distance?: number;
-    start_point_name?: string;
-    end_point_name?: string;
-  }
-  const [recentRoutes, setRecentRoutes] = useState<RecentRoute[]>([]);
-  const [, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
+  const [isLoading, setIsLoading] = useState(true);
 
   const fetchDashboardData = async () => {
     try {
@@ -53,6 +51,10 @@ export default function DashboardPage() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
 
   const statCards = [
     {
@@ -134,6 +136,15 @@ export default function DashboardPage() {
     };
     return colors[color as keyof typeof colors];
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-[#1f1f1f]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FFCC66]"></div>
+        <p className="ml-4 text-white">Loading dashboard data...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -287,7 +298,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <a
             href="/routes"
-            className="bg-white p-4 rounded-xl hover:shadow-md transition-all duration-200 text-center block hover:scale-105"
+            className="bg-[#404040] p-4 rounded-xl hover:shadow-md transition-all duration-200 text-center block hover:scale-105"
           >
             <svg
               className="w-8 h-8 mx-auto mb-2 text-[#FFCC66]"
@@ -302,11 +313,11 @@ export default function DashboardPage() {
                 d="M12 6v6m0 0v6m0-6h6m-6 0H6"
               />
             </svg>
-            <span className="text-sm font-medium text-gray-900">Add Route</span>
+            <span className="text-sm font-medium text-white">Add Route</span>
           </a>
           <a
             href="/routes"
-            className="bg-white p-4 rounded-xl hover:shadow-md transition-all duration-200 text-center block hover:scale-104"
+            className="bg-[#404040] p-4 rounded-xl hover:shadow-md transition-all duration-200 text-center block hover:scale-104"
           >
             <svg
               className="w-8 h-8 mx-auto mb-2 text-[#FFCC66]"
@@ -321,13 +332,13 @@ export default function DashboardPage() {
                 d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
               />
             </svg>
-            <span className="text-sm font-medium text-gray-900">
+            <span className="text-sm font-medium text-white">
               Manage Routes
             </span>
           </a>
           <a
             href="/analytics"
-            className="bg-white p-4 rounded-xl hover:shadow-md transition-all duration-200 text-center block hover:scale-105"
+            className="bg-[#404040] p-4 rounded-xl hover:shadow-md transition-all duration-200 text-center block hover:scale-105"
           >
             <svg
               className="w-8 h-8 mx-auto mb-2 text-[#FFCC66]"
@@ -342,13 +353,13 @@ export default function DashboardPage() {
                 d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
               />
             </svg>
-            <span className="text-sm font-medium text-gray-900">
+            <span className="text-sm font-medium text-white">
               View Analytics
             </span>
           </a>
           <a
             href="/settings"
-            className="bg-white p-4 rounded-xl hover:shadow-md transition-all duration-200 text-center block hover:scale-105"
+            className="bg-[#404040] p-4 rounded-xl hover:shadow-md transition-all duration-200 text-center block hover:scale-105"
           >
             <svg
               className="w-8 h-8 mx-auto mb-2 text-[#FFCC66]"
@@ -363,7 +374,7 @@ export default function DashboardPage() {
                 d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
               />
             </svg>
-            <span className="text-sm font-medium text-gray-900">Settings</span>
+            <span className="text-sm font-medium text-white">Settings</span>
           </a>
         </div>
       </div>
