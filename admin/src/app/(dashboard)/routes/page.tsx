@@ -1113,29 +1113,29 @@ export default function EnhancedAddRoutePage() {
 
                           {/* Show review details if selected */}
                           {isReviewing && (
-                            <div className="mt-4 border-t pt-4">
+                            <div className="mt-4 border-t-2 border-[#404040] pt-2">
                               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                                 {/* Left side - Details and Controls */}
                                 <div className="space-y-4">
-                                  <div className="p-4 rounded-lg">
-                                    <h4 className="font-semibold mb-3 text-lg">
+                                  <div className="rounded-lg">
+                                    <h4 className="font-semibold mb-3 text-lg text-white">
                                       Route Details
                                     </h4>
                                     <div className="space-y-3">
                                       <div className="text-sm space-y-2">
-                                        <p className="flex justify-between">
+                                        <p className="flex justify-between text-white">
                                           <strong>Route Code:</strong>
                                           <span className="text-blue-600 font-medium">
                                             {contribution.route_code}
                                           </span>
                                         </p>
-                                        <p className="flex justify-between">
+                                        <p className="flex justify-between text-white">
                                           <strong>Total Points:</strong>
                                           <span>
                                             {contributionCoordinates.length}
                                           </span>
                                         </p>
-                                        <p className="flex justify-between">
+                                        <p className="flex justify-between text-white">
                                           <strong>Route Type:</strong>
                                           <span>
                                             {contribution.forward_geojson.type}
@@ -1299,7 +1299,7 @@ export default function EnhancedAddRoutePage() {
                                 <div className="bg-gray-50 p-4 rounded-lg">
                                   <h4 className="font-semibold mb-3 text-lg flex items-center">
                                     <svg
-                                      className="w-5 h-5 mr-2 text-blue-600"
+                                      className="w-5 h-5 mr-2 text-[#FFCC66]"
                                       fill="none"
                                       stroke="currentColor"
                                       viewBox="0 0 24 24"
