@@ -130,7 +130,7 @@ export default function DatabasePage() {
   );
 
   return (
-    <div className="space-y-6 w-[250px]">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -431,7 +431,7 @@ export default function DatabasePage() {
                   Error loading table: {currentTableData.error}
                 </div>
               ) : viewMode === "schema" ? (
-                <div className="p-6 overflow-x-auto">
+                <div className="p-6">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
