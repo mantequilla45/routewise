@@ -307,7 +307,7 @@ export default function DatabasePage() {
                     className={`w-full text-left px-4 py-3 transition-all hover:bg-[#3A3A3A] ${
                       isSelected
                         ? "bg-[#3A3A3A] border-l-4 border-l-[#CC9933] rounded-md"
-                        : "border-b-2 border-[#3A3A3A]"
+                        : "border-b-2 border-[#3A3A3A] rounded-md"
                     }`}
                   >
                     <div className="flex items-center justify-between">
@@ -355,14 +355,14 @@ export default function DatabasePage() {
           {/* Controls Bar */}
           <div className="rounded-xl p-4 mb-2">
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center justify-between space-x-4">
                 <h3 className="font-semibold text-white">{selectedTable}</h3>
                 <div className="flex space-x-2">
                   <button
                     onClick={() => setViewMode("table")}
                     className={`px-3 py-1.5 rounded-lg transition-colors ${
                       viewMode === "table"
-                        ? "bg-[#FFCC66] text-white"
+                        ? "bg-[#3A3A3A] text-white"
                         : "text-gray-600 hover:bg-[#3A3A3A]"
                     }`}
                   >
@@ -372,7 +372,7 @@ export default function DatabasePage() {
                     onClick={() => setViewMode("schema")}
                     className={`px-3 py-1.5 rounded-lg transition-colors ${
                       viewMode === "schema"
-                        ? "bg-[#FFCC66] text-white"
+                        ? "bg-[#3A3A3A] text-white"
                         : "text-gray-600 hover:bg-[#3A3A3A]"
                     }`}
                   >
@@ -382,7 +382,7 @@ export default function DatabasePage() {
                     onClick={() => setViewMode("raw")}
                     className={`px-3 py-1.5 rounded-lg transition-colors ${
                       viewMode === "raw"
-                        ? "bg-[#FFCC66] text-white"
+                        ? "bg-[#3A3A3A] text-white"
                         : "text-gray-600 hover:bg-[#3A3A3A]"
                     }`}
                   >
@@ -397,7 +397,7 @@ export default function DatabasePage() {
                   placeholder="Search in table..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="px-4 py-2 bg-[#3A3A3A] rounded-lg focus:outline-none focus:ring-2"
+                  className="text-white px-4 py-2 bg-[#3A3A3A] rounded-lg focus:outline-none focus:ring-2 focus:ring-bg-white"
                 />
                 <button
                   onClick={() => exportTableData(selectedTable)}
@@ -430,60 +430,58 @@ export default function DatabasePage() {
                   Error loading table: {currentTableData.error}
                 </div>
               ) : viewMode === "schema" ? (
-                <div className="overflow-x-auto">
-                  <div className="p-6">
-                    <table className="divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Column Name
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Data Type
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Nullable
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Default
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {currentTableData.columns.map((column) => (
-                          <tr
-                            key={column.column_name}
-                            className="hover:bg-gray-50"
-                          >
-                            <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                              {column.column_name}
-                            </td>
-                            <td className="px-6 py-4 text-sm text-gray-500">
-                              <code className="bg-gray-100 px-2 py-1 rounded">
-                                {column.data_type}
+                <div className="p-6 overflow-auto max-h-[600px]">
+                  <table className="divide-y divide-gray-200">
+                    <thead className="bg-gray-50 sticky top-0">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                          Column Name
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                          Data Type
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                          Nullable
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                          Default
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {currentTableData.columns.map((column) => (
+                        <tr
+                          key={column.column_name}
+                          className="hover:bg-gray-50"
+                        >
+                          <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                            {column.column_name}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-500">
+                            <code className="bg-gray-100 px-2 py-1 rounded">
+                              {column.data_type}
+                            </code>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-500">
+                            {column.is_nullable === "YES" ? (
+                              <span className="text-green-600">✓ Yes</span>
+                            ) : (
+                              <span className="text-red-600">✗ No</span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-500">
+                            {column.column_default ? (
+                              <code className="bg-gray-100 px-2 py-1 rounded text-xs">
+                                {column.column_default}
                               </code>
-                            </td>
-                            <td className="px-6 py-4 text-sm text-gray-500">
-                              {column.is_nullable === "YES" ? (
-                                <span className="text-green-600">✓ Yes</span>
-                              ) : (
-                                <span className="text-red-600">✗ No</span>
-                              )}
-                            </td>
-                            <td className="px-6 py-4 text-sm text-gray-500">
-                              {column.column_default ? (
-                                <code className="bg-gray-100 px-2 py-1 rounded text-xs">
-                                  {column.column_default}
-                                </code>
-                              ) : (
-                                <span className="text-gray-400">-</span>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                            ) : (
+                              <span className="text-gray-400">-</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               ) : viewMode === "raw" ? (
                 <div className="bg-gray-900 p-6 overflow-x-auto max-h-[600px]">
@@ -492,7 +490,7 @@ export default function DatabasePage() {
                   </pre>
                 </div>
               ) : (
-                <div className="p-6 overflow-x-auto max-h-[600px]">
+                <div className="p-6 overflow-auto max-h-[600px]">
                   {filteredData.length > 0 ? (
                     <table className="divide-y divide-gray-200">
                       <thead className="bg-gray-50 sticky top-0">
@@ -500,7 +498,7 @@ export default function DatabasePage() {
                           {currentTableData.columns.map((column) => (
                             <th
                               key={column.column_name}
-                              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                              className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider"
                             >
                               {column.column_name}
                             </th>
