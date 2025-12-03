@@ -306,7 +306,7 @@ export default function DatabasePage() {
                     onClick={() => setSelectedTable(table)}
                     className={`w-full text-left px-4 py-3 transition-all hover:bg-[#3A3A3A] ${
                       isSelected
-                        ? "bg-[#3A3A3A] border-l-4 border-l-[#CC9933] border-b border-[#FFCC66]"
+                        ? "bg-[#3A3A3A] border-l-4 border-l-[#CC9933] rounded-md"
                         : "border-b-2 border-[#3A3A3A]"
                     }`}
                   >
@@ -353,17 +353,17 @@ export default function DatabasePage() {
         {/* Right Content - Table Data */}
         <div className="flex-1 w-[200px]">
           {/* Controls Bar */}
-          <div className="rounded-xl border border-gray-100 mb-2">
+          <div className="rounded-xl p-4 mb-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                <h3 className="font-semibold text-gray-900">{selectedTable}</h3>
+                <h3 className="font-semibold text-white">{selectedTable}</h3>
                 <div className="flex space-x-2">
                   <button
                     onClick={() => setViewMode("table")}
                     className={`px-3 py-1.5 rounded-lg transition-colors ${
                       viewMode === "table"
-                        ? "bg-[#FFCC66] text-gray-700"
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        ? "bg-[#FFCC66] text-white"
+                        : "text-gray-600 hover:bg-[#3A3A3A]"
                     }`}
                   >
                     Table
@@ -372,8 +372,8 @@ export default function DatabasePage() {
                     onClick={() => setViewMode("schema")}
                     className={`px-3 py-1.5 rounded-lg transition-colors ${
                       viewMode === "schema"
-                        ? "bg-blue-100 text-blue-700"
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        ? "bg-[#FFCC66] text-white"
+                        : "text-gray-600 hover:bg-[#3A3A3A]"
                     }`}
                   >
                     Schema
@@ -382,8 +382,8 @@ export default function DatabasePage() {
                     onClick={() => setViewMode("raw")}
                     className={`px-3 py-1.5 rounded-lg transition-colors ${
                       viewMode === "raw"
-                        ? "bg-blue-100 text-blue-700"
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        ? "bg-[#FFCC66] text-white"
+                        : "text-gray-600 hover:bg-[#3A3A3A]"
                     }`}
                   >
                     JSON
@@ -397,7 +397,7 @@ export default function DatabasePage() {
                   placeholder="Search in table..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="px-4 py-2 bg-[#3A3A3A] rounded-lg focus:outline-none focus:ring-2"
                 />
                 <button
                   onClick={() => exportTableData(selectedTable)}
