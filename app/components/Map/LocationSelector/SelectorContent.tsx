@@ -252,14 +252,14 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
 
             {results && results.length > 0 && (
                 <View style={styles.routeList}>
+                    <Text style={{ color: 'white', fontFamily: 'Lexend_400Regular', marginBottom: 10 }}>Results</Text>
                     <ScrollView
-                        style={{ flex: 1 }}
+                        style={{ maxHeight: 400 }}
                         contentContainerStyle={styles.routeCardContainer}
                         showsVerticalScrollIndicator={true}
                         nestedScrollEnabled={true}
                         scrollEnabled={true}
                     >
-                        <Text style={{ color: 'white', fontFamily: 'Lexend_400Regular', marginBottom: 10 }}>Results</Text>
                         {results.map((route, index) => {
                             console.log(`Rendering route card ${index}: ${route.routeId}`);
                             return (
@@ -407,12 +407,10 @@ const styles = StyleSheet.create({
     routeList: {
         marginTop: 10,
         width: '100%',
-        minHeight: 200,
-        maxHeight: 400,
     },
 
     routeCardContainer: {
-        paddingVertical: 10,
+        paddingBottom: 10,
         gap: 15,
     }
 });

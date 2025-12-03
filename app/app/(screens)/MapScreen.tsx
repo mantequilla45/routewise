@@ -9,61 +9,46 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 function MapScreenContent() {
     const { isPinPlacementEnabled, setIsPinPlacementEnabled, isPointAB, setIsPointAB, pointA, pointB } = useContext(MapPointsContext);
-    const [showBottomSheet, setShowBottomSheet] = useState(true)
-    const [prevPinPlacement, setPrevPinPlacement] = useState(false)
-    const [isSnapping, setIsSnapping] = useState(false)
     const [isSelectingLocations, setIsSelectingLocations] = useState(false) // Track if we're in location selection flow
-    const [isAnimatingOut, setIsAnimatingOut] = useState(false) // Track animation state
     const mapRef = useRef<NativeMapRef>(null);
     const insets = useSafeAreaInsets();
-    const animatedHeight = useRef(new Animated.Value(1)).current;
-    const swipeTranslateY = useRef(new Animated.Value(0)).current; // Start at visible position
-    const modalOpacity = useRef(new Animated.Value(1)).current;
-    const indicatorTranslateY = useRef(new Animated.Value(100)).current;
 
-    // Smooth animation when showing/hiding bottom sheet
-    useEffect(() => {
-        if (showBottomSheet && !isAnimatingOut) {
-            // Animate modal in from bottom
-            Animated.parallel([
-                Animated.spring(swipeTranslateY, {
-                    toValue: 0,
-                    tension: 65,
-                    friction: 11,
-                    useNativeDriver: true,
-                }),
-                Animated.timing(modalOpacity, {
-                    toValue: 1,
-                    duration: 300,
-                    useNativeDriver: true,
-                }),
-                Animated.timing(indicatorTranslateY, {
-                    toValue: 100,
-                    duration: 150,
-                    useNativeDriver: true,
-                })
-            ]).start();
-        } else if (!showBottomSheet && !isAnimatingOut) {
-            // Show indicator when modal is hidden
-            Animated.spring(indicatorTranslateY, {
+    // Single animation value to control modal position (0 = visible, 600 = hidden)
+    const modalPosition = useRef(new Animated.Value(0)).current;
+    const indicatorOpacity = useRef(new Animated.Value(0)).current;
+
+    // Helper functions for modal visibility
+    const showModal = (callback?: () => void) => {
+        Animated.parallel([
+            Animated.spring(modalPosition, {
                 toValue: 0,
                 tension: 65,
                 friction: 11,
                 useNativeDriver: true,
-            }).start();
-        }
-    }, [showBottomSheet, isAnimatingOut]);
+            }),
+            Animated.timing(indicatorOpacity, {
+                toValue: 0,
+                duration: 200,
+                useNativeDriver: true,
+            })
+        ]).start(callback);
+    };
 
-    // Animate minimize/maximize based on pin placement
-    useEffect(() => {
-        Animated.timing(animatedHeight, {
-            toValue: isPinPlacementEnabled ? 0 : 1,
-            duration: 300,
-            useNativeDriver: false,
-        }).start();
-        
-        setPrevPinPlacement(isPinPlacementEnabled);
-    }, [isPinPlacementEnabled]);
+    const hideModal = (callback?: () => void) => {
+        Animated.parallel([
+            Animated.timing(modalPosition, {
+                toValue: 600,
+                duration: 300,
+                useNativeDriver: true,
+            }),
+            Animated.timing(indicatorOpacity, {
+                toValue: 1,
+                duration: 200,
+                delay: 100,
+                useNativeDriver: true,
+            })
+        ]).start(callback);
+    };
 
     // Create pan responder for swipe down gesture
     const panResponder = useRef(
@@ -75,117 +60,59 @@ function MapScreenContent() {
             },
             onPanResponderGrant: () => {
                 // Set the initial value when gesture starts
-                swipeTranslateY.setOffset(swipeTranslateY._value);
-                swipeTranslateY.setValue(0);
+                modalPosition.extractOffset();
             },
             onPanResponderMove: (_, gestureState) => {
                 // Allow movement with some resistance at the top
                 const translation = gestureState.dy < 0 ? gestureState.dy * 0.3 : gestureState.dy;
-                swipeTranslateY.setValue(translation);
-                
-                // Fade out as we swipe down
-                const opacity = Math.max(0, Math.min(1, 1 - (gestureState.dy / 400)));
-                modalOpacity.setValue(opacity);
+                modalPosition.setValue(translation);
             },
             onPanResponderRelease: (_, gestureState) => {
-                swipeTranslateY.flattenOffset();
-                
+                modalPosition.flattenOffset();
+
                 // If swiped down more than 100 pixels or with velocity, dismiss
                 if (gestureState.dy > 100 || gestureState.vy > 0.3) {
-                    Animated.parallel([
-                        Animated.timing(swipeTranslateY, {
-                            toValue: 600,
-                            duration: 300,
-                            useNativeDriver: true,
-                        }),
-                        Animated.timing(modalOpacity, {
-                            toValue: 0,
-                            duration: 300,
-                            useNativeDriver: true,
-                        })
-                    ]).start(() => {
-                        setShowBottomSheet(false);
-                    });
+                    hideModal();
                 } else {
                     // Smooth snap back
-                    Animated.parallel([
-                        Animated.spring(swipeTranslateY, {
-                            toValue: 0,
-                            tension: 65,
-                            friction: 11,
-                            useNativeDriver: true,
-                        }),
-                        Animated.timing(modalOpacity, {
-                            toValue: 1,
-                            duration: 200,
-                            useNativeDriver: true,
-                        })
-                    ]).start();
+                    showModal();
                 }
             },
         })
     ).current;
-
-    // Pan responder for swipe up gesture
-    const swipeUpPanResponder = useRef(
-        PanResponder.create({
-            onStartShouldSetPanResponder: () => false,
-            onMoveShouldSetPanResponder: (_, gestureState) => {
-                // Only respond to significant upward swipes
-                return gestureState.dy < -10 && Math.abs(gestureState.dx) < 20;
-            },
-            onPanResponderRelease: (_, gestureState) => {
-                // If swiped up, show the location selector
-                if (gestureState.dy < -50 || gestureState.vy < -0.5) {
-                    setShowBottomSheet(true);
-                }
-            },
-        })
-    ).current;
-
 
     const handleConfirmLocation = () => {
         console.log('handleConfirmLocation called', { isPointAB, isSelectingLocations, isPinPlacementEnabled });
-        
+
         if (mapRef.current) {
             // If we're in the selection flow
             if (isSelectingLocations) {
                 if (isPointAB) {
-                    // First location - don't exit pin placement
+                    // First location - set it and continue to destination
                     console.log('Setting first location, will continue to destination...');
                     mapRef.current.setLocationAtCenter();
-                    
-                    // Continue to destination selection after a brief delay
-                    setTimeout(() => {
-                        console.log('Switching to destination selection');
-                        console.log('Current states before switch:', { isPinPlacementEnabled, isSelectingLocations });
-                        setIsPointAB(false); // Now select destination
-                        // Ensure we stay in pin placement mode
-                        setIsPinPlacementEnabled(true);
-                        console.log('Should now be selecting destination...');
-                    }, 500);
+
+                    // Immediately switch to destination selection
+                    setIsPointAB(false);
+                    // Stay in pin placement mode
+                    setIsPinPlacementEnabled(true);
                 } else {
                     // Second location - complete the flow
                     console.log('Setting destination, completing flow...');
                     mapRef.current.setLocationAtCenter();
-                    
-                    // Delay to allow the location to be set
-                    setTimeout(() => {
-                        setIsSelectingLocations(false);
-                        setIsPinPlacementEnabled(false);
-                        // Don't set showBottomSheet immediately - let the animation handle it
-                        
-                        // Start animation to show modal
-                        swipeTranslateY.setValue(600);
-                        modalOpacity.setValue(0);
-                        setShowBottomSheet(true);
-                    }, 300);
+
+                    // Exit pin placement and show modal
+                    setIsSelectingLocations(false);
+                    setIsPinPlacementEnabled(false);
+
+                    // Animate modal back up
+                    showModal();
                 }
             } else {
                 // Normal single location selection (not in flow)
                 mapRef.current.setLocationAtCenter();
                 setIsPinPlacementEnabled(false);
-                setShowBottomSheet(true);
+                showModal();
             }
         }
     };
@@ -194,36 +121,18 @@ function MapScreenContent() {
     const enterPinPlacementMode = (isPointA: boolean) => {
         console.log('Starting location selection flow...');
         setIsSelectingLocations(true); // Mark that we're in selection flow
-        setIsAnimatingOut(true); // Mark that we're animating
-        
-        // Animate modal out smoothly (same as swipe down)
-        Animated.parallel([
-            Animated.timing(swipeTranslateY, {
-                toValue: 600,
-                duration: 300,
-                useNativeDriver: true,
-            }),
-            Animated.timing(modalOpacity, {
-                toValue: 0,
-                duration: 300,
-                useNativeDriver: true,
-            })
-        ]).start(() => {
-            // Only hide after animation completes
-            setShowBottomSheet(false);
-            setIsAnimatingOut(false);
+
+        // Animate modal down smoothly, then enable pin placement
+        hideModal(() => {
             setIsPinPlacementEnabled(true);
             setIsPointAB(isPointA);
-            // Reset animation values for next time
-            swipeTranslateY.setValue(0);
-            modalOpacity.setValue(1);
         });
     };
 
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
             <Stack.Screen options={{ headerShown: false }} />
-            
+
             {/* Map in background, takes full screen */}
             <View style={styles.mapContainer}>
                 <NativeMap ref={mapRef} />
@@ -243,7 +152,7 @@ function MapScreenContent() {
                             onPress={() => {
                                 setIsSelectingLocations(false);
                                 setIsPinPlacementEnabled(false);
-                                setShowBottomSheet(true);
+                                showModal();
                             }}
                             style={styles.cancelButton}
                         >
@@ -273,52 +182,47 @@ function MapScreenContent() {
             )}
 
             {/* Location selector - always rendered, controlled by animation */}
-            <Animated.View 
+            <Animated.View
                 {...panResponder.panHandlers}
                 style={[
                     styles.locationSelector,
                     {
                         transform: [
                             {
-                                translateY: swipeTranslateY
+                                translateY: modalPosition
                             }
                         ],
-                        opacity: modalOpacity,
-                        pointerEvents: (showBottomSheet && !isPinPlacementEnabled) ? 'auto' : 'none'
+                        pointerEvents: isPinPlacementEnabled ? 'none' : 'auto'
                     }
                 ]}>
                 {/* Drag handle indicator */}
                 <View style={styles.dragHandle} />
-                <MapModalContent 
-                    exit={() => setShowBottomSheet(false)} 
-                    setShowBottomSheet={setShowBottomSheet}
+                <MapModalContent
+                    exit={() => hideModal()}
+                    setShowBottomSheet={(value) => value ? showModal() : hideModal()}
                     enterPinPlacementMode={enterPinPlacementMode}
                 />
             </Animated.View>
-            
-            {/* Swipe up indicator - always rendered but animated in/out */}
-            {!isPinPlacementEnabled && (
-                <Animated.View 
-                    style={[
-                        styles.swipeUpIndicator,
-                        {
-                            transform: [{
-                                translateY: indicatorTranslateY
-                            }]
-                        }
-                    ]}
+
+            {/* Swipe up indicator - shown when modal is hidden */}
+            <Animated.View
+                style={[
+                    styles.swipeUpIndicator,
+                    {
+                        opacity: indicatorOpacity,
+                        pointerEvents: isPinPlacementEnabled ? 'none' : 'auto'
+                    }
+                ]}
+            >
+                <TouchableOpacity
+                    onPress={() => showModal()}
+                    activeOpacity={0.9}
+                    style={{ width: '100%', alignItems: 'center' }}
                 >
-                    <TouchableOpacity 
-                        {...swipeUpPanResponder.panHandlers}
-                        onPress={() => setShowBottomSheet(true)}
-                        activeOpacity={0.9}
-                        style={{ width: '100%', alignItems: 'center' }}
-                    >
-                        <View style={styles.dragHandle} />
-                        <Text style={styles.swipeUpText}>Tap to select location</Text>
-                    </TouchableOpacity>
-                </Animated.View>
-            )}
+                    <View style={styles.dragHandle} />
+                    <Text style={styles.swipeUpText}>Tap to select location</Text>
+                </TouchableOpacity>
+            </Animated.View>
         </View>
     );
 }
@@ -463,7 +367,7 @@ const styles = StyleSheet.create({
     },
     confirmLocationButton: {
         position: 'absolute',
-        bottom: 20,
+        bottom: 80,
         alignSelf: 'center',
         left: 20,
         right: 20,
