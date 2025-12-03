@@ -8,7 +8,7 @@ import { Animated, StyleSheet, Text, TouchableOpacity, View, PanResponder } from
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 function MapScreenContent() {
-    const { isPinPlacementEnabled, setIsPinPlacementEnabled, isPointAB, setIsPointAB, pointA, pointB, isRouteFromList, setIsRouteFromList, routes, setRoutes, setAllRoutes, selectedRouteInfo, setSelectedRouteInfo } = useContext(MapPointsContext);
+    const { isPinPlacementEnabled, setIsPinPlacementEnabled, isPointAB, setIsPointAB, pointA, pointB, isRouteFromList, setIsRouteFromList, routes, setRoutes, setAllRoutes, selectedRouteInfo, setSelectedRouteInfo, results } = useContext(MapPointsContext);
     const [isSelectingLocations, setIsSelectingLocations] = useState(false);
     const mapRef = useRef<NativeMapRef>(null);
     const insets = useSafeAreaInsets();
@@ -240,25 +240,29 @@ function MapScreenContent() {
                 />
             </Animated.View>
             
-            {/* Swipe up indicator - shown when modal is hidden */}
-            <Animated.View 
-                style={[
-                    styles.swipeUpIndicator,
-                    {
-                        opacity: indicatorOpacity,
-                        pointerEvents: isPinPlacementEnabled ? 'none' : 'auto'
-                    }
-                ]}
-            >
-                <TouchableOpacity 
-                    onPress={() => showModal()}
-                    activeOpacity={0.9}
-                    style={{ width: '100%', alignItems: 'center' }}
+            {/* Swipe up indicator - shown when modal is hidden and not showing route from list */}
+            {!isRouteFromList && !isPinPlacementEnabled && (
+                <Animated.View 
+                    style={[
+                        styles.swipeUpIndicator,
+                        {
+                            opacity: indicatorOpacity,
+                            pointerEvents: 'auto'
+                        }
+                    ]}
                 >
-                    <View style={styles.dragHandle} />
-                    <Text style={styles.swipeUpText}>Tap to select location</Text>
-                </TouchableOpacity>
-            </Animated.View>
+                    <TouchableOpacity 
+                        onPress={() => showModal()}
+                        activeOpacity={0.9}
+                        style={{ width: '100%', alignItems: 'center' }}
+                    >
+                        <View style={styles.dragHandle} />
+                        <Text style={styles.swipeUpText}>
+                            {results && results.length > 0 ? 'Tap to view routes' : 'Tap to select location'}
+                        </Text>
+                    </TouchableOpacity>
+                </Animated.View>
+            )}
         </View>
     );
 }

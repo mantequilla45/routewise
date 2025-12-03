@@ -7,7 +7,7 @@ import { useContext, useEffect, useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import RouteCard from "./RouteCard";
 
-export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{ exit: () => void, setShowBottomSheet: (value: boolean) => void }>) {
+export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlacementMode }: Readonly<{ exit: () => void, setShowBottomSheet: (value: boolean) => void, enterPinPlacementMode?: (isPointA: boolean) => void }>) {
     const { setIsPointAB, setIsPinPlacementEnabled, pointA, pointB, setPointA, setPointB, setRoutes, allRoutes, setAllRoutes, results, setResults, isPinPlacementEnabled, selectedRouteIndex, setSelectedRouteIndex } = useContext(MapPointsContext)
     const [wasSelectingFirstLocation, setWasSelectingFirstLocation] = useState(false)
 
@@ -227,10 +227,14 @@ export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{
                 <View style={styles.pointInputBox}>
                     <View style={styles.pointInputContainer}>
                         <TouchableOpacity onPress={() => {
-                            setIsPinPlacementEnabled(true);
-                            setIsPointAB(true);
-                            setWasSelectingFirstLocation(true);
-                            setShowBottomSheet(false);
+                            if (enterPinPlacementMode) {
+                                enterPinPlacementMode(true);
+                            } else {
+                                setIsPinPlacementEnabled(true);
+                                setIsPointAB(true);
+                                setWasSelectingFirstLocation(true);
+                                setShowBottomSheet(false);
+                            }
                         }}>
                             <View style={styles.pointInputRow}>
                                 <View style={styles.pointInputBlock}>
@@ -260,9 +264,13 @@ export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{
                         <View style={styles.line}></View>
 
                         <TouchableOpacity onPress={() => {
-                            setIsPinPlacementEnabled(true);
-                            setIsPointAB(false);
-                            setShowBottomSheet(false);
+                            if (enterPinPlacementMode) {
+                                enterPinPlacementMode(false);
+                            } else {
+                                setIsPinPlacementEnabled(true);
+                                setIsPointAB(false);
+                                setShowBottomSheet(false);
+                            }
                         }}>
                             <View style={styles.pointInputRow}>
                                 <View style={styles.pointInputBlock}>
@@ -454,8 +462,8 @@ const styles = StyleSheet.create({
     routeList: {
         marginTop: 10,
         width: '100%',
-        minHeight: 200,
-        maxHeight: 400,
+        minHeight: 400,
+        maxHeight: 800,
     },
 
     routeCardContainer: {
