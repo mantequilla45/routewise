@@ -424,14 +424,14 @@ export default function DatabasePage() {
 
           {/* Data Display */}
           {currentTableData && (
-            <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+            <div className="bg-white rounded-xl border border-gray-100">
               {currentTableData.error ? (
                 <div className="p-6 text-center text-red-600">
                   Error loading table: {currentTableData.error}
                 </div>
               ) : viewMode === "schema" ? (
                 <div className="overflow-x-auto">
-                  <div className="p-6 min-w-full">
+                  <div className="p-6">
                     <table className="divide-y divide-gray-200">
                       <thead className="bg-gray-50">
                         <tr>
@@ -455,22 +455,22 @@ export default function DatabasePage() {
                             key={column.column_name}
                             className="hover:bg-gray-50"
                           >
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            <td className="px-6 py-4 text-sm font-medium text-gray-900">
                               {column.column_name}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <td className="px-6 py-4 text-sm text-gray-500">
                               <code className="bg-gray-100 px-2 py-1 rounded">
                                 {column.data_type}
                               </code>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <td className="px-6 py-4 text-sm text-gray-500">
                               {column.is_nullable === "YES" ? (
                                 <span className="text-green-600">✓ Yes</span>
                               ) : (
                                 <span className="text-red-600">✗ No</span>
                               )}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <td className="px-6 py-4 text-sm text-gray-500">
                               {column.column_default ? (
                                 <code className="bg-gray-100 px-2 py-1 rounded text-xs">
                                   {column.column_default}
@@ -486,7 +486,7 @@ export default function DatabasePage() {
                   </div>
                 </div>
               ) : viewMode === "raw" ? (
-                <div className="bg-gray-900 p-6 overflow-auto max-h-[600px]">
+                <div className="bg-gray-900 p-6 overflow-x-auto max-h-[600px]">
                   <pre className="text-green-400 text-xs font-mono">
                     {JSON.stringify(filteredData, null, 2)}
                   </pre>
