@@ -351,7 +351,7 @@ export default function DatabasePage() {
         </div>
 
         {/* Right Content - Table Data */}
-        <div className="flex-1">
+        <div className="flex-1 ">
           {/* Controls Bar */}
           <div className="bg-white rounded-xl border border-gray-100 p-4 mb-4">
             <div className="flex items-center justify-between">
@@ -424,7 +424,7 @@ export default function DatabasePage() {
 
           {/* Data Display */}
           {currentTableData && (
-            <div className="bg-[#CC9933] rounded-xl border border-gray-100 overflow-hidden">
+            <div className="bg-[#CC9933] rounded-xl border border-gray-100 overflow-x-hidden">
               {currentTableData.error ? (
                 <div className="p-6 text-center text-red-600">
                   Error loading table: {currentTableData.error}
