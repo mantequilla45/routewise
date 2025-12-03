@@ -183,7 +183,7 @@ export default function DatabasePage() {
 
       {/* Database Overview Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-[#3A3A3A] rounded-xl p-6 border">
+        <div className="bg-[#3A3A3A] rounded-xl p-6 border-2 border-[#FFCC66]">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-white">Total Tables</p>
@@ -209,17 +209,17 @@ export default function DatabasePage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-6 border border-gray-100">
+        <div className="bg-[#3A3A3A] rounded-xl p-6 border-2 border-[#FFCC66]">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Total Rows</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
+              <p className="text-sm text-white">Total Rows</p>
+              <p className="text-2xl font-bold text-white mt-1">
                 {totalRows.toLocaleString()}
               </p>
             </div>
-            <div className="p-3 bg-green-100 rounded-lg">
+            <div className="p-3 bg-[#CC9933] rounded-lg">
               <svg
-                className="w-6 h-6 text-green-600"
+                className="w-6 h-6 text-white"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -235,17 +235,17 @@ export default function DatabasePage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-6 border border-gray-100">
+        <div className="bg-[#3A3A3A] rounded-xl p-6 border-2 border-[#FFCC66]">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Total Columns</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
+              <p className="text-sm text-white">Total Columns</p>
+              <p className="text-2xl font-bold text-white mt-1">
                 {totalColumns}
               </p>
             </div>
-            <div className="p-3 bg-purple-100 rounded-lg">
+            <div className="p-3 bg-[#CC9933] rounded-lg">
               <svg
-                className="w-6 h-6 text-purple-600"
+                className="w-6 h-6 text-white"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -261,17 +261,17 @@ export default function DatabasePage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-6 border border-gray-100">
+        <div className="bg-[#3A3A3A] rounded-xl p-6 border-2 border-[#FFCC66]">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Database</p>
-              <p className="text-sm font-semibold text-green-600 mt-1">
+              <p className="text-sm text-white">Database</p>
+              <p className="text-sm font-semibold text-white mt-1">
                 PostgreSQL + PostGIS
               </p>
             </div>
-            <div className="p-3 bg-green-100 rounded-lg">
+            <div className="p-3 bg-[#CC9933] rounded-lg">
               <svg
-                className="w-6 h-6 text-green-600"
+                className="w-6 h-6 text-white"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -292,10 +292,10 @@ export default function DatabasePage() {
       <div className="flex space-x-6">
         {/* Left Sidebar - Table List */}
         <div className="w-64 flex-shrink-0">
-          <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-            <div className="p-4 border-b border-gray-100 bg-gray-50">
-              <h3 className="font-semibold text-gray-900">Tables</h3>
-            </div>
+          <div>
+            <h3 className="font-semibold text-white">Tables</h3>
+          </div>
+          <div className="rounded-xl border border-gray-100 overflow-hidden">
             <div className="max-h-[600px] overflow-y-auto">
               {databaseInfo.tables.map((table) => {
                 const tableData = databaseInfo.tableData[table];
