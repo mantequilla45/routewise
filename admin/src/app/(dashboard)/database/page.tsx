@@ -130,7 +130,7 @@ export default function DatabasePage() {
   );
 
   return (
-    <div className="space-y-6 bg-black">
+    <div className="space-y-6 w-[250px]">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
