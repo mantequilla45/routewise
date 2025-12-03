@@ -183,8 +183,8 @@ export default function DatabasePage() {
 
       {/* Database Overview Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="flex items-center justify-between">
-          <div className="p-6 bg-[#3A3A3A] flex items-center justify-between">
+        <div className="bg-[#3A3A3A] rounded-xl p-6 border border-gray-100">
+          <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-white">Total Tables</p>
               <p className="text-2xl font-bold text-white mt-1">
