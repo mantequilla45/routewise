@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { ReactElement, useState, useEffect } from "react";
 import {
   Home,
@@ -28,6 +28,7 @@ interface SidebarProps {
 export default function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
   const [currentPath, setCurrentPath] = useState("");
   const pathname = usePathname();
+  const router = useRouter();
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -35,16 +36,33 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
     }
   }, []);
 
-  const handleLogout = () => {
-    // 1. Clear authentication token (if stored client-side)
+  const handleLogout = async () => {
     if (typeof window !== "undefined") {
       localStorage.removeItem("authToken");
     }
-    // 2. Redirect to the root/login page
-    if (typeof window !== "undefined") {
-      window.location.pathname = "/";
+
+    try {
+      // 2. Call the dedicated API route to clear the httpOnly cookie on the server.
+      const response = await fetch("/api/logout", {
+        method: "POST",
+        // No need for headers/body as the server reads cookies automatically
+      });
+
+      if (response.ok) {
+        // 3. Navigate cleanly to the root page after successful logout (cookie is cleared).
+        router.replace("/");
+      } else {
+        console.error("Logout failed on server:", response.statusText);
+        // Optional: Fallback navigation or error handling
+        router.replace("/");
+      }
+    } catch (error) {
+      console.error("Error during logout API call:", error);
+      // Fallback hard navigation if API fails, ensuring a new session start attempt
+      if (typeof window !== "undefined") {
+        window.location.pathname = "/";
+      }
     }
-    // NOTE: In a real app, this should follow a successful call to `supabase.auth.signOut()`
   };
 
   const navItems: NavItem[] = [
