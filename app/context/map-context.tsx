@@ -19,6 +19,10 @@ type MapPointsContextType = {
     setResults: (r: MappedGeoRouteResult[]) => void;
     selectedRouteIndex: number | null;
     setSelectedRouteIndex: (index: number | null) => void;
+    isRouteFromList: boolean;
+    setIsRouteFromList: (value: boolean) => void;
+    selectedRouteInfo: { id: string; name: string } | null;
+    setSelectedRouteInfo: (info: { id: string; name: string } | null) => void;
 };
 
 export const MapPointsContext = createContext<MapPointsContextType>({
@@ -37,7 +41,11 @@ export const MapPointsContext = createContext<MapPointsContextType>({
     results: [],
     setResults: () => { },
     selectedRouteIndex: null,
-    setSelectedRouteIndex: () => { }
+    setSelectedRouteIndex: () => { },
+    isRouteFromList: false,
+    setIsRouteFromList: () => { },
+    selectedRouteInfo: null,
+    setSelectedRouteInfo: () => { }
 });
 
 export const MapPointsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -49,6 +57,8 @@ export const MapPointsProvider: React.FC<{ children: ReactNode }> = ({ children 
     const [allRoutes, setAllRoutes] = useState<GoogleMapsPolyline[]>([]);
     const [results, setResults] = useState<MappedGeoRouteResult[]>([]);
     const [selectedRouteIndex, setSelectedRouteIndex] = useState<number | null>(null);
+    const [isRouteFromList, setIsRouteFromList] = useState<boolean>(false);
+    const [selectedRouteInfo, setSelectedRouteInfo] = useState<{ id: string; name: string } | null>(null);
 
     const memoizedValue = useMemo(
         () => ({
@@ -67,9 +77,13 @@ export const MapPointsProvider: React.FC<{ children: ReactNode }> = ({ children 
             results,
             setResults,
             selectedRouteIndex,
-            setSelectedRouteIndex
+            setSelectedRouteIndex,
+            isRouteFromList,
+            setIsRouteFromList,
+            selectedRouteInfo,
+            setSelectedRouteInfo
         }),
-        [pointA, pointB, isPointAB, isPinPlacementEnabled, routes, allRoutes, results, selectedRouteIndex]
+        [pointA, pointB, isPointAB, isPinPlacementEnabled, routes, allRoutes, results, selectedRouteIndex, isRouteFromList, selectedRouteInfo]
     );
 
     return (

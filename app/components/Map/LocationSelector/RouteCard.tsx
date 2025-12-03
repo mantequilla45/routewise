@@ -3,31 +3,57 @@ import { MappedGeoRouteResult } from "@/types/GeoTypes";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { MultiRouteResult } from "@/app/services/routes/calculateMultiRoutes";
 
 type RouteCardProps = {
-    route: MappedGeoRouteResult;
+    route: MappedGeoRouteResult | MultiRouteResult;
     isSelected?: boolean;
     onSelect?: () => void;
 };
 
 export default function RouteCard({ route, isSelected = false, onSelect }: Readonly<RouteCardProps>) {
+    const isTransfer = 'isTransfer' in route && route.isTransfer;
+    
     return (
         <TouchableOpacity onPress={onSelect} activeOpacity={0.7}>
             <View style={[
                 styles.routeCard,
-                isSelected && styles.selectedCard
+                isSelected && styles.selectedCard,
+                isTransfer && styles.transferCard
             ]}>
                 <View style={styles.column1}>
                     <View>
-                        <Text style={styles.routeCode}>
-                            {route.routeId}
-                        </Text>
+                        {isTransfer ? (
+                            <View>
+                                <Text style={[styles.routeCode, styles.transferRouteCode]}>
+                                    {route.firstRoute?.routeId}
+                                </Text>
+                                <View style={styles.transferIndicator}>
+                                    <Ionicons name="arrow-down" size={16} color="#666" />
+                                    <Text style={styles.transferText}>Transfer</Text>
+                                </View>
+                                <Text style={[styles.routeCode, styles.transferRouteCode]}>
+                                    {route.secondRoute?.routeId}
+                                </Text>
+                            </View>
+                        ) : (
+                            <Text style={styles.routeCode}>
+                                {route.routeId}
+                            </Text>
+                        )}
                     </View>
                     <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
                     </View>
                 </View>
                 <View style={styles.column2}>
-                    <Text style={styles.fare}>P{route.fare}</Text>
+                    <Text style={styles.fare}>
+                        P{isTransfer && route.totalFare ? route.totalFare : route.fare}
+                    </Text>
+                    {isTransfer && (
+                        <Text style={styles.fareBreakdown}>
+                            P{route.firstRoute?.fare} + P{route.secondRoute?.fare}
+                        </Text>
+                    )}
                 </View>
             </View>
         </TouchableOpacity>
@@ -50,10 +76,34 @@ const styles = StyleSheet.create({
         borderColor: "#4CAF50",
         backgroundColor: "#E8F5E9",
     },
+    transferCard: {
+        backgroundColor: "#FFE5E5",
+        borderColor: "#FF6B6B",
+    },
     selectedIndicator: {
         position: 'absolute',
         top: 10,
         right: 10,
+    },
+    transferIndicator: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        paddingVertical: 2,
+    },
+    transferText: {
+        fontSize: 12,
+        color: '#666',
+        fontFamily: 'Lexend_400Regular',
+    },
+    transferRouteCode: {
+        fontSize: 18,
+    },
+    fareBreakdown: {
+        fontSize: 12,
+        color: '#666',
+        fontFamily: 'Lexend_400Regular',
+        marginTop: 4,
     },
     column1: {
         width: '50%',

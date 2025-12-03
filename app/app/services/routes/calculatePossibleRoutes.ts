@@ -1,10 +1,11 @@
 import { LatLng, MappedGeoRouteResult } from "@/types/GeoTypes";
 import { adjustToNearestRoad } from "../maps/roadAdjustment";
+import { calculateMultiRoutes, MultiRouteResult } from "./calculateMultiRoutes";
 
 export async function calculatePossibleRoutes(
     from: LatLng | null,
     to: LatLng | null
-): Promise<MappedGeoRouteResult[] | { error: string; warning?: string }> {
+): Promise<(MappedGeoRouteResult | MultiRouteResult)[] | { error: string; warning?: string }> {
     console.log('calculatePossibleRoutes called with:', { from, to });
     
     if (!from || !to) {
@@ -71,10 +72,24 @@ export async function calculatePossibleRoutes(
         // optionally validate the shape
         if (Array.isArray(data)) {
             console.log('Successfully calculated', data.length, 'routes');
-            return data as MappedGeoRouteResult[];
+            
+            // If we got single routes, return them
+            if (data.length > 0) {
+                return data as MappedGeoRouteResult[];
+            }
         }
 
-        return data;
+        // If no single routes found (empty array), try multi-route calculation
+        console.log('No single jeep routes found, attempting 2-jeep calculation...');
+        const multiRouteResult = await calculateMultiRoutes(adjustedFrom, adjustedTo);
+        
+        // Check if multi-route calculation returned an error
+        if ('error' in multiRouteResult) {
+            return multiRouteResult;
+        }
+        
+        // Return multi-route results
+        return multiRouteResult;
     } catch (error) {
         console.error('Error in calculatePossibleRoutes:', error);
         return { 

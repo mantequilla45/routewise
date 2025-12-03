@@ -1,6 +1,6 @@
 import MapModalContent from '@/components/Map/LocationSelector/SelectorContent';
 import NativeMap, { NativeMapRef } from '@/components/Map/NativeMap';
-import { MapPointsContext, MapPointsProvider } from '@/context/map-context';
+import { MapPointsContext } from '@/context/map-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack } from 'expo-router';
 import { useContext, useEffect, useRef, useState } from 'react';
@@ -8,64 +8,86 @@ import { Animated, StyleSheet, Text, TouchableOpacity, View, PanResponder } from
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 function MapScreenContent() {
-    const { isPinPlacementEnabled, setIsPinPlacementEnabled, isPointAB, pointA, pointB } = useContext(MapPointsContext);
-    const [showBottomSheet, setShowBottomSheet] = useState(true)
-    const [prevPinPlacement, setPrevPinPlacement] = useState(false)
-    const [isSnapping, setIsSnapping] = useState(false)
+    const { isPinPlacementEnabled, setIsPinPlacementEnabled, isPointAB, setIsPointAB, pointA, pointB, isRouteFromList, setIsRouteFromList, routes, setRoutes, setAllRoutes, selectedRouteInfo, setSelectedRouteInfo } = useContext(MapPointsContext);
+    const [isSelectingLocations, setIsSelectingLocations] = useState(false);
     const mapRef = useRef<NativeMapRef>(null);
     const insets = useSafeAreaInsets();
-    const animatedHeight = useRef(new Animated.Value(1)).current;
-    const swipeTranslateY = useRef(new Animated.Value(0)).current;
+    
+    // Single animation value to control modal position (0 = visible, 600 = hidden)
+    const modalPosition = useRef(new Animated.Value(isRouteFromList ? 600 : 0)).current;
+    const indicatorOpacity = useRef(new Animated.Value(isRouteFromList ? 1 : 0)).current;
 
-    // Animate minimize/maximize based on pin placement
+    // Helper functions for modal visibility
+    const showModal = (callback?: () => void) => {
+        Animated.parallel([
+            Animated.spring(modalPosition, {
+                toValue: 0,
+                tension: 65,
+                friction: 11,
+                useNativeDriver: true,
+            }),
+            Animated.timing(indicatorOpacity, {
+                toValue: 0,
+                duration: 200,
+                useNativeDriver: true,
+            })
+        ]).start(callback);
+    };
+
+    const hideModal = (callback?: () => void) => {
+        Animated.parallel([
+            Animated.timing(modalPosition, {
+                toValue: 600,
+                duration: 300,
+                useNativeDriver: true,
+            }),
+            Animated.timing(indicatorOpacity, {
+                toValue: 1,
+                duration: 200,
+                delay: 100,
+                useNativeDriver: true,
+            })
+        ]).start(callback);
+    };
+    
+    // Hide modal when route is from list
     useEffect(() => {
-        Animated.timing(animatedHeight, {
-            toValue: isPinPlacementEnabled ? 0 : 1,
-            duration: 300,
-            useNativeDriver: false,
-        }).start();
-        
-        setPrevPinPlacement(isPinPlacementEnabled);
-    }, [isPinPlacementEnabled]);
+        if (isRouteFromList) {
+            hideModal();
+        }
+    }, [isRouteFromList]);
 
     // Create pan responder for swipe down gesture
     const panResponder = useRef(
         PanResponder.create({
             onStartShouldSetPanResponder: () => false,
             onMoveShouldSetPanResponder: (_, gestureState) => {
-                // Only respond to significant downward swipes
-                return gestureState.dy > 10 && Math.abs(gestureState.dx) < 20;
+                // Only respond to vertical swipes
+                return Math.abs(gestureState.dy) > 5 && Math.abs(gestureState.dx) < Math.abs(gestureState.dy);
+            },
+            onPanResponderGrant: () => {
+                // Set the initial value when gesture starts
+                modalPosition.extractOffset();
             },
             onPanResponderMove: (_, gestureState) => {
-                // Only allow downward movement
-                if (gestureState.dy > 0) {
-                    swipeTranslateY.setValue(gestureState.dy);
+                // Allow slight upward movement with strong resistance for bounce effect
+                // Max 50px upward with heavy resistance, full downward movement
+                let translation = gestureState.dy;
+                if (gestureState.dy < 0) {
+                    // Apply exponential resistance for upward movement
+                    translation = Math.max(-50, gestureState.dy * 0.2);
                 }
+                modalPosition.setValue(translation);
             },
             onPanResponderRelease: (_, gestureState) => {
-                // If swiped down more than 150 pixels or with velocity, minimize
-                if (gestureState.dy > 150 || gestureState.vy > 0.5) {
-                    Animated.parallel([
-                        Animated.timing(swipeTranslateY, {
-                            toValue: 500,
-                            duration: 200,
-                            useNativeDriver: true,
-                        }),
-                        Animated.timing(animatedHeight, {
-                            toValue: 0,
-                            duration: 200,
-                            useNativeDriver: false,
-                        })
-                    ]).start(() => {
-                        setIsPinPlacementEnabled(true); // Enter pin placement mode
-                        swipeTranslateY.setValue(0);
-                    });
+                modalPosition.flattenOffset();
+                
+                // If swiped down more than 100 pixels or with velocity, dismiss
+                if (gestureState.dy > 100 || gestureState.vy > 0.3) {
+                    hideModal();
                 } else {
-                    // Snap back to position
-                    Animated.spring(swipeTranslateY, {
-                        toValue: 0,
-                        useNativeDriver: true,
-                    }).start();
+                    // Smooth snap back
+                    showModal();
                 }
             },
         })
@@ -74,8 +96,45 @@ function MapScreenContent() {
 
     const handleConfirmLocation = () => {
         if (mapRef.current) {
-            mapRef.current.setLocationAtCenter();
+            // If we're in the selection flow
+            if (isSelectingLocations) {
+                if (isPointAB) {
+                    // First location - set it and continue to destination
+                    mapRef.current.setLocationAtCenter();
+                    
+                    // Immediately switch to destination selection
+                    setIsPointAB(false);
+                    // Stay in pin placement mode
+                    setIsPinPlacementEnabled(true);
+                } else {
+                    // Second location - complete the flow
+                    mapRef.current.setLocationAtCenter();
+                    
+                    // Exit pin placement and show modal
+                    setIsSelectingLocations(false);
+                    setIsPinPlacementEnabled(false);
+                    
+                    // Animate modal back up
+                    showModal();
+                }
+            } else {
+                // Normal single location selection (not in flow)
+                mapRef.current.setLocationAtCenter();
+                setIsPinPlacementEnabled(false);
+                showModal();
+            }
         }
+    };
+
+    // Smooth transition to pin placement mode
+    const enterPinPlacementMode = (isPointA: boolean) => {
+        setIsSelectingLocations(true); // Mark that we're in selection flow
+        
+        // Animate modal down smoothly, then enable pin placement
+        hideModal(() => {
+            setIsPinPlacementEnabled(true);
+            setIsPointAB(isPointA);
+        });
     };
 
     return (
@@ -86,6 +145,31 @@ function MapScreenContent() {
             <View style={styles.mapContainer}>
                 <NativeMap ref={mapRef} />
             </View>
+
+            {/* Clear button when showing route from list */}
+            {isRouteFromList && routes.length > 0 && (
+                <View style={styles.clearRouteButton}>
+                    <View style={styles.routeInfoHeader}>
+                        <View style={styles.routeInfoContent}>
+                            <Text style={styles.routeInfoLabel}>Showing Route</Text>
+                            <Text style={styles.routeInfoCode}>{selectedRouteInfo?.id || 'Route'}</Text>
+                        </View>
+                        <TouchableOpacity 
+                            onPress={() => {
+                                setRoutes([]);
+                                setAllRoutes([]);
+                                setIsRouteFromList(false);
+                                setSelectedRouteInfo(null);
+                                showModal(); // Show the selector modal after clearing
+                            }}
+                            style={styles.clearButtonSmall}
+                            activeOpacity={0.8}
+                        >
+                            <Ionicons name="close-circle" size={28} color="#FF6B6B" />
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            )}
 
             {/* Pin placement mode indicator */}
             {isPinPlacementEnabled && (
@@ -99,8 +183,9 @@ function MapScreenContent() {
                         </Text>
                         <TouchableOpacity
                             onPress={() => {
+                                setIsSelectingLocations(false);
                                 setIsPinPlacementEnabled(false);
-                                setShowBottomSheet(true);
+                                showModal();
                             }}
                             style={styles.cancelButton}
                         >
@@ -129,31 +214,57 @@ function MapScreenContent() {
                 </View>
             )}
 
-            {/* Location selector at bottom, above tabs */}
-            <Animated.View style={[
-                styles.locationSelector,
-                {
-                    transform: [{
-                        translateY: animatedHeight.interpolate({
-                            inputRange: [0, 1],
-                            outputRange: [500, 0] // Slide down when minimized
-                        })
-                    }],
-                    opacity: animatedHeight
-                }
-            ]}>
-                <MapModalContent exit={() => setShowBottomSheet(false)} setShowBottomSheet={setShowBottomSheet} />
+            {/* Location selector - always rendered, controlled by animation */}
+            <Animated.View 
+                {...panResponder.panHandlers}
+                style={[
+                    styles.locationSelector,
+                    {
+                        transform: [
+                            {
+                                translateY: modalPosition
+                            }
+                        ],
+                        pointerEvents: isPinPlacementEnabled ? 'none' : 'auto'
+                    }
+                ]}>
+                {/* Extended background for bounce effect */}
+                <View style={styles.modalExtension} />
+                
+                {/* Drag handle indicator */}
+                <View style={styles.dragHandle} />
+                <MapModalContent 
+                    exit={() => hideModal()} 
+                    setShowBottomSheet={(value) => value ? showModal() : hideModal()}
+                    enterPinPlacementMode={enterPinPlacementMode}
+                />
+            </Animated.View>
+            
+            {/* Swipe up indicator - shown when modal is hidden */}
+            <Animated.View 
+                style={[
+                    styles.swipeUpIndicator,
+                    {
+                        opacity: indicatorOpacity,
+                        pointerEvents: isPinPlacementEnabled ? 'none' : 'auto'
+                    }
+                ]}
+            >
+                <TouchableOpacity 
+                    onPress={() => showModal()}
+                    activeOpacity={0.9}
+                    style={{ width: '100%', alignItems: 'center' }}
+                >
+                    <View style={styles.dragHandle} />
+                    <Text style={styles.swipeUpText}>Tap to select location</Text>
+                </TouchableOpacity>
             </Animated.View>
         </View>
     );
 }
 
 export default function MapScreen() {
-    return (
-        <MapPointsProvider>
-            <MapScreenContent></MapScreenContent>
-        </MapPointsProvider>
-    )
+    return <MapScreenContent />;
 }
 
 const styles = StyleSheet.create({
@@ -287,5 +398,79 @@ const styles = StyleSheet.create({
     confirmLocationButtonDisabled: {
         backgroundColor: '#9E9E9E',
         opacity: 0.7,
+    },
+    clearRouteButton: {
+        position: 'absolute',
+        top: 60,
+        left: 20,
+        right: 20,
+        zIndex: 100,
+    },
+    routeInfoHeader: {
+        backgroundColor: 'white',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: 16,
+        borderRadius: 12,
+        elevation: 5,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+    },
+    routeInfoContent: {
+        flex: 1,
+    },
+    routeInfoLabel: {
+        fontSize: 12,
+        color: '#666',
+        fontFamily: 'Lexend_400Regular',
+    },
+    routeInfoCode: {
+        fontSize: 20,
+        color: '#303030',
+        fontFamily: 'Lexend_600SemiBold',
+        marginTop: 2,
+    },
+    clearButtonSmall: {
+        marginLeft: 12,
+    },
+    modalExtension: {
+        position: 'absolute',
+        bottom: -200,
+        left: -20,
+        right: -20,
+        height: 250,
+        backgroundColor: '#303030',
+    },
+    dragHandle: {
+        width: 40,
+        height: 5,
+        backgroundColor: '#666',
+        borderRadius: 3,
+        alignSelf: 'center',
+        marginBottom: 10,
+        marginTop: -5,
+    },
+    swipeUpIndicator: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: '#303030',
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        paddingTop: 12,
+        paddingBottom: 15,
+        alignItems: 'center',
+        zIndex: 10,
+        elevation: 10,
+    },
+    swipeUpText: {
+        color: '#999',
+        fontSize: 14,
+        marginBottom: 5,
+        fontFamily: 'Lexend_400Regular',
     },
 });
