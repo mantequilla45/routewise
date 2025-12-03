@@ -292,10 +292,10 @@ export default function DatabasePage() {
       <div className="flex space-x-6">
         {/* Left Sidebar - Table List */}
         <div className="w-64 flex-shrink-0">
-          <div>
-            <h3 className="font-semibold text-white">Tables</h3>
+          <div className="flex items-start justify-start mb-2">
+            <h3 className="font-semibold text-white">TABLES</h3>
           </div>
-          <div className="rounded-xl border border-gray-100 overflow-hidden">
+          <div className="rounded-xl overflow-hidden">
             <div className="max-h-[600px] overflow-y-auto">
               {databaseInfo.tables.map((table) => {
                 const tableData = databaseInfo.tableData[table];
@@ -304,9 +304,9 @@ export default function DatabasePage() {
                   <button
                     key={table}
                     onClick={() => setSelectedTable(table)}
-                    className={`w-full text-left px-4 py-3 border-b border-gray-50 transition-all hover:bg-blue-50 ${
+                    className={`w-full text-left px-4 py-3 border-b border-[#FFCC66] transition-all hover:bg-[#3A3A3A] ${
                       isSelected
-                        ? "bg-blue-50 border-l-4 border-l-blue-500"
+                        ? "bg-[#3A3A3A] border-l-4 border-l-[#CC9933]"
                         : ""
                     }`}
                   >
@@ -314,7 +314,7 @@ export default function DatabasePage() {
                       <div>
                         <p
                           className={`text-sm font-medium ${
-                            isSelected ? "text-blue-700" : "text-gray-900"
+                            isSelected ? "text-white" : "text-gray-600"
                           }`}
                         >
                           {table}
@@ -326,7 +326,7 @@ export default function DatabasePage() {
                       </div>
                       {isSelected && (
                         <svg
-                          className="w-4 h-4 text-blue-600"
+                          className="w-4 h-4 text-[#CC9933]"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
