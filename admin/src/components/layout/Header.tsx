@@ -6,11 +6,13 @@ export default function Header() {
   const [showNotifications, setShowNotifications] = useState(false);
 
   return (
-    <header className="bg-white border-b border-gray-100 px-6 py-4 shadow-sm">
+    <header className="bg-[#2D2D2D] px-6 py-4 shadow-sm sticky top-0 left-0 flex flex-col">
       <div className="flex items-center justify-between">
         {/* Search Bar */}
-        <div className="flex-1 max-w-xl">
-          <div className="relative">
+        <div className="flex-1 max-w-3xl text-[#FFCC66] text-xl">
+          <p>WELCOME ADMIN! YOU ARE NOW IN THE ROUTEWISE ADMIN DASHBOARD.</p>
+
+          {/* <div className="relative">
             <svg
               className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
               fill="none"
@@ -27,21 +29,52 @@ export default function Header() {
             <input
               type="text"
               placeholder="Search routes, analytics, or settings..."
-              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:bg-white"
+              value={searchQuery || ""}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+              }}
+              className="w-full pl-10 pr-4 py-2.5 bg-white rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#FFCC66] transition-all hover:bg-white"
             />
-          </div>
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                title="Clear search"
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            )}
+          </div> */}
         </div>
 
         {/* Right Section */}
         <div className="flex items-center space-x-3 ml-6">
           {/* Notifications */}
-          <div className="relative">
+          {/* <div className="relative">
             <button
               onClick={() => setShowNotifications(!showNotifications)}
-              className="p-2.5 hover:bg-gray-50 rounded-xl transition-all relative group"
+              className={`p-2.5 rounded-xl transition-all relative group ${
+                showNotifications ? "bg-[#CC9933]" : "hover:bg-[#CC9933]"
+              }`}
             >
               <svg
-                className="w-5 h-5 text-gray-600 group-hover:text-gray-900"
+                className={`w-5 h-5 transition-colors ${
+                  showNotifications
+                    ? "text-black"
+                    : "text-white group-hover:text-black"
+                }`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -57,14 +90,14 @@ export default function Header() {
             </button>
 
             {showNotifications && (
-              <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-gray-100 z-50 overflow-hidden animate-fade-in">
-                <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-purple-50">
+              <div className="absolute right-0 mt-2 w-80 bg-[#D9D9D9] rounded-2xl shadow-xl border border-gray-100 z-50 overflow-hidden animate-fade-in">
+                <div className="p-3 border-b border-gray-100 bg-white">
                   <h3 className="font-semibold text-gray-900">Notifications</h3>
                 </div>
                 <div className="max-h-96 overflow-y-auto">
-                  <div className="p-4 hover:bg-blue-50 cursor-pointer border-b border-gray-50 transition-colors">
+                  <div className="p-4 hover:bg-[#FFCC66] cursor-pointer border-b border-gray-50 transition-colors">
                     <div className="flex items-start space-x-3">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 animate-pulse"></div>
+                      <div className="w-2 h-2 bg-[#CC9933] rounded-full mt-2 animate-pulse"></div>
                       <div className="flex-1">
                         <p className="text-sm text-gray-900">
                           New route added:{" "}
@@ -76,9 +109,9 @@ export default function Header() {
                       </div>
                     </div>
                   </div>
-                  <div className="p-4 hover:bg-green-50 cursor-pointer transition-colors">
+                  <div className="p-4 hover:bg-[#FFCC66] cursor-pointer transition-colors">
                     <div className="flex items-start space-x-3">
-                      <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
+                      <div className="w-2 h-2 bg-[#CC9933] rounded-full mt-2"></div>
                       <div className="flex-1">
                         <p className="text-sm text-gray-900">
                           Route optimization completed
@@ -90,12 +123,12 @@ export default function Header() {
                 </div>
               </div>
             )}
-          </div>
+          </div> */}
 
           {/* Quick Add Button */}
           <a
             href="/routes"
-            className="flex items-center space-x-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-2.5 rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-200"
+            className="flex items-center space-x-2 bg-gradient-to-b from-[#FFCC66] to-[#CC9933] text-black px-4 py-2.5 rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-200"
           >
             <svg
               className="w-4 h-4"
@@ -110,7 +143,7 @@ export default function Header() {
                 d="M12 4v16m8-8H4"
               />
             </svg>
-            <span className="font-medium text-sm">Add Route</span>
+            <span className="font-medium text-sm text-black">Add Route</span>
           </a>
         </div>
       </div>
