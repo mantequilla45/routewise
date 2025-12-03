@@ -7,22 +7,12 @@ import { useContext, useEffect, useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import RouteCard from "./RouteCard";
 
-export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{ exit: () => void, setShowBottomSheet: (value: boolean) => void }>) {
+export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlacementMode }: Readonly<{ 
+    exit: () => void, 
+    setShowBottomSheet: (value: boolean) => void,
+    enterPinPlacementMode?: (isPointA: boolean) => void
+}>) {
     const { setIsPointAB, setIsPinPlacementEnabled, pointA, pointB, setPointA, setPointB, setRoutes, allRoutes, setAllRoutes, results, setResults, isPinPlacementEnabled, selectedRouteIndex, setSelectedRouteIndex } = useContext(MapPointsContext)
-    const [wasSelectingFirstLocation, setWasSelectingFirstLocation] = useState(false)
-
-    // Auto-open second location selection after first location is selected
-    useEffect(() => {
-        if (wasSelectingFirstLocation && pointA && !isPinPlacementEnabled) {
-            // First location was just selected, now open second location selection
-            setWasSelectingFirstLocation(false);
-            setTimeout(() => {
-                setIsPinPlacementEnabled(true);
-                setIsPointAB(false);
-                setShowBottomSheet(false);
-            }, 100);
-        }
-    }, [pointA, isPinPlacementEnabled, wasSelectingFirstLocation]);
 
     // Monitor allRoutes changes
     useEffect(() => {
@@ -160,7 +150,6 @@ export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{
             setPointA(null);
             setPointB(null);
             setIsPinPlacementEnabled(false);
-            setWasSelectingFirstLocation(false);
             console.log("Map cleared - all points and routes removed");
         }, 50);
     };
@@ -184,10 +173,13 @@ export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{
                 <View style={styles.pointInputBox}>
                     <View style={styles.pointInputContainer}>
                         <TouchableOpacity onPress={() => {
-                            setIsPinPlacementEnabled(true);
-                            setIsPointAB(true);
-                            setWasSelectingFirstLocation(true);
-                            setShowBottomSheet(false);
+                            if (enterPinPlacementMode) {
+                                enterPinPlacementMode(true);
+                            } else {
+                                setIsPinPlacementEnabled(true);
+                                setIsPointAB(true);
+                                setShowBottomSheet(false);
+                            }
                         }}>
                             <View style={styles.pointInputRow}>
                                 <View style={styles.pointInputBlock}>
@@ -217,9 +209,13 @@ export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{
                         <View style={styles.line}></View>
 
                         <TouchableOpacity onPress={() => {
-                            setIsPinPlacementEnabled(true);
-                            setIsPointAB(false);
-                            setShowBottomSheet(false);
+                            if (enterPinPlacementMode) {
+                                enterPinPlacementMode(false);
+                            } else {
+                                setIsPinPlacementEnabled(true);
+                                setIsPointAB(false);
+                                setShowBottomSheet(false);
+                            }
                         }}>
                             <View style={styles.pointInputRow}>
                                 <View style={styles.pointInputBlock}>
@@ -256,14 +252,14 @@ export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{
 
             {results && results.length > 0 && (
                 <View style={styles.routeList}>
+                    <Text style={{ color: 'white', fontFamily: 'Lexend_400Regular', marginBottom: 10 }}>Results</Text>
                     <ScrollView
-                        style={{ flex: 1 }}
+                        style={{ maxHeight: 400 }}
                         contentContainerStyle={styles.routeCardContainer}
                         showsVerticalScrollIndicator={true}
                         nestedScrollEnabled={true}
                         scrollEnabled={true}
                     >
-                        <Text style={{ color: 'white', fontFamily: 'Lexend_400Regular', marginBottom: 10 }}>Results</Text>
                         {results.map((route, index) => {
                             console.log(`Rendering route card ${index}: ${route.routeId}`);
                             return (
@@ -411,12 +407,10 @@ const styles = StyleSheet.create({
     routeList: {
         marginTop: 10,
         width: '100%',
-        minHeight: 200,
-        maxHeight: 400,
     },
 
     routeCardContainer: {
-        paddingVertical: 10,
+        paddingBottom: 10,
         gap: 15,
     }
 });
