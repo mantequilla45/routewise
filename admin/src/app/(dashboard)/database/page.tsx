@@ -183,7 +183,7 @@ export default function DatabasePage() {
 
       {/* Database Overview Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="rounded-2xl p-6 border">
+        <div className="flex items-center justify-between">
           <div className="p-6 bg-[#3A3A3A] flex items-center justify-between">
             <div>
               <p className="text-sm text-white">Total Tables</p>
@@ -193,7 +193,7 @@ export default function DatabasePage() {
             </div>
             <div className="p-3 bg-[#CC9933] rounded-lg">
               <svg
-                className="w-6 h-6 text-[#FFCC66]"
+                className="w-6 h-6 text-white"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
