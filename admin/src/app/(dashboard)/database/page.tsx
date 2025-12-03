@@ -139,7 +139,6 @@ export default function DatabasePage() {
             Complete database overview and management
           </p>
         </div>
-
         <div className="flex space-x-3">
           <button
             onClick={exportAllData}
@@ -431,58 +430,60 @@ export default function DatabasePage() {
                   Error loading table: {currentTableData.error}
                 </div>
               ) : viewMode === "schema" ? (
-                <div className="p-6">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Column Name
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Data Type
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Nullable
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Default
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {currentTableData.columns.map((column) => (
-                        <tr
-                          key={column.column_name}
-                          className="hover:bg-gray-50"
-                        >
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {column.column_name}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            <code className="bg-gray-100 px-2 py-1 rounded">
-                              {column.data_type}
-                            </code>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {column.is_nullable === "YES" ? (
-                              <span className="text-green-600">✓ Yes</span>
-                            ) : (
-                              <span className="text-red-600">✗ No</span>
-                            )}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {column.column_default ? (
-                              <code className="bg-gray-100 px-2 py-1 rounded text-xs">
-                                {column.column_default}
-                              </code>
-                            ) : (
-                              <span className="text-gray-400">-</span>
-                            )}
-                          </td>
+                <div className="overflow-x-auto">
+                  <div className="p-6 min-w-full">
+                    <table className="divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Column Name
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Data Type
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Nullable
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Default
+                          </th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {currentTableData.columns.map((column) => (
+                          <tr
+                            key={column.column_name}
+                            className="hover:bg-gray-50"
+                          >
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                              {column.column_name}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              <code className="bg-gray-100 px-2 py-1 rounded">
+                                {column.data_type}
+                              </code>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {column.is_nullable === "YES" ? (
+                                <span className="text-green-600">✓ Yes</span>
+                              ) : (
+                                <span className="text-red-600">✗ No</span>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {column.column_default ? (
+                                <code className="bg-gray-100 px-2 py-1 rounded text-xs">
+                                  {column.column_default}
+                                </code>
+                              ) : (
+                                <span className="text-gray-400">-</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               ) : viewMode === "raw" ? (
                 <div className="bg-gray-900 p-6 overflow-auto max-h-[600px]">
@@ -491,9 +492,9 @@ export default function DatabasePage() {
                   </pre>
                 </div>
               ) : (
-                <div className="overflow-x-auto max-h-[600px]">
+                <div className="p-6 overflow-x-auto max-h-[600px]">
                   {filteredData.length > 0 ? (
-                    <table className="min-w-full divide-y divide-gray-200">
+                    <table className="divide-y divide-gray-200">
                       <thead className="bg-gray-50 sticky top-0">
                         <tr>
                           {currentTableData.columns.map((column) => (
