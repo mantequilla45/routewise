@@ -26,14 +26,18 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
-  const [currentPath, setCurrentPath] = useState("");
-  const pathname = usePathname();
-  const router = useRouter();
+  const [pathname, setPathname] = useState("");
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      setCurrentPath(window.location.pathname);
+      setPathname(window.location.pathname);
     }
+
+    const handlePopState = () => {
+      setPathname(window.location.pathname);
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
   }, []);
 
   const handleLogout = async () => {
@@ -42,25 +46,30 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
     }
 
     try {
-      // 2. Call the dedicated API route to clear the httpOnly cookie on the server.
+      // 1. Call the API route to clear the secure Supabase cookies on the server.
       const response = await fetch("/api/logout", {
         method: "POST",
-        // No need for headers/body as the server reads cookies automatically
       });
 
       if (response.ok) {
-        // 3. Navigate cleanly to the root page after successful logout (cookie is cleared).
-        router.replace("/");
+        // 2. CRITICAL FIX: Use window.location.href for a full, hard reload.
+        // This is the most reliable way to force the middleware to re-run
+        // with the session cleared.
+        if (typeof window !== "undefined") {
+          window.location.href = "/";
+        }
       } else {
         console.error("Logout failed on server:", response.statusText);
-        // Optional: Fallback navigation or error handling
-        router.replace("/");
+        // Fallback: Still attempt to reload
+        if (typeof window !== "undefined") {
+          window.location.href = "/";
+        }
       }
     } catch (error) {
       console.error("Error during logout API call:", error);
-      // Fallback hard navigation if API fails, ensuring a new session start attempt
+      // Fallback hard navigation if API fails
       if (typeof window !== "undefined") {
-        window.location.pathname = "/";
+        window.location.href = "/";
       }
     }
   };
