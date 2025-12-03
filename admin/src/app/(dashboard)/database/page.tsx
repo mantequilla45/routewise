@@ -351,7 +351,7 @@ export default function DatabasePage() {
         </div>
 
         {/* Right Content - Table Data */}
-        <div className="flex-1 bg-[#CC9933] min-w-0">
+        <div className="flex-1 bg-[#CC9933] w-[200px]">
           {/* Controls Bar */}
           <div className="bg-white rounded-xl border border-gray-100 p-4 mb-4">
             <div className="flex items-center justify-between">
