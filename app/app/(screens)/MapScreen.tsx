@@ -13,8 +13,8 @@ function MapScreenContent() {
     const mapRef = useRef<NativeMapRef>(null);
     const insets = useSafeAreaInsets();
     
-    // Single animation value to control modal position (0 = visible, 600 = hidden)
-    const modalPosition = useRef(new Animated.Value(isRouteFromList ? 600 : 0)).current;
+    // Single animation value to control modal position (0 = visible, 800 = hidden)
+    const modalPosition = useRef(new Animated.Value(isRouteFromList ? 800 : 0)).current;
     const indicatorOpacity = useRef(new Animated.Value(isRouteFromList ? 1 : 0)).current;
 
     // Helper functions for modal visibility
@@ -37,7 +37,7 @@ function MapScreenContent() {
     const hideModal = (callback?: () => void) => {
         Animated.parallel([
             Animated.timing(modalPosition, {
-                toValue: 600,
+                toValue: 800,
                 duration: 300,
                 useNativeDriver: true,
             }),

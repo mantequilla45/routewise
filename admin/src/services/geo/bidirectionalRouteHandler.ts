@@ -62,9 +62,22 @@ export async function analyzeBidirectionalRoute(
             FROM route_info
         ),
         alternative_starts AS (
-            -- Don't look for alternative starts for now - focus on destination fix
-            SELECT NULL::float as alt_loc, NULL::float as distance_to_a
-            FROM route_info
+            -- Find a point on the route that's close to the start but comes AFTER it in the direction of travel
+            -- This handles the "opposite side of road" case where user pins the wrong side
+            SELECT 
+                cp.position as alt_loc,
+                ST_Distance(
+                    ST_LineInterpolatePoint(ri.geom_forward, cp.position)::geography,
+                    ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography
+                ) as distance_to_a
+            FROM close_points cp, route_info ri
+            WHERE ST_Distance(
+                ST_LineInterpolatePoint(ri.geom_forward, cp.position)::geography,
+                ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography
+            ) < 50  -- Within 50 meters of starting point
+            AND cp.position > ri.loc_a  -- Must come AFTER the pinned starting point
+            AND cp.position < ri.loc_b  -- Must be before the destination
+            ORDER BY cp.position  -- Get the FIRST occurrence after the pinned point
             LIMIT 1
         ),
         alternative_ends AS (
