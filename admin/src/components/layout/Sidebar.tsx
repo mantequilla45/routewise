@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { ReactElement, useState, useEffect } from "react";
 import {
   Home,
@@ -26,51 +26,21 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
-  const [pathname, setPathname] = useState("");
+  const [currentPath, setCurrentPath] = useState("");
+  const pathname = usePathname();
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      setPathname(window.location.pathname);
+      setCurrentPath(window.location.pathname);
     }
-
-    const handlePopState = () => {
-      setPathname(window.location.pathname);
-    };
-    window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
   }, []);
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
     if (typeof window !== "undefined") {
       localStorage.removeItem("authToken");
     }
-
-    try {
-      // 1. Call the API route to clear the secure Supabase cookies on the server.
-      const response = await fetch("/api/logout", {
-        method: "POST",
-      });
-
-      if (response.ok) {
-        // 2. CRITICAL FIX: Use window.location.href for a full, hard reload.
-        // This is the most reliable way to force the middleware to re-run
-        // with the session cleared.
-        if (typeof window !== "undefined") {
-          window.location.href = "/";
-        }
-      } else {
-        console.error("Logout failed on server:", response.statusText);
-        // Fallback: Still attempt to reload
-        if (typeof window !== "undefined") {
-          window.location.href = "/";
-        }
-      }
-    } catch (error) {
-      console.error("Error during logout API call:", error);
-      // Fallback hard navigation if API fails
-      if (typeof window !== "undefined") {
-        window.location.href = "/";
-      }
+    if (typeof window !== "undefined") {
+      window.location.pathname = "/";
     }
   };
 
@@ -106,7 +76,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
     <aside
       className={`${
         isCollapsed ? "w-22" : "w-65"
-      } transition-all duration-300 bg-[#2D2D2D] h-screen sticky top-0 left-0 flex flex-col`}
+      } transition-all duration-300 bg-[#2D2D2D] h-screen sticky top-0 left-0 flex flex-col z-50`}
     >
       {/* Logo Section */}
       <div className="flex items-center justify-between p-6 h-[72px] border-none border-gray-100">

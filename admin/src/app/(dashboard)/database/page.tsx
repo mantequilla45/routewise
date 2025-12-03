@@ -130,17 +130,16 @@ export default function DatabasePage() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 bg-black">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">
-            Database Management
-          </h1>
-          <p className="text-gray-500 mt-2">
+          <h1 className="text-3xl font-bold text-white">Database Management</h1>
+          <p className="text-white mt-1">
             Complete database overview and management
           </p>
         </div>
+
         <div className="flex space-x-3">
           <button
             onClick={exportAllData}
