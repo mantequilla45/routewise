@@ -63,8 +63,13 @@ function MapScreenContent() {
                 modalPosition.extractOffset();
             },
             onPanResponderMove: (_, gestureState) => {
-                // Allow movement with some resistance at the top
-                const translation = gestureState.dy < 0 ? gestureState.dy * 0.3 : gestureState.dy;
+                // Allow slight upward movement with strong resistance for bounce effect
+                // Max 30px upward with heavy resistance, full downward movement
+                let translation = gestureState.dy;
+                if (gestureState.dy < 0) {
+                    // Apply exponential resistance for upward movement
+                    translation = Math.max(-30, gestureState.dy * 0.15);
+                }
                 modalPosition.setValue(translation);
             },
             onPanResponderRelease: (_, gestureState) => {
@@ -173,7 +178,7 @@ function MapScreenContent() {
                         onPress={handleConfirmLocation}
                         activeOpacity={0.8}
                     >
-                        <Ionicons name="checkmark-circle" size={32} color="white" />
+                        <Ionicons name="checkmark-circle" size={32} color="#303030" />
                         <Text style={styles.confirmLocationText}>
                             Confirm {isPointAB ? 'Starting Point' : 'Destination'}
                         </Text>
@@ -195,6 +200,9 @@ function MapScreenContent() {
                         pointerEvents: isPinPlacementEnabled ? 'none' : 'auto'
                     }
                 ]}>
+                {/* Extended background for bounce effect */}
+                <View style={styles.modalExtension} />
+                
                 {/* Drag handle indicator */}
                 <View style={styles.dragHandle} />
                 <MapModalContent
@@ -371,7 +379,7 @@ const styles = StyleSheet.create({
         alignSelf: 'center',
         left: 20,
         right: 20,
-        backgroundColor: '#4CAF50',
+        backgroundColor: '#FFCC66',
         paddingVertical: 16,
         paddingHorizontal: 24,
         borderRadius: 12,
@@ -386,7 +394,7 @@ const styles = StyleSheet.create({
         shadowRadius: 3.84,
     },
     confirmLocationText: {
-        color: 'white',
+        color: '#303030',
         fontSize: 18,
         fontWeight: '600',
         fontFamily: 'Lexend_600SemiBold',
@@ -394,5 +402,13 @@ const styles = StyleSheet.create({
     confirmLocationButtonDisabled: {
         backgroundColor: '#9E9E9E',
         opacity: 0.7,
+    },
+    modalExtension: {
+        position: 'absolute',
+        bottom: -100,
+        left: 0,
+        right: 0,
+        height: 100,
+        backgroundColor: '#303030',
     },
 });
