@@ -295,7 +295,7 @@ export default function DatabasePage() {
           <div className="flex items-start justify-start mb-2">
             <h3 className="font-semibold text-white">TABLES</h3>
           </div>
-          <div className="rounded-xl overflow-hidden">
+          <div className="overflow-hidden">
             <div className="max-h-[600px] overflow-y-auto">
               {databaseInfo.tables.map((table) => {
                 const tableData = databaseInfo.tableData[table];
@@ -304,10 +304,10 @@ export default function DatabasePage() {
                   <button
                     key={table}
                     onClick={() => setSelectedTable(table)}
-                    className={`w-full text-left px-4 py-3 border-b border-[#FFCC66] transition-all hover:bg-[#3A3A3A] ${
+                    className={`w-full text-left px-4 py-3 transition-all hover:bg-[#3A3A3A] ${
                       isSelected
-                        ? "bg-[#3A3A3A] border-l-4 border-l-[#CC9933]"
-                        : ""
+                        ? "bg-[#3A3A3A] border-l-4 border-l-[#CC9933] border-b border-[#FFCC66]"
+                        : "border-b-2 border-[#3A3A3A]"
                     }`}
                   >
                     <div className="flex items-center justify-between">
@@ -351,9 +351,9 @@ export default function DatabasePage() {
         </div>
 
         {/* Right Content - Table Data */}
-        <div className="flex-1 bg-[#CC9933] w-[200px]">
+        <div className="flex-1 w-[200px]">
           {/* Controls Bar */}
-          <div className="bg-white rounded-xl border border-gray-100 p-4 mb-4">
+          <div className="rounded-xl border border-gray-100 mb-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <h3 className="font-semibold text-gray-900">{selectedTable}</h3>
@@ -362,7 +362,7 @@ export default function DatabasePage() {
                     onClick={() => setViewMode("table")}
                     className={`px-3 py-1.5 rounded-lg transition-colors ${
                       viewMode === "table"
-                        ? "bg-blue-100 text-blue-700"
+                        ? "bg-[#FFCC66] text-gray-700"
                         : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                     }`}
                   >
@@ -401,7 +401,7 @@ export default function DatabasePage() {
                 />
                 <button
                   onClick={() => exportTableData(selectedTable)}
-                  className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                  className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer"
                   title="Export this table"
                 >
                   <svg
