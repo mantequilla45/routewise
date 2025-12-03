@@ -4,12 +4,13 @@ import { latLongStringifier } from "@/lib/util/latLngStringifier";
 import { Ionicons } from "@expo/vector-icons";
 import { GoogleMapsPolyline } from "expo-maps/build/google/GoogleMaps.types";
 import { useContext, useEffect, useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import RouteCard from "./RouteCard";
 
 export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlacementMode }: Readonly<{ exit: () => void, setShowBottomSheet: (value: boolean) => void, enterPinPlacementMode?: (isPointA: boolean) => void }>) {
     const { setIsPointAB, setIsPinPlacementEnabled, pointA, pointB, setPointA, setPointB, setRoutes, allRoutes, setAllRoutes, results, setResults, isPinPlacementEnabled, selectedRouteIndex, setSelectedRouteIndex } = useContext(MapPointsContext)
     const [wasSelectingFirstLocation, setWasSelectingFirstLocation] = useState(false)
+    const [isCalculating, setIsCalculating] = useState(false)
 
     // Auto-open second location selection after first location is selected
     useEffect(() => {
@@ -75,6 +76,7 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
                 return;
             }
 
+            setIsCalculating(true);
             const routes = await calculatePossibleRoutes(pointA, pointB);
 
             if (Array.isArray(routes) && routes.length > 0) {
@@ -186,6 +188,8 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
                 "Unable to calculate routes. Please check your connection and try again.",
                 [{ text: "OK", style: "default" }]
             );
+        } finally {
+            setIsCalculating(false);
         }
     };
 
@@ -300,8 +304,19 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
             </View>
 
             <View style={styles.bottomSheetRow}>
-                <TouchableOpacity style={styles.calculateButton} onPress={onCalculate}>
-                    <Text style={styles.calculateButtonText}>Find Jeeps</Text>
+                <TouchableOpacity 
+                    style={[styles.calculateButton, isCalculating && styles.calculateButtonDisabled]} 
+                    onPress={onCalculate}
+                    disabled={isCalculating || !pointA || !pointB}
+                >
+                    {isCalculating ? (
+                        <View style={styles.loadingContainer}>
+                            <ActivityIndicator size="small" color="white" />
+                            <Text style={styles.calculateButtonText}>Finding Routes...</Text>
+                        </View>
+                    ) : (
+                        <Text style={styles.calculateButtonText}>Find Jeeps</Text>
+                    )}
                 </TouchableOpacity>
             </View>
 
@@ -457,6 +472,18 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#2D2D2D',
         marginRight: 5,
+    },
+
+    calculateButtonDisabled: {
+        opacity: 0.7,
+        backgroundColor: '#E0B050',
+    },
+
+    loadingContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 10,
     },
 
     routeList: {
