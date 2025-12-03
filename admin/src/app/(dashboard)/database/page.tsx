@@ -431,7 +431,7 @@ export default function DatabasePage() {
                   Error loading table: {currentTableData.error}
                 </div>
               ) : viewMode === "schema" ? (
-                <div className="p-6">
+                <div className="p-6 overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
