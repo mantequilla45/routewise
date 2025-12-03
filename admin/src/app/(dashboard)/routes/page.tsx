@@ -498,7 +498,7 @@ export default function EnhancedAddRoutePage() {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen animate-fade-in">
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-white">Route Management</h1>
