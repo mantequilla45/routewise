@@ -62,8 +62,7 @@ export async function analyzeBidirectionalRoute(
             FROM route_info
         ),
         alternative_starts AS (
-            -- Find a point on the route that's close to the start but comes AFTER it in the direction of travel
-            -- This handles the "opposite side of road" case where user pins the wrong side
+            -- When A > B (wrong direction), find the CLOSEST alternative point that gives a shorter route
             SELECT 
                 cp.position as alt_loc,
                 ST_Distance(
@@ -74,15 +73,18 @@ export async function analyzeBidirectionalRoute(
             WHERE ST_Distance(
                 ST_LineInterpolatePoint(ri.geom_forward, cp.position)::geography,
                 ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography
-            ) < 50  -- Within 50 meters of starting point
-            AND cp.position > ri.loc_a  -- Must come AFTER the pinned starting point
-            AND cp.position < ri.loc_b  -- Must be before the destination
-            ORDER BY cp.position  -- Get the FIRST occurrence after the pinned point
+            ) < 30  -- Within 30 meters (closer threshold for precision)
+            AND cp.position < ri.loc_b  -- Must come before B to create valid forward route
+            AND cp.position != ri.loc_a  -- Not the same point
+            AND ri.loc_a > ri.loc_b  -- Only look for alternatives when A > B (wrong direction)
+            ORDER BY 
+                -- Get the CLOSEST point that still gives us a valid forward route
+                distance_to_a
             LIMIT 1
         ),
         alternative_ends AS (
-            -- Find ANY point within 50m of destination that comes EARLIER on the route
-            -- This stops the route at the first nearby point (opposite side of road)
+            -- Find the FIRST point close to destination when approaching it
+            -- This prevents the route from going past the destination
             SELECT 
                 cp.position as alt_loc,
                 ST_Distance(
@@ -93,10 +95,22 @@ export async function analyzeBidirectionalRoute(
             WHERE ST_Distance(
                 ST_LineInterpolatePoint(ri.geom_forward, cp.position)::geography,
                 ST_SetSRID(ST_MakePoint($3, $4), 4326)::geography
-            ) < 50  -- Within 50 meters of destination
-            AND cp.position > ri.loc_a  -- Must be after the start point
-            AND cp.position < ri.loc_b  -- Must come BEFORE the pinned destination
-            ORDER BY cp.position  -- Get the FIRST occurrence along the route
+            ) < 30  -- Within 30 meters of destination (close enough to stop)
+            AND (
+                -- Case 1: Normal forward route (A < B), get first point near destination
+                (ri.loc_a < ri.loc_b AND cp.position > ri.loc_a AND cp.position <= ri.loc_b)
+                OR
+                -- Case 2: Route goes around (A > B), get first point near destination after going around
+                (ri.loc_a > ri.loc_b AND (cp.position > ri.loc_a OR cp.position <= ri.loc_b))
+            )
+            ORDER BY 
+                -- For normal routes, get earliest point near destination
+                -- For wraparound routes, also get earliest point in the sequence
+                CASE 
+                    WHEN ri.loc_a < ri.loc_b THEN cp.position
+                    WHEN cp.position > ri.loc_a THEN cp.position - 1.0  -- Prioritize points after A (wrapped)
+                    ELSE cp.position
+                END
             LIMIT 1
         ),
         optimized_points AS (
@@ -107,20 +121,20 @@ export async function analyzeBidirectionalRoute(
                 loc_a,
                 loc_b,
                 geom_forward,
-                -- Use optimized points ONLY when they help avoid long loops
+                -- Smart point selection for optimal routing
                 CASE 
-                    -- If we found a later starting point (opposite side), use it
-                    WHEN alt_start.alt_loc IS NOT NULL THEN
-                        alt_start.alt_loc  -- Use the later starting point (opposite side of road)
+                    -- If A > B and we found a nearby point that comes before B, use it
+                    WHEN loc_a > loc_b AND alt_start.alt_loc IS NOT NULL THEN
+                        alt_start.alt_loc  -- Use closer point on opposite side
                     ELSE 
-                        loc_a  -- Use original
+                        loc_a  -- Use original pinned location
                 END as final_loc_a,
                 CASE 
-                    -- If we found a closer cutoff point for the destination, use it
-                    WHEN alt_end.alt_loc IS NOT NULL THEN
-                        alt_end.alt_loc  -- Use the earlier cutoff point (opposite side of road)
+                    -- Always use the cutoff point if we're close enough to destination
+                    WHEN alt_end.alt_loc IS NOT NULL AND alt_end.distance_to_b < 30 THEN
+                        alt_end.alt_loc  -- Stop at first point near destination
                     ELSE 
-                        loc_b  -- Use original
+                        loc_b  -- Use exact pinned location
                 END as final_loc_b,
                 -- Keep debug info
                 alt_start.alt_loc as alt_start_loc,
