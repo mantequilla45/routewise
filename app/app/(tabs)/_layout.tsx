@@ -43,9 +43,18 @@ export default function TabLayout() {
           ),
         }} />
       <Tabs.Screen
+        name="routes"
+        options={{
+          title: 'Routes',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'bus' : 'bus-outline'} color={color} size={24} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="saved"
         options={{
-          title: 'Saved Routes',
+          title: 'Saved',
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name={focused ? 'bookmark' : 'bookmark-outline'} color={color} size={24} />
           ),

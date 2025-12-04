@@ -4,21 +4,32 @@ import { latLongStringifier } from "@/lib/util/latLngStringifier";
 import { Ionicons } from "@expo/vector-icons";
 import { GoogleMapsPolyline } from "expo-maps/build/google/GoogleMaps.types";
 import { useContext, useEffect, useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import RouteCard from "./RouteCard";
 
-export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlacementMode }: Readonly<{ 
-    exit: () => void, 
-    setShowBottomSheet: (value: boolean) => void,
-    enterPinPlacementMode?: (isPointA: boolean) => void
-}>) {
+export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlacementMode }: Readonly<{ exit: () => void, setShowBottomSheet: (value: boolean) => void, enterPinPlacementMode?: (isPointA: boolean) => void }>) {
     const { setIsPointAB, setIsPinPlacementEnabled, pointA, pointB, setPointA, setPointB, setRoutes, allRoutes, setAllRoutes, results, setResults, isPinPlacementEnabled, selectedRouteIndex, setSelectedRouteIndex } = useContext(MapPointsContext)
+    const [wasSelectingFirstLocation, setWasSelectingFirstLocation] = useState(false)
+    const [isCalculating, setIsCalculating] = useState(false)
+
+    // Auto-open second location selection after first location is selected
+    useEffect(() => {
+        if (wasSelectingFirstLocation && pointA && !isPinPlacementEnabled) {
+            // First location was just selected, now open second location selection
+            setWasSelectingFirstLocation(false);
+            setTimeout(() => {
+                setIsPinPlacementEnabled(true);
+                setIsPointAB(false);
+                setShowBottomSheet(false);
+            }, 100);
+        }
+    }, [pointA, isPinPlacementEnabled, wasSelectingFirstLocation]);
 
     // Monitor allRoutes changes
     useEffect(() => {
         console.log(`allRoutes updated: now contains ${allRoutes.length} polylines`);
         if (allRoutes.length > 0) {
-            console.log(`allRoutes polyline IDs:`, allRoutes.map(r => r.id));
+            console.log(`allRoutes polyline IDs:`, allRoutes.map(r => r.id || 'no-id'));
         }
     }, [allRoutes]);
 
@@ -26,10 +37,9 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
     const handleRouteSelect = (index: number) => {
         console.log(`Route card clicked: index ${index}, current selected: ${selectedRouteIndex}`);
         console.log(`Current allRoutes array length: ${allRoutes.length}`);
-        console.log(`allRoutes contents:`, allRoutes.map((r, i) => `[${i}]: ${r.id}, ${r.coordinates.length} points`));
 
         // Find the corresponding route in results
-        const selectedResult = results[index];
+        const selectedResult: any = results[index];
         if (!selectedResult) {
             console.warn(`No result found at index ${index}`);
             return;
@@ -37,15 +47,25 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
 
         setSelectedRouteIndex(index);
 
-        // Since we now create polylines for all routes with matching indices, we can use the index directly
-        if (index < allRoutes.length && allRoutes[index]) {
-            console.log(`Found polyline at index ${index}:`, allRoutes[index].id, `with ${allRoutes[index].coordinates.length} coordinates`);
-            setRoutes([allRoutes[index]]);
-            console.log(`Selected route ${index}: ${selectedResult.routeId}, showing polyline at index ${index}`);
+        // Check if it's a transfer route
+        if (selectedResult.isTransfer) {
+            // Find polylines for both segments
+            const polylinesToShow = allRoutes.filter(r =>
+                r.id && r.id.startsWith(`route_${index}_`)
+            );
+
+            console.log(`Selected transfer route ${index}: ${selectedResult.routeId}, showing ${polylinesToShow.length} polylines`);
+            setRoutes(polylinesToShow);
         } else {
-            console.warn(`No polyline found for route ${selectedResult.routeId} at index ${index}`);
-            console.warn(`allRoutes length: ${allRoutes.length}, requested index: ${index}`);
-            setRoutes([]);
+            // Single route - find the matching polyline
+            const polylineToShow = allRoutes.find(r => r.id === `route_${index}`);
+            if (polylineToShow) {
+                console.log(`Selected single route ${index}: ${selectedResult.routeId}`);
+                setRoutes([polylineToShow]);
+            } else {
+                console.warn(`No polyline found for route ${selectedResult.routeId} at index ${index}`);
+                setRoutes([]);
+            }
         }
     };
 
@@ -56,6 +76,7 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
                 return;
             }
 
+            setIsCalculating(true);
             const routes = await calculatePossibleRoutes(pointA, pointB);
 
             if (Array.isArray(routes) && routes.length > 0) {
@@ -64,16 +85,50 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
                 // Build polylines for ALL routes to maintain consistent indexing
                 const googlePolylineRoutes: GoogleMapsPolyline[] = [];
 
-                routes.forEach((r, resultIndex) => {
-                    // Create a polyline for every route, even if empty
-                    if (r.latLng && r.latLng.length > 0) {
+                routes.forEach((r: any, resultIndex) => {
+                    // Check if it's a transfer route
+                    const isTransfer = r.isTransfer === true;
+
+                    if (isTransfer && r.firstRoute && r.secondRoute) {
+                        // Create two polylines for transfer routes with different colors
+                        if (r.firstRoute.coordinates && r.firstRoute.coordinates.length > 0) {
+                            const firstPolyline: GoogleMapsPolyline = {
+                                id: `route_${resultIndex}_first`,
+                                coordinates: r.firstRoute.coordinates.map((coord: any) => ({
+                                    latitude: coord.latitude,
+                                    longitude: coord.longitude
+                                })),
+                                color: '#4CAF50', // Green for first segment
+                                width: 16,
+                                geodesic: true
+                            };
+                            googlePolylineRoutes.push(firstPolyline);
+                        }
+
+                        if (r.secondRoute.coordinates && r.secondRoute.coordinates.length > 0) {
+                            const secondPolyline: GoogleMapsPolyline = {
+                                id: `route_${resultIndex}_second`,
+                                coordinates: r.secondRoute.coordinates.map((coord: any) => ({
+                                    latitude: coord.latitude,
+                                    longitude: coord.longitude
+                                })),
+                                color: '#FF6B6B', // Red for second segment
+                                width: 16,
+                                geodesic: true
+                            };
+                            googlePolylineRoutes.push(secondPolyline);
+                        }
+
+                        console.log(`Created transfer polylines for result ${resultIndex} (${r.routeId})`);
+                    } else if (r.latLng && r.latLng.length > 0) {
+                        // Single route polyline
                         const polyline: GoogleMapsPolyline = {
                             id: `route_${resultIndex}`,
-                            coordinates: r.latLng.map(coord => ({
+                            coordinates: r.latLng.map((coord: any) => ({
                                 latitude: coord.latitude,
                                 longitude: coord.longitude
                             })),
-                            color: '#33ff00',
+                            color: '#33ff00', // Default green
                             width: 16,
                             geodesic: true
                         };
@@ -100,9 +155,20 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
                 console.log(`Setting allRoutes with ${googlePolylineRoutes.length} polylines`);
                 setAllRoutes(googlePolylineRoutes);
 
-                // Display the first valid route if available
-                if (googlePolylineRoutes.length > 0) {
-                    setRoutes([googlePolylineRoutes[0]]);
+                // Display the first route (check if it's a transfer route)
+                if (googlePolylineRoutes.length > 0 && routes.length > 0) {
+                    const firstResult = routes[0];
+                    if (firstResult.isTransfer) {
+                        // For transfer routes, show both segments
+                        const firstRoutePolylines = googlePolylineRoutes.filter(r =>
+                            r.id && r.id.startsWith('route_0_')
+                        );
+                        console.log(`Displaying initial transfer route with ${firstRoutePolylines.length} segments`);
+                        setRoutes(firstRoutePolylines);
+                    } else {
+                        // For single routes, show just one polyline
+                        setRoutes([googlePolylineRoutes[0]]);
+                    }
                     setSelectedRouteIndex(0);
                 } else {
                     setRoutes([]);
@@ -133,6 +199,8 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
                 "Unable to calculate routes. Please check your connection and try again.",
                 [{ text: "OK", style: "default" }]
             );
+        } finally {
+            setIsCalculating(false);
         }
     };
 
@@ -178,6 +246,7 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
                             } else {
                                 setIsPinPlacementEnabled(true);
                                 setIsPointAB(true);
+                                setWasSelectingFirstLocation(true);
                                 setShowBottomSheet(false);
                             }
                         }}>
@@ -245,8 +314,19 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
             </View>
 
             <View style={styles.bottomSheetRow}>
-                <TouchableOpacity style={styles.calculateButton} onPress={onCalculate}>
-                    <Text style={styles.calculateButtonText}>Find Jeeps</Text>
+                <TouchableOpacity
+                    style={[styles.calculateButton, isCalculating && styles.calculateButtonDisabled]}
+                    onPress={onCalculate}
+                    disabled={isCalculating || !pointA || !pointB}
+                >
+                    {isCalculating ? (
+                        <View style={styles.loadingContainer}>
+                            <ActivityIndicator size="small" color="white" />
+                            <Text style={styles.calculateButtonText}>Finding Routes...</Text>
+                        </View>
+                    ) : (
+                        <Text style={styles.calculateButtonText}>Find Jeeps</Text>
+                    )}
                 </TouchableOpacity>
             </View>
 
@@ -404,9 +484,23 @@ const styles = StyleSheet.create({
         marginRight: 5,
     },
 
+    calculateButtonDisabled: {
+        opacity: 0.7,
+        backgroundColor: '#E0B050',
+    },
+
+    loadingContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 10,
+    },
+
     routeList: {
         marginTop: 10,
         width: '100%',
+        minHeight: 400,
+        maxHeight: 800,
     },
 
     routeCardContainer: {

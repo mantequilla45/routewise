@@ -1,6 +1,6 @@
 import MapModalContent from '@/components/Map/LocationSelector/SelectorContent';
 import NativeMap, { NativeMapRef } from '@/components/Map/NativeMap';
-import { MapPointsContext, MapPointsProvider } from '@/context/map-context';
+import { MapPointsContext } from '@/context/map-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack } from 'expo-router';
 import { useContext, useEffect, useRef, useState } from 'react';
@@ -8,14 +8,14 @@ import { Animated, StyleSheet, Text, TouchableOpacity, View, PanResponder } from
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 function MapScreenContent() {
-    const { isPinPlacementEnabled, setIsPinPlacementEnabled, isPointAB, setIsPointAB, pointA, pointB } = useContext(MapPointsContext);
-    const [isSelectingLocations, setIsSelectingLocations] = useState(false) // Track if we're in location selection flow
+    const { isPinPlacementEnabled, setIsPinPlacementEnabled, isPointAB, setIsPointAB, pointA, pointB, isRouteFromList, setIsRouteFromList, routes, setRoutes, setAllRoutes, selectedRouteInfo, setSelectedRouteInfo, results } = useContext(MapPointsContext);
+    const [isSelectingLocations, setIsSelectingLocations] = useState(false);
     const mapRef = useRef<NativeMapRef>(null);
     const insets = useSafeAreaInsets();
-
-    // Single animation value to control modal position (0 = visible, 600 = hidden)
-    const modalPosition = useRef(new Animated.Value(0)).current;
-    const indicatorOpacity = useRef(new Animated.Value(0)).current;
+    
+    // Single animation value to control modal position (0 = visible, 800 = hidden)
+    const modalPosition = useRef(new Animated.Value(isRouteFromList ? 800 : 0)).current;
+    const indicatorOpacity = useRef(new Animated.Value(isRouteFromList ? 1 : 0)).current;
 
     // Helper functions for modal visibility
     const showModal = (callback?: () => void) => {
@@ -37,7 +37,7 @@ function MapScreenContent() {
     const hideModal = (callback?: () => void) => {
         Animated.parallel([
             Animated.timing(modalPosition, {
-                toValue: 600,
+                toValue: 800,
                 duration: 300,
                 useNativeDriver: true,
             }),
@@ -49,6 +49,13 @@ function MapScreenContent() {
             })
         ]).start(callback);
     };
+    
+    // Hide modal when route is from list
+    useEffect(() => {
+        if (isRouteFromList) {
+            hideModal();
+        }
+    }, [isRouteFromList]);
 
     // Create pan responder for swipe down gesture
     const panResponder = useRef(
@@ -64,17 +71,17 @@ function MapScreenContent() {
             },
             onPanResponderMove: (_, gestureState) => {
                 // Allow slight upward movement with strong resistance for bounce effect
-                // Max 30px upward with heavy resistance, full downward movement
+                // Max 50px upward with heavy resistance, full downward movement
                 let translation = gestureState.dy;
                 if (gestureState.dy < 0) {
                     // Apply exponential resistance for upward movement
-                    translation = Math.max(-30, gestureState.dy * 0.15);
+                    translation = Math.max(-50, gestureState.dy * 0.2);
                 }
                 modalPosition.setValue(translation);
             },
             onPanResponderRelease: (_, gestureState) => {
                 modalPosition.flattenOffset();
-
+                
                 // If swiped down more than 100 pixels or with velocity, dismiss
                 if (gestureState.dy > 100 || gestureState.vy > 0.3) {
                     hideModal();
@@ -94,22 +101,20 @@ function MapScreenContent() {
             if (isSelectingLocations) {
                 if (isPointAB) {
                     // First location - set it and continue to destination
-                    console.log('Setting first location, will continue to destination...');
                     mapRef.current.setLocationAtCenter();
-
+                    
                     // Immediately switch to destination selection
                     setIsPointAB(false);
                     // Stay in pin placement mode
                     setIsPinPlacementEnabled(true);
                 } else {
                     // Second location - complete the flow
-                    console.log('Setting destination, completing flow...');
                     mapRef.current.setLocationAtCenter();
-
+                    
                     // Exit pin placement and show modal
                     setIsSelectingLocations(false);
                     setIsPinPlacementEnabled(false);
-
+                    
                     // Animate modal back up
                     showModal();
                 }
@@ -124,9 +129,8 @@ function MapScreenContent() {
 
     // Smooth transition to pin placement mode
     const enterPinPlacementMode = (isPointA: boolean) => {
-        console.log('Starting location selection flow...');
         setIsSelectingLocations(true); // Mark that we're in selection flow
-
+        
         // Animate modal down smoothly, then enable pin placement
         hideModal(() => {
             setIsPinPlacementEnabled(true);
@@ -142,6 +146,31 @@ function MapScreenContent() {
             <View style={styles.mapContainer}>
                 <NativeMap ref={mapRef} />
             </View>
+
+            {/* Clear button when showing route from list */}
+            {isRouteFromList && routes.length > 0 && (
+                <View style={styles.clearRouteButton}>
+                    <View style={styles.routeInfoHeader}>
+                        <View style={styles.routeInfoContent}>
+                            <Text style={styles.routeInfoLabel}>Showing Route</Text>
+                            <Text style={styles.routeInfoCode}>{selectedRouteInfo?.id || 'Route'}</Text>
+                        </View>
+                        <TouchableOpacity 
+                            onPress={() => {
+                                setRoutes([]);
+                                setAllRoutes([]);
+                                setIsRouteFromList(false);
+                                setSelectedRouteInfo(null);
+                                showModal(); // Show the selector modal after clearing
+                            }}
+                            style={styles.clearButtonSmall}
+                            activeOpacity={0.8}
+                        >
+                            <Ionicons name="close-circle" size={28} color="#FF6B6B" />
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            )}
 
             {/* Pin placement mode indicator */}
             {isPinPlacementEnabled && (
@@ -187,7 +216,7 @@ function MapScreenContent() {
             )}
 
             {/* Location selector - always rendered, controlled by animation */}
-            <Animated.View
+            <Animated.View 
                 {...panResponder.panHandlers}
                 style={[
                     styles.locationSelector,
@@ -205,42 +234,42 @@ function MapScreenContent() {
                 
                 {/* Drag handle indicator */}
                 <View style={styles.dragHandle} />
-                <MapModalContent
-                    exit={() => hideModal()}
+                <MapModalContent 
+                    exit={() => hideModal()} 
                     setShowBottomSheet={(value) => value ? showModal() : hideModal()}
                     enterPinPlacementMode={enterPinPlacementMode}
                 />
             </Animated.View>
-
-            {/* Swipe up indicator - shown when modal is hidden */}
-            <Animated.View
-                style={[
-                    styles.swipeUpIndicator,
-                    {
-                        opacity: indicatorOpacity,
-                        pointerEvents: isPinPlacementEnabled ? 'none' : 'auto'
-                    }
-                ]}
-            >
-                <TouchableOpacity
-                    onPress={() => showModal()}
-                    activeOpacity={0.9}
-                    style={{ width: '100%', alignItems: 'center' }}
+            
+            {/* Swipe up indicator - shown when modal is hidden and not showing route from list */}
+            {!isRouteFromList && !isPinPlacementEnabled && (
+                <Animated.View 
+                    style={[
+                        styles.swipeUpIndicator,
+                        {
+                            opacity: indicatorOpacity,
+                            pointerEvents: 'auto'
+                        }
+                    ]}
                 >
-                    <View style={styles.dragHandle} />
-                    <Text style={styles.swipeUpText}>Tap to select location</Text>
-                </TouchableOpacity>
-            </Animated.View>
+                    <TouchableOpacity 
+                        onPress={() => showModal()}
+                        activeOpacity={0.9}
+                        style={{ width: '100%', alignItems: 'center' }}
+                    >
+                        <View style={styles.dragHandle} />
+                        <Text style={styles.swipeUpText}>
+                            {results && results.length > 0 ? 'Tap to view routes' : 'Tap to select location'}
+                        </Text>
+                    </TouchableOpacity>
+                </Animated.View>
+            )}
         </View>
     );
 }
 
 export default function MapScreen() {
-    return (
-        <MapPointsProvider>
-            <MapScreenContent></MapScreenContent>
-        </MapPointsProvider>
-    )
+    return <MapScreenContent />;
 }
 
 const styles = StyleSheet.create({
@@ -403,12 +432,49 @@ const styles = StyleSheet.create({
         backgroundColor: '#9E9E9E',
         opacity: 0.7,
     },
+    clearRouteButton: {
+        position: 'absolute',
+        top: 60,
+        left: 20,
+        right: 20,
+        zIndex: 100,
+    },
+    routeInfoHeader: {
+        backgroundColor: 'white',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: 16,
+        borderRadius: 12,
+        elevation: 5,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+    },
+    routeInfoContent: {
+        flex: 1,
+    },
+    routeInfoLabel: {
+        fontSize: 12,
+        color: '#666',
+        fontFamily: 'Lexend_400Regular',
+    },
+    routeInfoCode: {
+        fontSize: 20,
+        color: '#303030',
+        fontFamily: 'Lexend_600SemiBold',
+        marginTop: 2,
+    },
+    clearButtonSmall: {
+        marginLeft: 12,
+    },
     modalExtension: {
         position: 'absolute',
-        bottom: -100,
-        left: 0,
-        right: 0,
-        height: 100,
+        bottom: -200,
+        left: -20,
+        right: -20,
+        height: 250,
         backgroundColor: '#303030',
     },
 });
