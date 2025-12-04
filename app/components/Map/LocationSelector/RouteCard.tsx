@@ -9,9 +9,11 @@ type RouteCardProps = {
     route: MappedGeoRouteResult | MultiRouteResult;
     isSelected?: boolean;
     onSelect?: () => void;
+    onSave?: () => void;
+    isSaved?: boolean;
 };
 
-export default function RouteCard({ route, isSelected = false, onSelect }: Readonly<RouteCardProps>) {
+export default function RouteCard({ route, isSelected = false, onSelect, onSave, isSaved = false }: Readonly<RouteCardProps>) {
     const isTransfer = 'isTransfer' in route && route.isTransfer;
     
     return (
@@ -46,13 +48,30 @@ export default function RouteCard({ route, isSelected = false, onSelect }: Reado
                     </View>
                 </View>
                 <View style={styles.column2}>
-                    <Text style={styles.fare}>
-                        P{isTransfer && route.totalFare ? route.totalFare : route.fare}
-                    </Text>
-                    {isTransfer && (
-                        <Text style={styles.fareBreakdown}>
-                            P{route.firstRoute?.fare} + P{route.secondRoute?.fare}
+                    <View style={styles.fareContainer}>
+                        <Text style={styles.fare}>
+                            P{isTransfer && route.totalFare ? route.totalFare : route.fare}
                         </Text>
+                        {isTransfer && (
+                            <Text style={styles.fareBreakdown}>
+                                P{route.firstRoute?.fare} + P{route.secondRoute?.fare}
+                            </Text>
+                        )}
+                    </View>
+                    {onSave && (
+                        <TouchableOpacity 
+                            onPress={(e) => {
+                                e.stopPropagation();
+                                onSave();
+                            }} 
+                            style={styles.saveButton}
+                        >
+                            <Ionicons 
+                                name={isSaved ? "bookmark" : "bookmark-outline"} 
+                                size={24} 
+                                color={isSaved ? "#FF6B6B" : "#666"} 
+                            />
+                        </TouchableOpacity>
                     )}
                 </View>
             </View>
@@ -112,6 +131,15 @@ const styles = StyleSheet.create({
         width: '50%',
         alignItems: 'flex-end',
         justifyContent: 'space-between',
+        flexDirection: 'row',
+    },
+    fareContainer: {
+        flex: 1,
+        alignItems: 'flex-end',
+    },
+    saveButton: {
+        padding: 8,
+        marginLeft: 10,
     },
     routeCode: {
         fontFamily: 'Lexend_600SemiBold',

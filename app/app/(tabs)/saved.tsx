@@ -27,7 +27,7 @@ export interface JeepneyRoute {
 
 export async function getAllRoutes(): Promise<JeepneyRoute[]> {
     const { data, error } = await supabase
-        .from("new_jeepney_routes")
+        .from("jeepney_routes")
         .select("*");
 
     if (error) {

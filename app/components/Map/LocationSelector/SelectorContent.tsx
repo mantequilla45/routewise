@@ -6,11 +6,77 @@ import { GoogleMapsPolyline } from "expo-maps/build/google/GoogleMaps.types";
 import { useContext, useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import RouteCard from "./RouteCard";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlacementMode, hideModal }: Readonly<{ exit: () => void, setShowBottomSheet: (value: boolean) => void, enterPinPlacementMode?: (isPointA: boolean) => void, hideModal?: () => void }>) {
     const { setIsPointAB, setIsPinPlacementEnabled, pointA, pointB, setPointA, setPointB, setRoutes, allRoutes, setAllRoutes, results, setResults, isPinPlacementEnabled, selectedRouteIndex, setSelectedRouteIndex, setSelectedRouteInfo } = useContext(MapPointsContext)
     const [wasSelectingFirstLocation, setWasSelectingFirstLocation] = useState(false)
     const [isCalculating, setIsCalculating] = useState(false)
+    const [savedRoutes, setSavedRoutes] = useState<string[]>([])
+
+    // Load saved routes from AsyncStorage on mount
+    useEffect(() => {
+        loadSavedRoutes();
+    }, []);
+
+    const loadSavedRoutes = async () => {
+        try {
+            const saved = await AsyncStorage.getItem('savedRoutes');
+            if (saved) {
+                setSavedRoutes(JSON.parse(saved));
+            }
+        } catch (error) {
+            console.error('Error loading saved routes:', error);
+        }
+    };
+
+    const saveRoute = async (route: any, index: number) => {
+        try {
+            // Create a unique ID for the route
+            const routeKey = `${route.routeId}_${pointA?.latitude}_${pointA?.longitude}_${pointB?.latitude}_${pointB?.longitude}`;
+            
+            // Get existing saved routes
+            const existingSaved = await AsyncStorage.getItem('savedRoutes');
+            const savedList = existingSaved ? JSON.parse(existingSaved) : [];
+            
+            // Toggle save state
+            if (savedList.includes(routeKey)) {
+                // Remove from saved
+                const newList = savedList.filter((id: string) => id !== routeKey);
+                await AsyncStorage.setItem('savedRoutes', JSON.stringify(newList));
+                setSavedRoutes(newList);
+                
+                // Also save the full route details
+                await AsyncStorage.removeItem(`route_${routeKey}`);
+                
+                Alert.alert('Route Removed', 'Route removed from saved routes');
+            } else {
+                // Add to saved
+                savedList.push(routeKey);
+                await AsyncStorage.setItem('savedRoutes', JSON.stringify(savedList));
+                setSavedRoutes(savedList);
+                
+                // Save the full route details
+                const routeData = {
+                    ...route,
+                    pointA,
+                    pointB,
+                    savedAt: new Date().toISOString()
+                };
+                await AsyncStorage.setItem(`route_${routeKey}`, JSON.stringify(routeData));
+                
+                Alert.alert('Route Saved', 'Route saved successfully');
+            }
+        } catch (error) {
+            console.error('Error saving route:', error);
+            Alert.alert('Error', 'Failed to save route');
+        }
+    };
+
+    const isRouteSaved = (route: any) => {
+        const routeKey = `${route.routeId}_${pointA?.latitude}_${pointA?.longitude}_${pointB?.latitude}_${pointB?.longitude}`;
+        return savedRoutes.includes(routeKey);
+    };
 
     // Auto-open second location selection after first location is selected
     useEffect(() => {
@@ -363,6 +429,8 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
                                     route={route}
                                     isSelected={selectedRouteIndex === index}
                                     onSelect={() => handleRouteSelect(index)}
+                                    onSave={() => saveRoute(route, index)}
+                                    isSaved={isRouteSaved(route)}
                                 />
                             );
                         })}

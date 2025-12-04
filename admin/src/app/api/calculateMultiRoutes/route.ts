@@ -41,23 +41,56 @@ export async function POST(req: NextRequest) {
         console.log('🔄 MULTI-ROUTE API: To:', to);
 
         // Step 1: Find ALL routes that can be taken from the starting point
+        // For routes that pass by multiple times, find the best position for forward travel
         const startRoutesQuery = `
-            SELECT DISTINCT
-                r.id,
-                r.route_code,
-                r.start_point_name,
-                r.end_point_name,
-                ST_LineLocatePoint(r.geom_forward, ST_SetSRID(ST_MakePoint($1, $2), 4326)) as position_on_route,
-                ST_Distance(
+            WITH route_positions AS (
+                -- Find all positions where each route passes near the starting point
+                SELECT 
+                    r.id,
+                    r.route_code,
+                    r.start_point_name,
+                    r.end_point_name,
+                    r.geom_forward,
+                    generate_series(0.0, 1.0, 0.01) as sample_position
+                FROM jeepney_routes r
+                WHERE ST_DWithin(
                     r.geom_forward::geography,
+                    ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography,
+                    200  -- Within 200 meters of route
+                )
+            ),
+            nearby_points AS (
+                -- Find which sample positions are actually near the starting point
+                SELECT 
+                    rp.id,
+                    rp.route_code,
+                    rp.start_point_name,
+                    rp.end_point_name,
+                    rp.sample_position as position_on_route,
+                    ST_Distance(
+                        ST_LineInterpolatePoint(rp.geom_forward, rp.sample_position)::geography,
+                        ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography
+                    ) as distance_to_route
+                FROM route_positions rp
+                WHERE ST_Distance(
+                    ST_LineInterpolatePoint(rp.geom_forward, rp.sample_position)::geography,
                     ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography
-                ) as distance_to_route
-            FROM jeepney_routes r
-            WHERE ST_DWithin(
-                r.geom_forward::geography,
-                ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography,
-                200  -- Within 200 meters
+                ) < 50  -- Must be within 50 meters of the actual starting point
+            ),
+            best_positions AS (
+                -- For each route, pick the position closest to the start of the route
+                -- This ensures we can travel forward to reach destinations
+                SELECT DISTINCT ON (id)
+                    id,
+                    route_code,
+                    start_point_name,
+                    end_point_name,
+                    position_on_route,
+                    distance_to_route
+                FROM nearby_points
+                ORDER BY id, position_on_route ASC  -- Pick the earliest position on each route
             )
+            SELECT * FROM best_positions
             ORDER BY distance_to_route;
         `;
 
@@ -71,23 +104,56 @@ export async function POST(req: NextRequest) {
         });
 
         // Step 2: Find ALL routes that can reach the destination
+        // For routes that pass by multiple times, find the best position for reaching from earlier in the route
         const endRoutesQuery = `
-            SELECT DISTINCT
-                r.id,
-                r.route_code,
-                r.start_point_name,
-                r.end_point_name,
-                ST_LineLocatePoint(r.geom_forward, ST_SetSRID(ST_MakePoint($1, $2), 4326)) as position_on_route,
-                ST_Distance(
+            WITH route_positions AS (
+                -- Find all positions where each route passes near the destination
+                SELECT 
+                    r.id,
+                    r.route_code,
+                    r.start_point_name,
+                    r.end_point_name,
+                    r.geom_forward,
+                    generate_series(0.0, 1.0, 0.01) as sample_position
+                FROM jeepney_routes r
+                WHERE ST_DWithin(
                     r.geom_forward::geography,
+                    ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography,
+                    200  -- Within 200 meters of route
+                )
+            ),
+            nearby_points AS (
+                -- Find which sample positions are actually near the destination
+                SELECT 
+                    rp.id,
+                    rp.route_code,
+                    rp.start_point_name,
+                    rp.end_point_name,
+                    rp.sample_position as position_on_route,
+                    ST_Distance(
+                        ST_LineInterpolatePoint(rp.geom_forward, rp.sample_position)::geography,
+                        ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography
+                    ) as distance_to_route
+                FROM route_positions rp
+                WHERE ST_Distance(
+                    ST_LineInterpolatePoint(rp.geom_forward, rp.sample_position)::geography,
                     ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography
-                ) as distance_to_route
-            FROM jeepney_routes r
-            WHERE ST_DWithin(
-                r.geom_forward::geography,
-                ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography,
-                200  -- Within 200 meters
+                ) < 50  -- Must be within 50 meters of the actual destination
+            ),
+            best_positions AS (
+                -- For each route, pick the position furthest along the route
+                -- This ensures we can reach it from earlier in the route
+                SELECT DISTINCT ON (id)
+                    id,
+                    route_code,
+                    start_point_name,
+                    end_point_name,
+                    position_on_route,
+                    distance_to_route
+                FROM nearby_points
+                ORDER BY id, position_on_route DESC  -- Pick the latest position on each route
             )
+            SELECT * FROM best_positions
             ORDER BY distance_to_route;
         `;
 
@@ -198,30 +264,80 @@ export async function POST(req: NextRequest) {
                     ]);
 
                     // Second route: from intersection to destination
-                    const secondSegmentQuery = `
+                    // Check if there's a closer point to the destination after the intersection
+                    const secondSegmentOptimizedQuery = `
+                        WITH route_segment AS (
+                            SELECT 
+                                id,
+                                geom_forward,
+                                $2::float as start_pos,
+                                $3::float as original_end_pos
+                            FROM jeepney_routes 
+                            WHERE id = $1
+                        ),
+                        sample_points AS (
+                            -- Sample points between intersection and original destination position
+                            SELECT 
+                                rs.id,
+                                rs.geom_forward,
+                                rs.start_pos,
+                                rs.original_end_pos,
+                                rs.start_pos + (rs.original_end_pos - rs.start_pos) * s.step as sample_pos,
+                                ST_Distance(
+                                    ST_LineInterpolatePoint(rs.geom_forward, 
+                                        rs.start_pos + (rs.original_end_pos - rs.start_pos) * s.step
+                                    )::geography,
+                                    ST_SetSRID(ST_MakePoint($4, $5), 4326)::geography
+                                ) as distance_to_destination
+                            FROM 
+                                route_segment rs,
+                                (SELECT generate_series(0.0, 1.0, 0.01) as step) s
+                            WHERE rs.start_pos + (rs.original_end_pos - rs.start_pos) * s.step <= 1.0
+                        ),
+                        best_endpoint AS (
+                            -- Find the point closest to destination within 30m threshold
+                            SELECT 
+                                id,
+                                geom_forward,
+                                start_pos,
+                                CASE 
+                                    WHEN MIN(distance_to_destination) < 30 THEN 
+                                        -- Use the closest point if within threshold
+                                        (SELECT sample_pos FROM sample_points sp2 
+                                         WHERE sp2.id = sp.id 
+                                         ORDER BY distance_to_destination 
+                                         LIMIT 1)
+                                    ELSE 
+                                        -- Otherwise use original position
+                                        original_end_pos
+                                END as end_pos
+                            FROM sample_points sp
+                            GROUP BY id, geom_forward, start_pos, original_end_pos
+                        )
                         SELECT 
                             ST_AsGeoJSON(
                                 ST_LineSubstring(
                                     geom_forward, 
-                                    $2::float, 
-                                    $3::float
+                                    start_pos, 
+                                    end_pos
                                 )
                             ) as segment_geojson,
                             ST_Length(
                                 ST_LineSubstring(
                                     geom_forward, 
-                                    $2::float, 
-                                    $3::float
+                                    start_pos, 
+                                    end_pos
                                 )::geography
                             ) as distance_meters
-                        FROM jeepney_routes 
-                        WHERE id = $1;
+                        FROM best_endpoint;
                     `;
 
-                    const secondSegment = await query(secondSegmentQuery, [
+                    const secondSegment = await query(secondSegmentOptimizedQuery, [
                         endRoute.id,
                         intersection.position2,
-                        endRoute.position_on_route
+                        endRoute.position_on_route,
+                        to.longitude,
+                        to.latitude
                     ]);
 
                     if (firstSegment.length > 0 && secondSegment.length > 0) {

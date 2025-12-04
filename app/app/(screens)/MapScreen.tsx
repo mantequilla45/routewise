@@ -155,26 +155,6 @@ function MapScreenContent() {
                             <Text style={styles.routeInfoLabel}>Showing Route</Text>
                             <Text style={styles.routeInfoCode}>{selectedRouteInfo?.id || 'Route'}</Text>
                         </View>
-                        <TouchableOpacity 
-                            onPress={() => {
-                                // Always clear the displayed route
-                                setRoutes([]);
-                                setSelectedRouteInfo(null);
-                                setSelectedRouteIndex(null);
-                                
-                                if (isRouteFromList) {
-                                    // If from Routes tab, also clear everything and show modal
-                                    setAllRoutes([]);
-                                    setIsRouteFromList(false);
-                                    showModal();
-                                }
-                                // If from calculation, keep allRoutes so user can select another
-                            }}
-                            style={styles.clearButtonSmall}
-                            activeOpacity={0.8}
-                        >
-                            <Ionicons name="close-circle" size={28} color="#FF6B6B" />
-                        </TouchableOpacity>
                     </View>
                 </View>
             )}
