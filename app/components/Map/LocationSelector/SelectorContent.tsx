@@ -93,12 +93,21 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
             const routes = await calculatePossibleRoutes(pointA, pointB);
 
             if (Array.isArray(routes) && routes.length > 0) {
-                setResults(routes);
+                // Sort routes by distance (shortest first)
+                const sortedRoutes = [...routes].sort((a, b) => {
+                    const distA = a.distanceMeters || Number.MAX_VALUE;
+                    const distB = b.distanceMeters || Number.MAX_VALUE;
+                    return distA - distB;
+                });
+                console.log('Routes sorted by distance:', sortedRoutes.map(r => 
+                    `${r.routeId}: ${r.distanceMeters}m`
+                ));
+                setResults(sortedRoutes);
 
                 // Build polylines for ALL routes to maintain consistent indexing
                 const googlePolylineRoutes: GoogleMapsPolyline[] = [];
 
-                routes.forEach((r: any, resultIndex) => {
+                sortedRoutes.forEach((r: any, resultIndex) => {
                     // Check if it's a transfer route by checking for the isTransfer property
                     const isTransfer = 'isTransfer' in r && r.isTransfer === true;
 
@@ -162,14 +171,14 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
                     }
                 });
 
-                console.log(`Created ${googlePolylineRoutes.length} polylines from ${routes.length} results`);
+                console.log(`Created ${googlePolylineRoutes.length} polylines from ${sortedRoutes.length} results`);
 
                 // Store all routes (no need for index map anymore since indices match directly)
                 console.log(`Setting allRoutes with ${googlePolylineRoutes.length} polylines`);
                 setAllRoutes(googlePolylineRoutes);
 
                 // Don't display any route initially - wait for user selection
-                if (googlePolylineRoutes.length > 0 && routes.length > 0) {
+                if (googlePolylineRoutes.length > 0 && sortedRoutes.length > 0) {
                     // Clear any previous route display
                     setRoutes([]);
                     setSelectedRouteIndex(null);
