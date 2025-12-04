@@ -24,38 +24,40 @@ export async function calculateMultiRoutes(
     from: LatLng,
     to: LatLng
 ): Promise<MultiRouteResult[] | { error: string; warning?: string }> {
-    console.log('calculateMultiRoutes called - attempting 2-jeep journey calculation');
+    console.log('🔄 MULTI-ROUTE: Starting 2-jeep calculation');
+    console.log('🔄 MULTI-ROUTE: From:', from);
+    console.log('🔄 MULTI-ROUTE: To:', to);
     
     try {
-        console.log('Fetching multi-route calculation from API...');
+        console.log('🔄 MULTI-ROUTE: Calling API endpoint /api/calculateMultiRoutes');
         const res = await fetch("http://10.0.2.2:3000/api/calculateMultiRoutes", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ from, to })
         });
 
-        console.log('Multi-route API response status:', res.status);
+        console.log('🔄 MULTI-ROUTE: API response status:', res.status);
 
         if (!res.ok) {
             try {
                 const errorData = await res.json();
-                console.log("Multi-route error response:", errorData);
+                console.log("🔄 MULTI-ROUTE ERROR:", errorData);
                 return { 
                     error: errorData.error || "No 2-jeep routes available",
                     warning: errorData.warning
                 };
             } catch {
                 const errorText = await res.text();
-                console.log("Multi-route error response text:", errorText);
+                console.log("🔄 MULTI-ROUTE ERROR TEXT:", errorText);
                 return { error: errorText || "No 2-jeep routes available" };
             }
         }
 
         const data = await res.json();
-        console.log("Multi-route response:", data);
+        console.log("🔄 MULTI-ROUTE SUCCESS: Response data:", data);
 
         if (Array.isArray(data)) {
-            console.log('Successfully calculated', data.length, '2-jeep routes');
+            console.log('🔄 MULTI-ROUTE: Found', data.length, '2-jeep route combinations');
             // Mark all results as transfer routes
             return data.map(route => ({
                 ...route,
@@ -65,7 +67,7 @@ export async function calculateMultiRoutes(
 
         return data;
     } catch (error) {
-        console.error('Error in calculateMultiRoutes:', error);
+        console.error('🔄 MULTI-ROUTE FATAL ERROR:', error);
         return { 
             error: 'Failed to calculate 2-jeep routes', 
             warning: 'Network or calculation error occurred' 

@@ -155,9 +155,20 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
                 console.log(`Setting allRoutes with ${googlePolylineRoutes.length} polylines`);
                 setAllRoutes(googlePolylineRoutes);
 
-                // Display the first valid route if available
-                if (googlePolylineRoutes.length > 0) {
-                    setRoutes([googlePolylineRoutes[0]]);
+                // Display the first route (check if it's a transfer route)
+                if (googlePolylineRoutes.length > 0 && routes.length > 0) {
+                    const firstResult = routes[0];
+                    if (firstResult.isTransfer) {
+                        // For transfer routes, show both segments
+                        const firstRoutePolylines = googlePolylineRoutes.filter(r => 
+                            r.id && r.id.startsWith('route_0_')
+                        );
+                        console.log(`Displaying initial transfer route with ${firstRoutePolylines.length} segments`);
+                        setRoutes(firstRoutePolylines);
+                    } else {
+                        // For single routes, show just one polyline
+                        setRoutes([googlePolylineRoutes[0]]);
+                    }
                     setSelectedRouteIndex(0);
                 } else {
                     setRoutes([]);

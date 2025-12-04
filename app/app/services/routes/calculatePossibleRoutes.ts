@@ -6,73 +6,67 @@ export async function calculatePossibleRoutes(
     from: LatLng | null,
     to: LatLng | null
 ): Promise<(MappedGeoRouteResult | MultiRouteResult)[] | { error: string; warning?: string }> {
-    console.log('calculatePossibleRoutes called with:', { from, to });
     
     if (!from || !to) {
-        console.log('Missing from or to coordinates');
         return [];
     }
 
     try {
-        console.log('Starting route calculation...');
-        
         // Try to snap to road, but fall back to original points if it fails
         let adjustedFrom = from;
         let adjustedTo = to;
         
         try {
-            console.log('Attempting to snap points to road...');
             const [snappedFrom, snappedTo] = await Promise.all([
                 adjustToNearestRoad(from).catch(() => from),
                 adjustToNearestRoad(to).catch(() => to)
             ]);
             adjustedFrom = snappedFrom;
             adjustedTo = snappedTo;
-            console.log('Snap to road completed');
         } catch (snapError) {
-            console.log('Snap to road failed, using original points:', snapError);
+            // Use original points on snap error
         }
 
-        console.log('Original points:', { from, to });
-        console.log('Using points for calculation:', { from: adjustedFrom, to: adjustedTo });
-
-        console.log('Fetching route calculation from API...');
         const res = await fetch("http://10.0.2.2:3000/api/calculateRoutes", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ from: adjustedFrom, to: adjustedTo })
         });
 
-        console.log('API response status:', res.status);
-
         if (!res.ok) {
             try {
                 const errorData = await res.json();
-                console.log("Error response:", errorData);
-                return { 
-                    error: errorData.error || "Failed to calculate routes",
-                    warning: errorData.warning
-                };
-            } catch {
+                
+                // If single routes failed, try multi-route before giving up
+                console.log('🔄 MULTI-ROUTE: Single route failed, attempting 2-jeep calculation...');
+                const multiRouteResult = await calculateMultiRoutes(adjustedFrom, adjustedTo);
+                
+                console.log('🔄 MULTI-ROUTE: Result:', multiRouteResult);
+                
+                // Check if multi-route calculation returned an error
+                if ('error' in multiRouteResult) {
+                    console.log('🔄 MULTI-ROUTE: Failed - both single and multi-route unavailable');
+                    // Return original error if multi-route also failed
+                    return { 
+                        error: errorData.error || "Failed to calculate routes",
+                        warning: "No single or multi-jeep routes found"
+                    };
+                }
+                
+                console.log('🔄 MULTI-ROUTE: Success - returning multi-route results');
+                // Return multi-route results if successful
+                return multiRouteResult;
+            } catch (err) {
+                console.log('🔄 MULTI-ROUTE: Error parsing response:', err);
                 const errorText = await res.text();
-                console.log("Error response text:", errorText);
                 return { error: errorText || "Failed to calculate routes" };
             }
         }
 
         const data = await res.json();
 
-        console.log("Response JSON:", data);
-
-        // Check for warnings in successful responses
-        if (data.warning) {
-            console.log("Route warning:", data.warning);
-        }
-
         // optionally validate the shape
         if (Array.isArray(data)) {
-            console.log('Successfully calculated', data.length, 'routes');
-            
             // If we got single routes, return them
             if (data.length > 0) {
                 return data as MappedGeoRouteResult[];
@@ -80,18 +74,22 @@ export async function calculatePossibleRoutes(
         }
 
         // If no single routes found (empty array), try multi-route calculation
-        console.log('No single jeep routes found, attempting 2-jeep calculation...');
+        console.log('🔄 MULTI-ROUTE: No single routes in response, attempting 2-jeep calculation...');
         const multiRouteResult = await calculateMultiRoutes(adjustedFrom, adjustedTo);
+        
+        console.log('🔄 MULTI-ROUTE: Result:', multiRouteResult);
         
         // Check if multi-route calculation returned an error
         if ('error' in multiRouteResult) {
+            console.log('🔄 MULTI-ROUTE: Failed - no routes available');
             return multiRouteResult;
         }
         
+        console.log('🔄 MULTI-ROUTE: Success - returning multi-route results');
         // Return multi-route results
         return multiRouteResult;
     } catch (error) {
-        console.error('Error in calculatePossibleRoutes:', error);
+        console.error('🔄 MULTI-ROUTE: Fatal error in calculatePossibleRoutes:', error);
         return { 
             error: 'Failed to calculate routes', 
             warning: 'Network or calculation error occurred' 
