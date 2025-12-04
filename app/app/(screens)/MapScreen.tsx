@@ -93,8 +93,9 @@ function MapScreenContent() {
         })
     ).current;
 
-
     const handleConfirmLocation = () => {
+        console.log('handleConfirmLocation called', { isPointAB, isSelectingLocations, isPinPlacementEnabled });
+
         if (mapRef.current) {
             // If we're in the selection flow
             if (isSelectingLocations) {
@@ -140,7 +141,7 @@ function MapScreenContent() {
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
             <Stack.Screen options={{ headerShown: false }} />
-            
+
             {/* Map in background, takes full screen */}
             <View style={styles.mapContainer}>
                 <NativeMap ref={mapRef} />
@@ -206,7 +207,7 @@ function MapScreenContent() {
                         onPress={handleConfirmLocation}
                         activeOpacity={0.8}
                     >
-                        <Ionicons name="checkmark-circle" size={32} color="white" />
+                        <Ionicons name="checkmark-circle" size={32} color="#303030" />
                         <Text style={styles.confirmLocationText}>
                             Confirm {isPointAB ? 'Starting Point' : 'Destination'}
                         </Text>
@@ -297,6 +298,34 @@ const styles = StyleSheet.create({
         zIndex: 10, // Above map
         elevation: 10, // For Android
     },
+    dragHandle: {
+        width: 40,
+        height: 5,
+        backgroundColor: '#666',
+        borderRadius: 3,
+        alignSelf: 'center',
+        marginBottom: 10,
+        marginTop: -5,
+    },
+    swipeUpIndicator: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: '#303030',
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        paddingTop: 12,
+        paddingBottom: 15,
+        alignItems: 'center',
+        zIndex: 10,
+        elevation: 10,
+    },
+    swipeUpText: {
+        color: '#999',
+        fontSize: 14,
+        marginBottom: 5,
+    },
     pinPlacementIndicator: {
         position: 'absolute',
         top: 0,
@@ -375,11 +404,11 @@ const styles = StyleSheet.create({
     },
     confirmLocationButton: {
         position: 'absolute',
-        bottom: 20,
+        bottom: 80,
         alignSelf: 'center',
         left: 20,
         right: 20,
-        backgroundColor: '#4CAF50',
+        backgroundColor: '#FFCC66',
         paddingVertical: 16,
         paddingHorizontal: 24,
         borderRadius: 12,
@@ -394,7 +423,7 @@ const styles = StyleSheet.create({
         shadowRadius: 3.84,
     },
     confirmLocationText: {
-        color: 'white',
+        color: '#303030',
         fontSize: 18,
         fontWeight: '600',
         fontFamily: 'Lexend_600SemiBold',
@@ -447,34 +476,5 @@ const styles = StyleSheet.create({
         right: -20,
         height: 250,
         backgroundColor: '#303030',
-    },
-    dragHandle: {
-        width: 40,
-        height: 5,
-        backgroundColor: '#666',
-        borderRadius: 3,
-        alignSelf: 'center',
-        marginBottom: 10,
-        marginTop: -5,
-    },
-    swipeUpIndicator: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        backgroundColor: '#303030',
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
-        paddingTop: 12,
-        paddingBottom: 15,
-        alignItems: 'center',
-        zIndex: 10,
-        elevation: 10,
-    },
-    swipeUpText: {
-        color: '#999',
-        fontSize: 14,
-        marginBottom: 5,
-        fontFamily: 'Lexend_400Regular',
     },
 });

@@ -50,10 +50,10 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
         // Check if it's a transfer route
         if (selectedResult.isTransfer) {
             // Find polylines for both segments
-            const polylinesToShow = allRoutes.filter(r => 
+            const polylinesToShow = allRoutes.filter(r =>
                 r.id && r.id.startsWith(`route_${index}_`)
             );
-            
+
             console.log(`Selected transfer route ${index}: ${selectedResult.routeId}, showing ${polylinesToShow.length} polylines`);
             setRoutes(polylinesToShow);
         } else {
@@ -88,7 +88,7 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
                 routes.forEach((r: any, resultIndex) => {
                     // Check if it's a transfer route
                     const isTransfer = r.isTransfer === true;
-                    
+
                     if (isTransfer && r.firstRoute && r.secondRoute) {
                         // Create two polylines for transfer routes with different colors
                         if (r.firstRoute.coordinates && r.firstRoute.coordinates.length > 0) {
@@ -104,7 +104,7 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
                             };
                             googlePolylineRoutes.push(firstPolyline);
                         }
-                        
+
                         if (r.secondRoute.coordinates && r.secondRoute.coordinates.length > 0) {
                             const secondPolyline: GoogleMapsPolyline = {
                                 id: `route_${resultIndex}_second`,
@@ -118,7 +118,7 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
                             };
                             googlePolylineRoutes.push(secondPolyline);
                         }
-                        
+
                         console.log(`Created transfer polylines for result ${resultIndex} (${r.routeId})`);
                     } else if (r.latLng && r.latLng.length > 0) {
                         // Single route polyline
@@ -160,7 +160,7 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
                     const firstResult = routes[0];
                     if (firstResult.isTransfer) {
                         // For transfer routes, show both segments
-                        const firstRoutePolylines = googlePolylineRoutes.filter(r => 
+                        const firstRoutePolylines = googlePolylineRoutes.filter(r =>
                             r.id && r.id.startsWith('route_0_')
                         );
                         console.log(`Displaying initial transfer route with ${firstRoutePolylines.length} segments`);
@@ -218,7 +218,6 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
             setPointA(null);
             setPointB(null);
             setIsPinPlacementEnabled(false);
-            setWasSelectingFirstLocation(false);
             console.log("Map cleared - all points and routes removed");
         }, 50);
     };
@@ -315,8 +314,8 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
             </View>
 
             <View style={styles.bottomSheetRow}>
-                <TouchableOpacity 
-                    style={[styles.calculateButton, isCalculating && styles.calculateButtonDisabled]} 
+                <TouchableOpacity
+                    style={[styles.calculateButton, isCalculating && styles.calculateButtonDisabled]}
                     onPress={onCalculate}
                     disabled={isCalculating || !pointA || !pointB}
                 >
@@ -333,14 +332,14 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
 
             {results && results.length > 0 && (
                 <View style={styles.routeList}>
+                    <Text style={{ color: 'white', fontFamily: 'Lexend_400Regular', marginBottom: 10 }}>Results</Text>
                     <ScrollView
-                        style={{ flex: 1 }}
+                        style={{ maxHeight: 400 }}
                         contentContainerStyle={styles.routeCardContainer}
                         showsVerticalScrollIndicator={true}
                         nestedScrollEnabled={true}
                         scrollEnabled={true}
                     >
-                        <Text style={{ color: 'white', fontFamily: 'Lexend_400Regular', marginBottom: 10 }}>Results</Text>
                         {results.map((route, index) => {
                             console.log(`Rendering route card ${index}: ${route.routeId}`);
                             return (
@@ -505,7 +504,7 @@ const styles = StyleSheet.create({
     },
 
     routeCardContainer: {
-        paddingVertical: 10,
+        paddingBottom: 10,
         gap: 15,
     }
 });
