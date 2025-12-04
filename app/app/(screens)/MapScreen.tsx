@@ -4,18 +4,40 @@ import { MapPointsContext } from '@/context/map-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack } from 'expo-router';
 import { useContext, useEffect, useRef, useState } from 'react';
-import { Animated, StyleSheet, Text, TouchableOpacity, View, PanResponder } from 'react-native';
+import { Animated, StyleSheet, Text, TouchableOpacity, View, PanResponder, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 function MapScreenContent() {
-    const { isPinPlacementEnabled, setIsPinPlacementEnabled, isPointAB, setIsPointAB, pointA, pointB, isRouteFromList, setIsRouteFromList, routes, setRoutes, setAllRoutes, selectedRouteInfo, setSelectedRouteInfo, results, setSelectedRouteIndex } = useContext(MapPointsContext);
+    const { isPinPlacementEnabled, setIsPinPlacementEnabled, isPointAB, setIsPointAB, pointA, pointB, isRouteFromList, setIsRouteFromList, routes, setRoutes, setAllRoutes, selectedRouteInfo, setSelectedRouteInfo, results, setSelectedRouteIndex, selectedRouteIndex } = useContext(MapPointsContext);
     const [isSelectingLocations, setIsSelectingLocations] = useState(false);
+    const [isRouteSaved, setIsRouteSaved] = useState(false);
     const mapRef = useRef<NativeMapRef>(null);
     const insets = useSafeAreaInsets();
     
     // Single animation value to control modal position (0 = visible, 800 = hidden)
     const modalPosition = useRef(new Animated.Value(isRouteFromList ? 800 : 0)).current;
     const indicatorOpacity = useRef(new Animated.Value(isRouteFromList ? 1 : 0)).current;
+
+    // Check if current route is saved when selected route changes
+    useEffect(() => {
+        const checkIfRouteSaved = async () => {
+            if (selectedRouteIndex !== null && results && results[selectedRouteIndex]) {
+                const route = results[selectedRouteIndex];
+                const routeKey = `${route.routeId}_${pointA?.latitude}_${pointA?.longitude}_${pointB?.latitude}_${pointB?.longitude}`;
+                
+                try {
+                    const existingSaved = await AsyncStorage.getItem('savedRoutes');
+                    const savedList = existingSaved ? JSON.parse(existingSaved) : [];
+                    setIsRouteSaved(savedList.includes(routeKey));
+                } catch (error) {
+                    console.error('Error checking saved status:', error);
+                }
+            }
+        };
+        
+        checkIfRouteSaved();
+    }, [selectedRouteIndex, results, pointA, pointB]);
 
     // Helper functions for modal visibility
     const showModal = (callback?: () => void) => {
@@ -155,6 +177,54 @@ function MapScreenContent() {
                             <Text style={styles.routeInfoLabel}>Showing Route</Text>
                             <Text style={styles.routeInfoCode}>{selectedRouteInfo?.id || 'Route'}</Text>
                         </View>
+                        {results && results.length > 0 && selectedRouteIndex !== null && (
+                            <TouchableOpacity 
+                                onPress={async () => {
+                                    const route = results[selectedRouteIndex];
+                                    if (!route) return;
+                                    
+                                    const routeKey = `${route.routeId}_${pointA?.latitude}_${pointA?.longitude}_${pointB?.latitude}_${pointB?.longitude}`;
+                                    
+                                    try {
+                                        const existingSaved = await AsyncStorage.getItem('savedRoutes');
+                                        const savedList = existingSaved ? JSON.parse(existingSaved) : [];
+                                        
+                                        if (savedList.includes(routeKey)) {
+                                            // Remove from saved
+                                            const newList = savedList.filter((id: string) => id !== routeKey);
+                                            await AsyncStorage.setItem('savedRoutes', JSON.stringify(newList));
+                                            setIsRouteSaved(false);
+                                            await AsyncStorage.removeItem(`route_${routeKey}`);
+                                            Alert.alert('Route Removed', 'Route removed from saved routes');
+                                        } else {
+                                            // Add to saved
+                                            savedList.push(routeKey);
+                                            await AsyncStorage.setItem('savedRoutes', JSON.stringify(savedList));
+                                            setIsRouteSaved(true);
+                                            
+                                            const routeData = {
+                                                ...route,
+                                                pointA,
+                                                pointB,
+                                                savedAt: new Date().toISOString()
+                                            };
+                                            await AsyncStorage.setItem(`route_${routeKey}`, JSON.stringify(routeData));
+                                            Alert.alert('Route Saved', 'Route saved successfully');
+                                        }
+                                    } catch (error) {
+                                        console.error('Error saving route:', error);
+                                        Alert.alert('Error', 'Failed to save route');
+                                    }
+                                }}
+                                style={styles.saveIconButton}
+                            >
+                                <Ionicons 
+                                    name={isRouteSaved ? "bookmark" : "bookmark-outline"} 
+                                    size={24} 
+                                    color={isRouteSaved ? "#FF6B6B" : "#666"} 
+                                />
+                            </TouchableOpacity>
+                        )}
                     </View>
                 </View>
             )}
@@ -456,6 +526,10 @@ const styles = StyleSheet.create({
     },
     clearButtonSmall: {
         marginLeft: 12,
+    },
+    saveIconButton: {
+        padding: 8,
+        marginLeft: 10,
     },
     modalExtension: {
         position: 'absolute',

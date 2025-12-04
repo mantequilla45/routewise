@@ -20,23 +20,25 @@ export default function RouteCard({ route, isSelected = false, onSelect, onSave,
         <TouchableOpacity onPress={onSelect} activeOpacity={0.7}>
             <View style={[
                 styles.routeCard,
-                isSelected && styles.selectedCard,
-                isTransfer && styles.transferCard
+                isSelected && styles.selectedCard
             ]}>
-                <View style={styles.column1}>
-                    <View>
+                <View style={[
+                    styles.contentWrapper,
+                    isTransfer && styles.contentWrapperTransfer
+                ]}>
+                    <View style={styles.routeInfo}>
                         {isTransfer ? (
-                            <View>
-                                <Text style={[styles.routeCode, styles.transferRouteCode]}>
-                                    {route.firstRoute?.routeId}
-                                </Text>
-                                <View style={styles.transferIndicator}>
-                                    <Ionicons name="arrow-down" size={16} color="#666" />
-                                    <Text style={styles.transferText}>Transfer</Text>
+                            <View style={styles.transferRoutesContainer}>
+                                <View style={styles.transferRouteRow}>
+                                    <Text style={styles.routeCode}>
+                                        {route.firstRoute?.routeId}
+                                    </Text>
+                                    <Ionicons name="arrow-forward" size={20} color="#2D2D2D" style={styles.transferArrow} />
+                                    <Text style={styles.routeCode}>
+                                        {route.secondRoute?.routeId}
+                                    </Text>
                                 </View>
-                                <Text style={[styles.routeCode, styles.transferRouteCode]}>
-                                    {route.secondRoute?.routeId}
-                                </Text>
+                                <Text style={styles.transferLabel}>2 Jeeps Required</Text>
                             </View>
                         ) : (
                             <Text style={styles.routeCode}>
@@ -44,34 +46,18 @@ export default function RouteCard({ route, isSelected = false, onSelect, onSave,
                             </Text>
                         )}
                     </View>
-                    <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
-                    </View>
                 </View>
-                <View style={styles.column2}>
-                    <View style={styles.fareContainer}>
-                        <Text style={styles.fare}>
-                            P{isTransfer && route.totalFare ? route.totalFare : route.fare}
+                <View style={[
+                    styles.priceBox,
+                    isTransfer && styles.priceBoxTransfer
+                ]}>
+                    <Text style={styles.fare}>
+                        P{isTransfer && route.totalFare ? route.totalFare : route.fare}
+                    </Text>
+                    {isTransfer && (
+                        <Text style={styles.fareBreakdown}>
+                            P{route.firstRoute?.fare} + P{route.secondRoute?.fare}
                         </Text>
-                        {isTransfer && (
-                            <Text style={styles.fareBreakdown}>
-                                P{route.firstRoute?.fare} + P{route.secondRoute?.fare}
-                            </Text>
-                        )}
-                    </View>
-                    {onSave && (
-                        <TouchableOpacity 
-                            onPress={(e) => {
-                                e.stopPropagation();
-                                onSave();
-                            }} 
-                            style={styles.saveButton}
-                        >
-                            <Ionicons 
-                                name={isSaved ? "bookmark" : "bookmark-outline"} 
-                                size={24} 
-                                color={isSaved ? "#FF6B6B" : "#666"} 
-                            />
-                        </TouchableOpacity>
                     )}
                 </View>
             </View>
@@ -81,65 +67,65 @@ export default function RouteCard({ route, isSelected = false, onSelect, onSave,
 
 const styles = StyleSheet.create({
     routeCard: {
-        borderWidth: 3,
         width: "100%",
         backgroundColor: "#FFCC66",
         borderRadius: 10,
         flexDirection: "row",
-        paddingHorizontal: 25,
-        paddingVertical: 15,
         position: 'relative',
+        overflow: 'hidden',
+        borderWidth: 3,
         borderColor: "#FFCC66",
+        minHeight: 80,
     },
     selectedCard: {
         borderColor: "#4CAF50",
         backgroundColor: "#E8F5E9",
     },
-    transferCard: {
-        backgroundColor: "#FFE5E5",
-        borderColor: "#FF6B6B",
+    contentWrapper: {
+        flex: 1,
+        paddingHorizontal: 25,
+        paddingVertical: 15,
+        justifyContent: 'center',
     },
-    selectedIndicator: {
-        position: 'absolute',
-        top: 10,
-        right: 10,
+    contentWrapperTransfer: {
+        paddingVertical: 20,
     },
-    transferIndicator: {
+    routeInfo: {
+        flex: 1,
+        justifyContent: 'center',
+    },
+    priceBox: {
+        aspectRatio: 1,
+        backgroundColor: '#E6B85C',  // Darker shade of yellow
+        justifyContent: 'center',
+        alignItems: 'center',
+        minWidth: 80,
+    },
+    priceBoxTransfer: {
+        minWidth: 100,
+    },
+    transferRoutesContainer: {
+        gap: 8,
+    },
+    transferRouteRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 4,
-        paddingVertical: 2,
+        gap: 10,
     },
-    transferText: {
-        fontSize: 12,
-        color: '#666',
-        fontFamily: 'Lexend_400Regular',
+    transferArrow: {
+        marginHorizontal: 5,
     },
-    transferRouteCode: {
-        fontSize: 18,
-    },
-    fareBreakdown: {
+    transferLabel: {
         fontSize: 12,
         color: '#666',
         fontFamily: 'Lexend_400Regular',
         marginTop: 4,
     },
-    column1: {
-        width: '50%',
-    },
-    column2: {
-        width: '50%',
-        alignItems: 'flex-end',
-        justifyContent: 'space-between',
-        flexDirection: 'row',
-    },
-    fareContainer: {
-        flex: 1,
-        alignItems: 'flex-end',
-    },
-    saveButton: {
-        padding: 8,
-        marginLeft: 10,
+    fareBreakdown: {
+        fontSize: 12,
+        color: '#2D2D2D',
+        fontFamily: 'Lexend_400Regular',
+        marginTop: 4,
     },
     routeCode: {
         fontFamily: 'Lexend_600SemiBold',

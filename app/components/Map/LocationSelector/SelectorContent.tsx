@@ -429,8 +429,6 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
                                     route={route}
                                     isSelected={selectedRouteIndex === index}
                                     onSelect={() => handleRouteSelect(index)}
-                                    onSave={() => saveRoute(route, index)}
-                                    isSaved={isRouteSaved(route)}
                                 />
                             );
                         })}
