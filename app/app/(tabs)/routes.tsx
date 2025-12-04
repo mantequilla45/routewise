@@ -8,7 +8,7 @@ import Button from '@/components/Button';
 interface Route {
     id: string;
     route_id: string;
-    route_name: string;
+    route_code: string;
     route_color: string;
     created_at: string;
     coordinates?: any;
@@ -73,7 +73,7 @@ export default function RoutesScreen() {
                     setIsRouteFromList(true); // Mark that this route came from the list
                     setSelectedRouteInfo({ 
                         id: fullRoute.route_id, 
-                        name: fullRoute.route_name 
+                        name: fullRoute.route_code 
                     });
                     
                     // Navigate to the map screen
@@ -88,7 +88,7 @@ export default function RoutesScreen() {
     const filteredRoutes = routes.filter(route => {
         const query = searchQuery.toLowerCase();
         return route.route_id.toLowerCase().includes(query) ||
-            route.route_name.toLowerCase().includes(query);
+            route.route_code.toLowerCase().includes(query);
     });
 
     const sortAlphabetically = () => {
@@ -108,7 +108,7 @@ export default function RoutesScreen() {
                 <View style={styles.routeHeader}>
                     <View style={styles.routeInfo}>
                         <Text style={styles.routeCode}>{item.route_id}</Text>
-                        <Text style={styles.routeName}>{item.route_name}</Text>
+                        <Text style={styles.routeName}>{item.route_code}</Text>
                     </View>
                     <View style={styles.routeActions}>
                         <View style={[styles.colorIndicator, { backgroundColor: item.route_color || '#33ff00' }]} />

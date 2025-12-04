@@ -23,6 +23,17 @@ export interface RouteCalculationResult {
     debugInfo?: any;
 }
 
+export interface SideDetectionResult {
+    routeId: string;
+    routeCode: string;
+    startPos: number;
+    endPos: number;
+    startDist: number;
+    endDist: number;
+    startSide: 'correct' | 'opposite';
+    endSide: 'correct' | 'opposite';
+}
+
 export abstract class BaseRouteHandler {
     protected FARE_PER_KM = 2.20;
     protected MINIMUM_FARE = 13;
@@ -53,12 +64,91 @@ export abstract class BaseRouteHandler {
         }
     }
 
+    /**
+     * Detects which side of the road each pin is on for all routes
+     * Returns routes with side detection for both start and end points
+     */
+    protected async detectSidesForRoutes(from: LatLng, to: LatLng, maxDistance: number = 100): Promise<SideDetectionResult[]> {
+        const sideDetectionQuery = `
+            WITH route_check AS (
+                SELECT 
+                    r.id,
+                    r.route_code,
+                    ST_LineLocatePoint(r.geom_forward, ST_SetSRID(ST_MakePoint($1, $2), 4326)) as start_pos,
+                    ST_LineLocatePoint(r.geom_forward, ST_SetSRID(ST_MakePoint($3, $4), 4326)) as end_pos,
+                    ST_Distance(r.geom_forward::geography, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography) as start_dist,
+                    ST_Distance(r.geom_forward::geography, ST_SetSRID(ST_MakePoint($3, $4), 4326)::geography) as end_dist,
+                    
+                    -- Calculate route direction at start point
+                    ST_Azimuth(
+                        ST_LineInterpolatePoint(r.geom_forward, LEAST(ST_LineLocatePoint(r.geom_forward, ST_SetSRID(ST_MakePoint($1, $2), 4326)), 0.99)),
+                        ST_LineInterpolatePoint(r.geom_forward, LEAST(ST_LineLocatePoint(r.geom_forward, ST_SetSRID(ST_MakePoint($1, $2), 4326)) + 0.01, 1.0))
+                    ) as route_bearing_at_start,
+                    
+                    -- Calculate bearing from route to each pin
+                    ST_Azimuth(
+                        ST_LineInterpolatePoint(r.geom_forward, ST_LineLocatePoint(r.geom_forward, ST_SetSRID(ST_MakePoint($1, $2), 4326))),
+                        ST_SetSRID(ST_MakePoint($1, $2), 4326)
+                    ) as start_point_bearing,
+                    ST_Azimuth(
+                        ST_LineInterpolatePoint(r.geom_forward, ST_LineLocatePoint(r.geom_forward, ST_SetSRID(ST_MakePoint($3, $4), 4326))),
+                        ST_SetSRID(ST_MakePoint($3, $4), 4326)
+                    ) as end_point_bearing
+                FROM jeepney_routes r
+                WHERE ST_DWithin(r.geom_forward::geography, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography, $5)
+                    AND ST_DWithin(r.geom_forward::geography, ST_SetSRID(ST_MakePoint($3, $4), 4326)::geography, $5)
+            )
+            SELECT 
+                id as route_id,
+                route_code,
+                start_pos,
+                end_pos,
+                start_dist,
+                end_dist,
+                -- Determine side for start point
+                CASE 
+                    WHEN start_dist < 15 THEN 'correct'  -- Very close, definitely correct
+                    WHEN start_dist < 30 AND 
+                         SIN(start_point_bearing - route_bearing_at_start) > 0 THEN 'correct'  -- Right side
+                    WHEN start_dist < 30 AND 
+                         SIN(start_point_bearing - route_bearing_at_start) <= 0 THEN 'opposite'  -- Left side
+                    ELSE 'opposite'  -- Too far, probably opposite
+                END as start_side,
+                -- Determine side for end point
+                CASE 
+                    WHEN end_dist < 15 THEN 'correct'
+                    WHEN end_dist < 30 AND 
+                         SIN(end_point_bearing - route_bearing_at_start) > 0 THEN 'correct'
+                    WHEN end_dist < 30 AND 
+                         SIN(end_point_bearing - route_bearing_at_start) <= 0 THEN 'opposite'
+                    ELSE 'opposite'
+                END as end_side
+            FROM route_check;
+        `;
+        
+        const results = await query(sideDetectionQuery, [
+            from.longitude, from.latitude,
+            to.longitude, to.latitude,
+            maxDistance
+        ]);
+        
+        return results.map(r => ({
+            routeId: r.route_id,
+            routeCode: r.route_code,
+            startPos: r.start_pos,
+            endPos: r.end_pos,
+            startDist: r.start_dist,
+            endDist: r.end_dist,
+            startSide: r.start_side,
+            endSide: r.end_side
+        }));
+    }
+
     protected async findNearestRoutes(point: LatLng, maxDistance: number = 50) {
         const routesQuery = `
             SELECT 
                 r.id,
                 r.route_code,
-                r.route_name,
                 r.start_point_name,
                 r.end_point_name,
                 ST_LineLocatePoint(r.geom_forward, ST_SetSRID(ST_MakePoint($1, $2), 4326)) as position_on_route,

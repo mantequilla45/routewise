@@ -19,7 +19,7 @@ export async function GET(
             SELECT 
                 id,
                 route_code as route_id,
-                CONCAT(start_point_name, ' - ', end_point_name) as route_name,
+                CONCAT(start_point_name, ' - ', end_point_name) as route_code,
                 '#33ff00' as route_color,
                 ST_AsGeoJSON(geom_forward)::json as geojson
             FROM jeepney_routes

@@ -155,6 +155,13 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
                 return;
             }
 
+            // Clear existing results first
+            setResults([]);
+            setRoutes([]);
+            setAllRoutes([]);
+            setSelectedRouteIndex(null);
+            setSelectedRouteInfo(null);
+            
             setIsCalculating(true);
             const routes = await calculatePossibleRoutes(pointA, pointB);
 
@@ -208,11 +215,12 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
                         }
 
                         console.log(`Created transfer polylines for result ${resultIndex} (${r.routeId})`);
-                    } else if (r.latLng && r.latLng.length > 0) {
-                        // Single route polyline
+                    } else if ((r.latLng && r.latLng.length > 0) || (r.coordinates && r.coordinates.length > 0)) {
+                        // Single route polyline - handle both V1 (latLng) and V2 (coordinates) formats
+                        const routeCoords = r.coordinates || r.latLng;
                         const polyline: GoogleMapsPolyline = {
                             id: `route_${resultIndex}`,
-                            coordinates: r.latLng.map((coord: any) => ({
+                            coordinates: routeCoords.map((coord: any) => ({
                                 latitude: coord.latitude,
                                 longitude: coord.longitude
                             })),
@@ -222,7 +230,7 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
                         };
 
                         googlePolylineRoutes.push(polyline);
-                        console.log(`Created polyline for result ${resultIndex} (${r.routeId})`);
+                        console.log(`Created polyline for result ${resultIndex} (${r.routeId}) with ${routeCoords.length} coordinates`);
                     } else {
                         // Push empty polyline to maintain index consistency
                         const emptyPolyline: GoogleMapsPolyline = {

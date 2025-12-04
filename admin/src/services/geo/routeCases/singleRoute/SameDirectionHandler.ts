@@ -47,7 +47,7 @@ export class SameDirectionHandler implements RouteCaseHandler {
                 SELECT 
                     r.id,
                     r.route_code,
-                    r.route_name,
+                    r.route_code,
                     r.start_point_name,
                     r.end_point_name,
                     ST_LineLocatePoint(r.geom_forward, ST_SetSRID(ST_MakePoint($1, $2), 4326)) as start_pos,
@@ -60,7 +60,7 @@ export class SameDirectionHandler implements RouteCaseHandler {
             SELECT 
                 id,
                 route_code,
-                CONCAT(start_point_name, ' - ', end_point_name) as route_name,
+                CONCAT(start_point_name, ' - ', end_point_name) as route_code,
                 start_pos,
                 end_pos,
                 ST_AsGeoJSON(ST_LineSubstring(geom_forward, start_pos, end_pos)) as segment_geojson,
@@ -95,7 +95,7 @@ export class SameDirectionHandler implements RouteCaseHandler {
             segments: [{
                 routeId: route.id,
                 routeCode: route.route_code,
-                routeName: route.route_name,
+                routeName: route.route_code,
                 coordinates,
                 distance: route.distance_meters,
                 fare,

@@ -27,7 +27,7 @@ interface TripHistoryData {
 interface SavedRoutesData {
   id: string;
   user_id: string;
-  route_name: string;
+  route_code: string;
   start_location: string;
   end_location: string;
   start_lat: string;
