@@ -8,7 +8,7 @@ import { Animated, StyleSheet, Text, TouchableOpacity, View, PanResponder } from
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 function MapScreenContent() {
-    const { isPinPlacementEnabled, setIsPinPlacementEnabled, isPointAB, setIsPointAB, pointA, pointB, isRouteFromList, setIsRouteFromList, routes, setRoutes, setAllRoutes, selectedRouteInfo, setSelectedRouteInfo, results } = useContext(MapPointsContext);
+    const { isPinPlacementEnabled, setIsPinPlacementEnabled, isPointAB, setIsPointAB, pointA, pointB, isRouteFromList, setIsRouteFromList, routes, setRoutes, setAllRoutes, selectedRouteInfo, setSelectedRouteInfo, results, setSelectedRouteIndex } = useContext(MapPointsContext);
     const [isSelectingLocations, setIsSelectingLocations] = useState(false);
     const mapRef = useRef<NativeMapRef>(null);
     const insets = useSafeAreaInsets();
@@ -147,8 +147,8 @@ function MapScreenContent() {
                 <NativeMap ref={mapRef} />
             </View>
 
-            {/* Clear button when showing route from list */}
-            {isRouteFromList && routes.length > 0 && (
+            {/* Route info header - show when displaying any route */}
+            {(routes.length > 0 && (isRouteFromList || (results && results.length > 0 && selectedRouteInfo))) && (
                 <View style={styles.clearRouteButton}>
                     <View style={styles.routeInfoHeader}>
                         <View style={styles.routeInfoContent}>
@@ -157,11 +157,18 @@ function MapScreenContent() {
                         </View>
                         <TouchableOpacity 
                             onPress={() => {
+                                // Always clear the displayed route
                                 setRoutes([]);
-                                setAllRoutes([]);
-                                setIsRouteFromList(false);
                                 setSelectedRouteInfo(null);
-                                showModal(); // Show the selector modal after clearing
+                                setSelectedRouteIndex(null);
+                                
+                                if (isRouteFromList) {
+                                    // If from Routes tab, also clear everything and show modal
+                                    setAllRoutes([]);
+                                    setIsRouteFromList(false);
+                                    showModal();
+                                }
+                                // If from calculation, keep allRoutes so user can select another
                             }}
                             style={styles.clearButtonSmall}
                             activeOpacity={0.8}
@@ -238,6 +245,7 @@ function MapScreenContent() {
                     exit={() => hideModal()} 
                     setShowBottomSheet={(value) => value ? showModal() : hideModal()}
                     enterPinPlacementMode={enterPinPlacementMode}
+                    hideModal={hideModal}
                 />
             </Animated.View>
             
@@ -404,7 +412,7 @@ const styles = StyleSheet.create({
     },
     confirmLocationButton: {
         position: 'absolute',
-        bottom: 80,
+        bottom: 20,
         alignSelf: 'center',
         left: 20,
         right: 20,

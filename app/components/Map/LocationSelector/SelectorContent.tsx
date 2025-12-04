@@ -7,8 +7,8 @@ import { useContext, useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import RouteCard from "./RouteCard";
 
-export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlacementMode }: Readonly<{ exit: () => void, setShowBottomSheet: (value: boolean) => void, enterPinPlacementMode?: (isPointA: boolean) => void }>) {
-    const { setIsPointAB, setIsPinPlacementEnabled, pointA, pointB, setPointA, setPointB, setRoutes, allRoutes, setAllRoutes, results, setResults, isPinPlacementEnabled, selectedRouteIndex, setSelectedRouteIndex } = useContext(MapPointsContext)
+export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlacementMode, hideModal }: Readonly<{ exit: () => void, setShowBottomSheet: (value: boolean) => void, enterPinPlacementMode?: (isPointA: boolean) => void, hideModal?: () => void }>) {
+    const { setIsPointAB, setIsPinPlacementEnabled, pointA, pointB, setPointA, setPointB, setRoutes, allRoutes, setAllRoutes, results, setResults, isPinPlacementEnabled, selectedRouteIndex, setSelectedRouteIndex, setSelectedRouteInfo } = useContext(MapPointsContext)
     const [wasSelectingFirstLocation, setWasSelectingFirstLocation] = useState(false)
     const [isCalculating, setIsCalculating] = useState(false)
 
@@ -46,9 +46,15 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
         }
 
         setSelectedRouteIndex(index);
+        
+        // Set the route info to display in header
+        setSelectedRouteInfo({
+            id: selectedResult.routeId,
+            name: selectedResult.routeName || selectedResult.routeId
+        });
 
         // Check if it's a transfer route
-        if (selectedResult.isTransfer) {
+        if ('isTransfer' in selectedResult && selectedResult.isTransfer) {
             // Find polylines for both segments
             const polylinesToShow = allRoutes.filter(r =>
                 r.id && r.id.startsWith(`route_${index}_`)
@@ -66,6 +72,13 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
                 console.warn(`No polyline found for route ${selectedResult.routeId} at index ${index}`);
                 setRoutes([]);
             }
+        }
+        
+        // Hide the modal smoothly after selecting a route
+        if (hideModal) {
+            hideModal();
+        } else {
+            setShowBottomSheet(false);
         }
     };
 
@@ -86,8 +99,8 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
                 const googlePolylineRoutes: GoogleMapsPolyline[] = [];
 
                 routes.forEach((r: any, resultIndex) => {
-                    // Check if it's a transfer route
-                    const isTransfer = r.isTransfer === true;
+                    // Check if it's a transfer route by checking for the isTransfer property
+                    const isTransfer = 'isTransfer' in r && r.isTransfer === true;
 
                     if (isTransfer && r.firstRoute && r.secondRoute) {
                         // Create two polylines for transfer routes with different colors
@@ -155,24 +168,16 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
                 console.log(`Setting allRoutes with ${googlePolylineRoutes.length} polylines`);
                 setAllRoutes(googlePolylineRoutes);
 
-                // Display the first route (check if it's a transfer route)
+                // Don't display any route initially - wait for user selection
                 if (googlePolylineRoutes.length > 0 && routes.length > 0) {
-                    const firstResult = routes[0];
-                    if (firstResult.isTransfer) {
-                        // For transfer routes, show both segments
-                        const firstRoutePolylines = googlePolylineRoutes.filter(r =>
-                            r.id && r.id.startsWith('route_0_')
-                        );
-                        console.log(`Displaying initial transfer route with ${firstRoutePolylines.length} segments`);
-                        setRoutes(firstRoutePolylines);
-                    } else {
-                        // For single routes, show just one polyline
-                        setRoutes([googlePolylineRoutes[0]]);
-                    }
-                    setSelectedRouteIndex(0);
+                    // Clear any previous route display
+                    setRoutes([]);
+                    setSelectedRouteIndex(null);
+                    setSelectedRouteInfo(null);
                 } else {
                     setRoutes([]);
                     setSelectedRouteIndex(null);
+                    setSelectedRouteInfo(null);
                 }
             } else if (routes && "error" in routes) {
                 console.warn("Server error:", routes.error);
@@ -212,6 +217,7 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
         setRoutes([]); // Clear polylines from map
         setAllRoutes([]); // Clear stored routes
         setSelectedRouteIndex(null); // Clear selection
+        setSelectedRouteInfo(null); // Clear route info header
 
         // Use a small delay to ensure routes are cleared before points
         setTimeout(() => {
