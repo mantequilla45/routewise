@@ -115,7 +115,7 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
         
         // Set the route info to display in header
         setSelectedRouteInfo({
-            id: selectedResult.routeId,
+            id: selectedResult.routeCode || selectedResult.routeId,
             name: selectedResult.routeName || selectedResult.routeId
         });
 
