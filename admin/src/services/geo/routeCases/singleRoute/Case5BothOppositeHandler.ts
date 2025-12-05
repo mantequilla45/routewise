@@ -1,6 +1,7 @@
 import { LatLng } from '@/types/GeoTypes';
 import { query } from '@/lib/db/db';
-import { BaseRouteHandler, RouteCalculationResult } from '../BaseHandler';
+import { BaseRouteHandler, RouteCalculationResult, RouteSegment } from '../BaseHandler';
+import { RouteQueryResult } from '../types';
 
 /**
  * Case 5: Both Opposite
@@ -160,7 +161,7 @@ export class Case5BothOppositeHandler extends BaseRouteHandler {
 
         console.log(`🚗 Case 5: Found ${results.length} both opposite route(s)`);
         
-        const segments = results.map((route: any) => {
+        const segments: RouteSegment[] = results.map((route: RouteQueryResult) => {
             const coordinates = this.parseGeoJson(route.segment_geojson);
             const fare = this.calculateFare(route.route_distance);
             

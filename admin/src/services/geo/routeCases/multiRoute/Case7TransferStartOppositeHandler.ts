@@ -1,6 +1,7 @@
 import { LatLng } from '@/types/GeoTypes';
 import { query } from '@/lib/db/db';
-import { BaseRouteHandler, RouteCalculationResult } from '../BaseHandler';
+import { BaseRouteHandler, RouteCalculationResult, RouteSegment } from '../BaseHandler';
+import { TransferRouteResult } from '../types';
 
 /**
  * Case 7: Transfer with Start Opposite
@@ -91,7 +92,7 @@ export class Case7TransferStartOppositeHandler extends BaseRouteHandler {
         `;
         
         const checkResults = await query(checkQuery, [from.longitude, from.latitude]);
-        const needingAdjustment = checkResults.filter((r: any) => r.status === 'needs_adjustment').length;
+        const needingAdjustment = checkResults.filter((r: Record<string, unknown>) => r.status === 'needs_adjustment').length;
         console.log(`  ${needingAdjustment} routes need start point adjustment`);
         
         const routeQuery = `
@@ -317,7 +318,7 @@ export class Case7TransferStartOppositeHandler extends BaseRouteHandler {
 
         console.log(`🚗 Case 7: Found ${results.length} transfer route(s) with opposite start`);
         
-        const segments = results.map((route: any) => {
+        const segments: RouteSegment[] = results.map((route: TransferRouteResult) => {
             const coords_a = this.parseGeoJson(route.segment_a_geojson);
             const coords_b = this.parseGeoJson(route.segment_b_geojson);
             const fare_a = this.calculateFare(route.route_a_distance);

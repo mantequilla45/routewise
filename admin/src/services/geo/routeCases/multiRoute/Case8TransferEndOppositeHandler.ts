@@ -1,6 +1,7 @@
 import { LatLng } from '@/types/GeoTypes';
 import { query } from '@/lib/db/db';
-import { BaseRouteHandler, RouteCalculationResult } from '../BaseHandler';
+import { BaseRouteHandler, RouteCalculationResult, RouteSegment } from '../BaseHandler';
+import { TransferRouteResult } from '../types';
 
 /**
  * Case 8: Transfer with End Opposite
@@ -218,7 +219,7 @@ export class Case8TransferEndOppositeHandler extends BaseRouteHandler {
             console.log(`    Total distance: ${(topRoute.total_distance / 1000).toFixed(2)}km`);
         }
         
-        const segments = results.map((route: any) => {
+        const segments: RouteSegment[] = results.map((route: TransferRouteResult) => {
             const coords_a = this.parseGeoJson(route.segment_a_geojson);
             const coords_b = this.parseGeoJson(route.segment_b_geojson);
             const fare_a = this.calculateFare(route.route_a_distance);

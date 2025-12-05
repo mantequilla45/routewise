@@ -1,6 +1,7 @@
 import { LatLng } from '@/types/GeoTypes';
 import { query } from '@/lib/db/db';
-import { BaseRouteHandler, RouteCalculationResult } from '../BaseHandler';
+import { BaseRouteHandler, RouteCalculationResult, RouteSegment } from '../BaseHandler';
+import { TransferRouteResult } from '../types';
 
 /**
  * Case 6: Simple Transfer (2 Jeeps)
@@ -99,7 +100,7 @@ export class Case6SimpleTransferHandler extends BaseRouteHandler {
             to.longitude, to.latitude
         ]);
         
-        const intersectCount = intersections.filter((i: any) => i.intersects).length;
+        const intersectCount = intersections.filter((i: Record<string, unknown>) => i.intersects).length;
         console.log(`  ${intersectCount} route pairs intersect`);
         
         // Check which transfers are valid (including ALL intersection points)
@@ -200,7 +201,7 @@ export class Case6SimpleTransferHandler extends BaseRouteHandler {
             to.longitude, to.latitude
         ]);
         
-        const validTransfers = validityChecks.filter((v: any) => v.can_forward_a && v.can_forward_b).length;
+        const validTransfers = validityChecks.filter((v: Record<string, unknown>) => v.can_forward_a && v.can_forward_b).length;
         console.log(`  ${validTransfers} valid transfer points found`);
         
         const routeQuery = `
@@ -348,7 +349,7 @@ export class Case6SimpleTransferHandler extends BaseRouteHandler {
 
         console.log(`🚗 Case 6: Found ${results.length} transfer route(s)`);
         
-        const segments = results.map((route: any) => {
+        const segments: RouteSegment[] = results.map((route: TransferRouteResult) => {
             const coords_a = this.parseGeoJson(route.segment_a_geojson);
             const coords_b = this.parseGeoJson(route.segment_b_geojson);
             const fare_a = this.calculateFare(route.route_a_distance);

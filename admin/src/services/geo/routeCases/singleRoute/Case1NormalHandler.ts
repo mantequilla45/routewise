@@ -1,6 +1,7 @@
 import { LatLng } from '@/types/GeoTypes';
 import { query } from '@/lib/db/db';
-import { BaseRouteHandler, RouteCalculationResult } from '../BaseHandler';
+import { BaseRouteHandler, RouteCalculationResult, RouteSegment } from '../BaseHandler';
+import { RouteQueryResult } from '../types';
 
 /**
  * Case 1: Normal Handler
@@ -13,7 +14,7 @@ export class Case1NormalHandler extends BaseRouteHandler {
         return 'CASE_1_NORMAL';
     }
 
-    async canHandle(from: LatLng, to: LatLng): Promise<boolean> {
+    async canHandle(_from: LatLng, _to: LatLng): Promise<boolean> {
         return true;
     }
 
@@ -72,7 +73,7 @@ export class Case1NormalHandler extends BaseRouteHandler {
         console.log(`🚗 Case 1 Normal: Found ${results.length} route(s)`);
         
         // Process all matching routes
-        const segments = results.map((route: any) => {
+        const segments: RouteSegment[] = results.map((route: RouteQueryResult) => {
             const coordinates = this.parseGeoJson(route.segment_geojson);
             const fare = this.calculateFare(route.route_distance);
             
@@ -88,7 +89,7 @@ export class Case1NormalHandler extends BaseRouteHandler {
                 startPosition: route.start_pos,
                 endPosition: route.end_pos,
                 walkingDistance: route.walking_distance,
-                optimized: route.walking_distance > 20
+                optimized: (route.walking_distance ?? 0) > 20
             };
         });
         
