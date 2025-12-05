@@ -3,7 +3,7 @@ CREATE OR REPLACE FUNCTION get_route_for_display(route_uuid UUID)
 RETURNS TABLE (
     id UUID,
     route_id TEXT,
-    route_name TEXT,
+    route_code TEXT,
     route_color TEXT,
     coordinates JSON
 )
@@ -14,7 +14,7 @@ BEGIN
     SELECT 
         r.id,
         r.route_id,
-        r.route_name,
+        r.route_code,
         r.route_color,
         json_agg(
             json_build_object(
@@ -28,6 +28,6 @@ BEGIN
     WHERE 
         r.id = route_uuid
     GROUP BY 
-        r.id, r.route_id, r.route_name, r.route_color;
+        r.id, r.route_id, r.route_code, r.route_color;
 END;
 $$;

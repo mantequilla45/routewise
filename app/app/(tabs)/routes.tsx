@@ -1,13 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useState, useContext } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { MapPointsContext } from '@/context/map-context';
+import Button from '@/components/Button';
 
 interface Route {
     id: string;
     route_id: string;
-    route_name: string;
+    route_code: string;
     route_color: string;
     created_at: string;
     coordinates?: any;
@@ -17,6 +18,7 @@ export default function RoutesScreen() {
     const [routes, setRoutes] = useState<Route[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
     const router = useRouter();
     const { setRoutes: setMapRoutes, setAllRoutes, setIsRouteFromList, setSelectedRouteInfo } = useContext(MapPointsContext);
 
@@ -71,7 +73,7 @@ export default function RoutesScreen() {
                     setIsRouteFromList(true); // Mark that this route came from the list
                     setSelectedRouteInfo({ 
                         id: fullRoute.route_id, 
-                        name: fullRoute.route_name 
+                        name: fullRoute.route_code 
                     });
                     
                     // Navigate to the map screen
@@ -81,6 +83,19 @@ export default function RoutesScreen() {
         } catch (error) {
             console.error('Error fetching route details:', error);
         }
+    };
+
+    const filteredRoutes = routes.filter(route => {
+        const query = searchQuery.toLowerCase();
+        return route.route_id.toLowerCase().includes(query) ||
+            route.route_code.toLowerCase().includes(query);
+    });
+
+    const sortAlphabetically = () => {
+        const sorted = [...routes].sort((a, b) => 
+            a.route_id.localeCompare(b.route_id)
+        );
+        setRoutes(sorted);
     };
 
     const renderRoute = ({ item }: { item: Route }) => {
@@ -93,14 +108,14 @@ export default function RoutesScreen() {
                 <View style={styles.routeHeader}>
                     <View style={styles.routeInfo}>
                         <Text style={styles.routeCode}>{item.route_id}</Text>
-                        <Text style={styles.routeName}>{item.route_name}</Text>
+                        <Text style={styles.routeName}>{item.route_code}</Text>
                     </View>
                     <View style={styles.routeActions}>
                         <View style={[styles.colorIndicator, { backgroundColor: item.route_color || '#33ff00' }]} />
                         <Ionicons 
                             name="chevron-forward" 
                             size={24} 
-                            color="#FFCC66"
+                            color="#666"
                         />
                     </View>
                 </View>
@@ -119,13 +134,30 @@ export default function RoutesScreen() {
 
     return (
         <View style={styles.container}>
-            <View style={styles.header}>
-                <Text style={styles.title}>Jeepney Routes</Text>
-                <Text style={styles.subtitle}>{routes.length} routes available</Text>
+            <View style={styles.heading}>
+                <Text style={styles.headingText}>
+                    Browse all jeepney routes.
+                </Text>
+                <View style={styles.searchContainer}>
+                    <Ionicons name="search-outline" size={20} color="gray" />
+                    <TextInput
+                        placeholder="Search routes..."
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                        style={styles.searchBox}
+                    />
+                </View>
+            </View>
+            
+            <View style={styles.recentHeading}>
+                <Button label="Sort A-Z" onPress={sortAlphabetically} theme="tags" />
+                <Text style={styles.recentText}>
+                    {filteredRoutes.length} Routes Available
+                </Text>
             </View>
 
             <FlatList
-                data={routes}
+                data={filteredRoutes}
                 renderItem={renderRoute}
                 keyExtractor={item => item.id}
                 contentContainerStyle={styles.listContent}
@@ -140,7 +172,7 @@ export default function RoutesScreen() {
                 ListEmptyComponent={
                     <View style={styles.emptyContainer}>
                         <Ionicons name="bus-outline" size={64} color="#666" />
-                        <Text style={styles.emptyText}>No routes available</Text>
+                        <Text style={styles.emptyText}>No routes found</Text>
                     </View>
                 }
             />
@@ -151,81 +183,98 @@ export default function RoutesScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#1a1a1a',
+        paddingHorizontal: 40,
+        paddingTop: 80,
+        backgroundColor: 'white',
     },
     centerContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#1a1a1a',
+        backgroundColor: 'white',
     },
-    header: {
-        paddingHorizontal: 20,
-        paddingTop: 60,
-        paddingBottom: 20,
-        backgroundColor: '#303030',
-        borderBottomWidth: 1,
-        borderBottomColor: '#404040',
+    heading: {
+        gap: 20,
+        width: '100%',
     },
-    title: {
-        fontSize: 28,
-        fontWeight: '600',
-        color: 'white',
-        fontFamily: 'Lexend_600SemiBold',
+    headingText: {
+        fontFamily: 'Lexend_500Medium',
+        fontSize: 20,
+        textAlignVertical: 'center',
+        color: '#303030',
     },
-    subtitle: {
-        fontSize: 14,
-        color: '#999',
-        marginTop: 4,
+    searchContainer: {
+        backgroundColor: '#D9D9D9',
+        height: 45,
+        borderRadius: 10,
+        paddingLeft: 15,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    searchBox: {
+        height: '100%',
+        flex: 1,
+        fontFamily: 'Lexend_300Light',
+        color: '#303030',
+    },
+    recentHeading: {
+        marginVertical: 10,
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    recentText: {
+        marginLeft: 12,
         fontFamily: 'Lexend_400Regular',
+        color: '#303030',
     },
     listContent: {
-        paddingHorizontal: 20,
         paddingBottom: 100,
     },
     routeCard: {
-        backgroundColor: '#303030',
-        borderRadius: 12,
+        backgroundColor: '#FFCC66',
+        borderRadius: 10,
         marginBottom: 12,
-        borderWidth: 1,
-        borderColor: '#404040',
+        borderWidth: 3,
+        borderColor: '#FFCC66',
         overflow: 'hidden',
     },
     routeHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: 16,
+        paddingHorizontal: 20,
+        paddingVertical: 15,
     },
     routeInfo: {
         flex: 1,
     },
     routeCode: {
-        fontSize: 20,
+        fontSize: 24,
         fontWeight: '600',
-        color: '#FFCC66',
+        color: '#303030',
         fontFamily: 'Lexend_600SemiBold',
     },
     routeName: {
         fontSize: 14,
-        color: '#ccc',
-        marginTop: 4,
+        color: '#303030',
+        marginTop: 2,
         fontFamily: 'Lexend_400Regular',
     },
     routeActions: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 12,
+        gap: 8,
     },
     colorIndicator: {
-        width: 24,
-        height: 24,
-        borderRadius: 12,
+        width: 20,
+        height: 20,
+        borderRadius: 10,
         borderWidth: 2,
-        borderColor: '#404040',
+        borderColor: '#303030',
     },
     loadingText: {
-        color: '#999',
+        color: '#666',
         marginTop: 12,
         fontSize: 16,
         fontFamily: 'Lexend_400Regular',

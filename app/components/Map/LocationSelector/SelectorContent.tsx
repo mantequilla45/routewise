@@ -6,11 +6,77 @@ import { GoogleMapsPolyline } from "expo-maps/build/google/GoogleMaps.types";
 import { useContext, useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import RouteCard from "./RouteCard";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlacementMode }: Readonly<{ exit: () => void, setShowBottomSheet: (value: boolean) => void, enterPinPlacementMode?: (isPointA: boolean) => void }>) {
-    const { setIsPointAB, setIsPinPlacementEnabled, pointA, pointB, setPointA, setPointB, setRoutes, allRoutes, setAllRoutes, results, setResults, isPinPlacementEnabled, selectedRouteIndex, setSelectedRouteIndex } = useContext(MapPointsContext)
+export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlacementMode, hideModal }: Readonly<{ exit: () => void, setShowBottomSheet: (value: boolean) => void, enterPinPlacementMode?: (isPointA: boolean) => void, hideModal?: () => void }>) {
+    const { setIsPointAB, setIsPinPlacementEnabled, pointA, pointB, setPointA, setPointB, setRoutes, allRoutes, setAllRoutes, results, setResults, isPinPlacementEnabled, selectedRouteIndex, setSelectedRouteIndex, setSelectedRouteInfo } = useContext(MapPointsContext)
     const [wasSelectingFirstLocation, setWasSelectingFirstLocation] = useState(false)
     const [isCalculating, setIsCalculating] = useState(false)
+    const [savedRoutes, setSavedRoutes] = useState<string[]>([])
+
+    // Load saved routes from AsyncStorage on mount
+    useEffect(() => {
+        loadSavedRoutes();
+    }, []);
+
+    const loadSavedRoutes = async () => {
+        try {
+            const saved = await AsyncStorage.getItem('savedRoutes');
+            if (saved) {
+                setSavedRoutes(JSON.parse(saved));
+            }
+        } catch (error) {
+            console.error('Error loading saved routes:', error);
+        }
+    };
+
+    const saveRoute = async (route: any, index: number) => {
+        try {
+            // Create a unique ID for the route
+            const routeKey = `${route.routeId}_${pointA?.latitude}_${pointA?.longitude}_${pointB?.latitude}_${pointB?.longitude}`;
+            
+            // Get existing saved routes
+            const existingSaved = await AsyncStorage.getItem('savedRoutes');
+            const savedList = existingSaved ? JSON.parse(existingSaved) : [];
+            
+            // Toggle save state
+            if (savedList.includes(routeKey)) {
+                // Remove from saved
+                const newList = savedList.filter((id: string) => id !== routeKey);
+                await AsyncStorage.setItem('savedRoutes', JSON.stringify(newList));
+                setSavedRoutes(newList);
+                
+                // Also save the full route details
+                await AsyncStorage.removeItem(`route_${routeKey}`);
+                
+                Alert.alert('Route Removed', 'Route removed from saved routes');
+            } else {
+                // Add to saved
+                savedList.push(routeKey);
+                await AsyncStorage.setItem('savedRoutes', JSON.stringify(savedList));
+                setSavedRoutes(savedList);
+                
+                // Save the full route details
+                const routeData = {
+                    ...route,
+                    pointA,
+                    pointB,
+                    savedAt: new Date().toISOString()
+                };
+                await AsyncStorage.setItem(`route_${routeKey}`, JSON.stringify(routeData));
+                
+                Alert.alert('Route Saved', 'Route saved successfully');
+            }
+        } catch (error) {
+            console.error('Error saving route:', error);
+            Alert.alert('Error', 'Failed to save route');
+        }
+    };
+
+    const isRouteSaved = (route: any) => {
+        const routeKey = `${route.routeId}_${pointA?.latitude}_${pointA?.longitude}_${pointB?.latitude}_${pointB?.longitude}`;
+        return savedRoutes.includes(routeKey);
+    };
 
     // Auto-open second location selection after first location is selected
     useEffect(() => {
@@ -46,9 +112,15 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
         }
 
         setSelectedRouteIndex(index);
+        
+        // Set the route info to display in header
+        setSelectedRouteInfo({
+            id: selectedResult.routeCode || selectedResult.routeId,
+            name: selectedResult.routeName || selectedResult.routeId
+        });
 
         // Check if it's a transfer route
-        if (selectedResult.isTransfer) {
+        if ('isTransfer' in selectedResult && selectedResult.isTransfer) {
             // Find polylines for both segments
             const polylinesToShow = allRoutes.filter(r =>
                 r.id && r.id.startsWith(`route_${index}_`)
@@ -60,12 +132,19 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
             // Single route - find the matching polyline
             const polylineToShow = allRoutes.find(r => r.id === `route_${index}`);
             if (polylineToShow) {
-                console.log(`Selected single route ${index}: ${selectedResult.routeId}`);
+                console.log(`Selected single route ${index}: ${selectedResult.routeCode || selectedResult.routeId}`);
                 setRoutes([polylineToShow]);
             } else {
-                console.warn(`No polyline found for route ${selectedResult.routeId} at index ${index}`);
+                console.warn(`No polyline found for route ${selectedResult.routeCode || selectedResult.routeId} at index ${index}`);
                 setRoutes([]);
             }
+        }
+        
+        // Hide the modal smoothly after selecting a route
+        if (hideModal) {
+            hideModal();
+        } else {
+            setShowBottomSheet(false);
         }
     };
 
@@ -76,18 +155,34 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
                 return;
             }
 
+            // Clear existing results first
+            setResults([]);
+            setRoutes([]);
+            setAllRoutes([]);
+            setSelectedRouteIndex(null);
+            setSelectedRouteInfo(null);
+            
             setIsCalculating(true);
             const routes = await calculatePossibleRoutes(pointA, pointB);
 
             if (Array.isArray(routes) && routes.length > 0) {
-                setResults(routes);
+                // Sort routes by distance (shortest first)
+                const sortedRoutes = [...routes].sort((a, b) => {
+                    const distA = a.distanceMeters || Number.MAX_VALUE;
+                    const distB = b.distanceMeters || Number.MAX_VALUE;
+                    return distA - distB;
+                });
+                console.log('Routes sorted by distance:', sortedRoutes.map(r => 
+                    `${r.routeId}: ${r.distanceMeters}m`
+                ));
+                setResults(sortedRoutes);
 
                 // Build polylines for ALL routes to maintain consistent indexing
                 const googlePolylineRoutes: GoogleMapsPolyline[] = [];
 
-                routes.forEach((r: any, resultIndex) => {
-                    // Check if it's a transfer route
-                    const isTransfer = r.isTransfer === true;
+                sortedRoutes.forEach((r: any, resultIndex) => {
+                    // Check if it's a transfer route by checking for the isTransfer property
+                    const isTransfer = 'isTransfer' in r && r.isTransfer === true;
 
                     if (isTransfer && r.firstRoute && r.secondRoute) {
                         // Create two polylines for transfer routes with different colors
@@ -120,11 +215,12 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
                         }
 
                         console.log(`Created transfer polylines for result ${resultIndex} (${r.routeId})`);
-                    } else if (r.latLng && r.latLng.length > 0) {
-                        // Single route polyline
+                    } else if ((r.latLng && r.latLng.length > 0) || (r.coordinates && r.coordinates.length > 0)) {
+                        // Single route polyline - handle both V1 (latLng) and V2 (coordinates) formats
+                        const routeCoords = r.coordinates || r.latLng;
                         const polyline: GoogleMapsPolyline = {
                             id: `route_${resultIndex}`,
-                            coordinates: r.latLng.map((coord: any) => ({
+                            coordinates: routeCoords.map((coord: any) => ({
                                 latitude: coord.latitude,
                                 longitude: coord.longitude
                             })),
@@ -134,7 +230,7 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
                         };
 
                         googlePolylineRoutes.push(polyline);
-                        console.log(`Created polyline for result ${resultIndex} (${r.routeId})`);
+                        console.log(`Created polyline for result ${resultIndex} (${r.routeId}) with ${routeCoords.length} coordinates`);
                     } else {
                         // Push empty polyline to maintain index consistency
                         const emptyPolyline: GoogleMapsPolyline = {
@@ -149,30 +245,22 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
                     }
                 });
 
-                console.log(`Created ${googlePolylineRoutes.length} polylines from ${routes.length} results`);
+                console.log(`Created ${googlePolylineRoutes.length} polylines from ${sortedRoutes.length} results`);
 
                 // Store all routes (no need for index map anymore since indices match directly)
                 console.log(`Setting allRoutes with ${googlePolylineRoutes.length} polylines`);
                 setAllRoutes(googlePolylineRoutes);
 
-                // Display the first route (check if it's a transfer route)
-                if (googlePolylineRoutes.length > 0 && routes.length > 0) {
-                    const firstResult = routes[0];
-                    if (firstResult.isTransfer) {
-                        // For transfer routes, show both segments
-                        const firstRoutePolylines = googlePolylineRoutes.filter(r =>
-                            r.id && r.id.startsWith('route_0_')
-                        );
-                        console.log(`Displaying initial transfer route with ${firstRoutePolylines.length} segments`);
-                        setRoutes(firstRoutePolylines);
-                    } else {
-                        // For single routes, show just one polyline
-                        setRoutes([googlePolylineRoutes[0]]);
-                    }
-                    setSelectedRouteIndex(0);
+                // Don't display any route initially - wait for user selection
+                if (googlePolylineRoutes.length > 0 && sortedRoutes.length > 0) {
+                    // Clear any previous route display
+                    setRoutes([]);
+                    setSelectedRouteIndex(null);
+                    setSelectedRouteInfo(null);
                 } else {
                     setRoutes([]);
                     setSelectedRouteIndex(null);
+                    setSelectedRouteInfo(null);
                 }
             } else if (routes && "error" in routes) {
                 console.warn("Server error:", routes.error);
@@ -212,6 +300,7 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
         setRoutes([]); // Clear polylines from map
         setAllRoutes([]); // Clear stored routes
         setSelectedRouteIndex(null); // Clear selection
+        setSelectedRouteInfo(null); // Clear route info header
 
         // Use a small delay to ensure routes are cleared before points
         setTimeout(() => {
@@ -341,7 +430,7 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
                         scrollEnabled={true}
                     >
                         {results.map((route, index) => {
-                            console.log(`Rendering route card ${index}: ${route.routeId}`);
+                            console.log(`Rendering route card ${index}: ${route.routeCode || route.routeId}`);
                             return (
                                 <RouteCard
                                     key={`route-${index}-${route.routeId}`}

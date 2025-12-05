@@ -107,6 +107,13 @@ const NativeMap = forwardRef<NativeMapRef>((props, ref) => {
         style={styles.map}
         cameraPosition={commonCamera}
         uiSettings={commonUISettings}
+        mapOptions={{
+          mapId: process.env.EXPO_PUBLIC_GOOGLE_MAPS_ID
+        }}
+        properties={{
+          isMyLocationEnabled: false, // Requires location permissions
+          isTrafficEnabled: false,
+        }}
         onCameraMove={handleCameraChange}
         markers={markers}
         polylines={routes.length > 0 ? routes : []}

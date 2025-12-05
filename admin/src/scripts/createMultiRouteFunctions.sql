@@ -7,7 +7,7 @@ CREATE OR REPLACE FUNCTION find_routes_containing_point(
 RETURNS TABLE (
     id UUID,
     route_id TEXT,
-    route_name TEXT,
+    route_code TEXT,
     closest_point geometry(Point, 4326),
     distance_meters FLOAT
 )
@@ -18,7 +18,7 @@ BEGIN
     SELECT DISTINCT ON (r.id)
         r.id,
         r.route_id,
-        r.route_name,
+        r.route_code,
         ST_ClosestPoint(r.coordinates::geometry, ST_SetSRID(ST_MakePoint(lon, lat), 4326)) as closest_point,
         ST_Distance(
             ST_Transform(r.coordinates::geometry, 3857),
