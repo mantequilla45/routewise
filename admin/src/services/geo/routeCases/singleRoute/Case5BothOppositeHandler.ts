@@ -164,9 +164,7 @@ export class Case5BothOppositeHandler extends BaseRouteHandler {
             const coordinates = this.parseGeoJson(route.segment_geojson);
             const fare = this.calculateFare(route.route_distance);
             
-            console.log(`  Route ${route.route_code}: ${(route.route_distance / 1000).toFixed(2)}km, ₱${fare}`);
-            console.log(`    📍 Walk ${route.walking_to_start.toFixed(0)}m to boarding point`);
-            console.log(`    📍 Walk ${route.walking_from_end.toFixed(0)}m from alighting point`);
+            // Reduced logging
             
             return {
                 routeId: route.id,

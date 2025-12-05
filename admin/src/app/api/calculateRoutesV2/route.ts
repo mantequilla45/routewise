@@ -45,13 +45,16 @@ export async function POST(req: NextRequest) {
         const { Case5BothOppositeHandler } = await import('@/services/geo/routeCases/singleRoute/Case5BothOppositeHandler');
         const { Case6SimpleTransferHandler } = await import('@/services/geo/routeCases/multiRoute/Case6SimpleTransferHandler');
         const { Case7TransferStartOppositeHandler } = await import('@/services/geo/routeCases/multiRoute/Case7TransferStartOppositeHandler');
+        const { Case8TransferEndOppositeHandler } = await import('@/services/geo/routeCases/multiRoute/Case8TransferEndOppositeHandler');
         
         // Try handlers and collect all possible routes
+        // Order matters - more specific cases should run first
         const handlers = [
             new Case1NormalHandler(),                  // Case 1: Normal forward travel
             new Case5BothOppositeHandler(),            // Case 5: Both pins on opposite sides
-            new Case6SimpleTransferHandler(),          // Case 6: Two-jeep transfer
+            new Case8TransferEndOppositeHandler(),     // Case 8: Transfer with end opposite (run before Case 6)
             new Case7TransferStartOppositeHandler(),   // Case 7: Transfer with start opposite
+            new Case6SimpleTransferHandler(),          // Case 6: Two-jeep transfer (run last as fallback)
         ];
 
         // Collect ALL routes from ALL handlers

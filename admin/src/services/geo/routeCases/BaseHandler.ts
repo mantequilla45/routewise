@@ -39,6 +39,7 @@ export interface RouteSegment {
     boardingWalk?: number;
     alightingWalk?: number;
     startOpposite?: boolean;  // Indicates if start point was on opposite side
+    endOpposite?: boolean;    // Indicates if end point was on opposite side
 }
 
 export interface RouteCalculationResult {

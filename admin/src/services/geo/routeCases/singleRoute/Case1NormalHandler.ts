@@ -76,12 +76,7 @@ export class Case1NormalHandler extends BaseRouteHandler {
             const coordinates = this.parseGeoJson(route.segment_geojson);
             const fare = this.calculateFare(route.route_distance);
             
-            console.log(`  Route ${route.route_code}: ${(route.route_distance / 1000).toFixed(2)}km, ₱${fare}`);
-            console.log(`    Travel: ${(route.start_pos * 100).toFixed(1)}% → ${(route.end_pos * 100).toFixed(1)}%`);
-            
-            if (route.walking_distance > 5) {
-                console.log(`    📍 Walk ${route.walking_distance.toFixed(0)}m to destination after alighting`);
-            }
+            // Reduced logging
             
             return {
                 routeId: route.id,

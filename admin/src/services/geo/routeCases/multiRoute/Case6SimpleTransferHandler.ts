@@ -72,8 +72,8 @@ export class Case6SimpleTransferHandler extends BaseRouteHandler {
         const startRoutes = await query(startRoutesQuery, [from.longitude, from.latitude]);
         const endRoutes = await query(endRoutesQuery, [to.longitude, to.latitude]);
         
-        console.log(`📍 Routes near START (within 100m): ${startRoutes.map((r: any) => `${r.route_code}(${r.distance.toFixed(1)}m)`).join(', ')}`);
-        console.log(`📍 Routes near END (within 100m): ${endRoutes.map((r: any) => `${r.route_code}(${r.distance.toFixed(1)}m)`).join(', ')}`);
+        // Reduced logging - just summary
+        console.log(`  Found ${startRoutes.length} start routes, ${endRoutes.length} end routes`);
         
         // Check which routes intersect
         const intersectionCheckQuery = `
@@ -99,14 +99,8 @@ export class Case6SimpleTransferHandler extends BaseRouteHandler {
             to.longitude, to.latitude
         ]);
         
-        console.log('🔄 Intersection check:');
-        intersections.forEach((i: any) => {
-            if (i.intersects) {
-                console.log(`  ✅ ${i.start_code} ∩ ${i.end_code} = INTERSECTS`);
-            } else {
-                console.log(`  ❌ ${i.start_code} ∩ ${i.end_code} = NO INTERSECTION`);
-            }
-        });
+        const intersectCount = intersections.filter((i: any) => i.intersects).length;
+        console.log(`  ${intersectCount} route pairs intersect`);
         
         // Check which transfers are valid (including ALL intersection points)
         const validityCheckQuery = `
@@ -206,19 +200,8 @@ export class Case6SimpleTransferHandler extends BaseRouteHandler {
             to.longitude, to.latitude
         ]);
         
-        console.log('🚦 Transfer validity check (ALL intersection points):');
-        let lastPair = '';
-        validityChecks.forEach((v: any) => {
-            const currentPair = `${v.route_a_code} → ${v.route_b_code}`;
-            if (currentPair !== lastPair) {
-                console.log(`  ${currentPair}: ${v.num_intersections} intersection(s)`);
-                lastPair = currentPair;
-            }
-            const status = (v.can_forward_a && v.can_forward_b) ? '✅' : '❌';
-            console.log(`    Point ${v.point_num}: ${status}`);
-            console.log(`      Route A: board ${(v.boarding_pos * 100).toFixed(1)}% → transfer ${(v.transfer_pos_a * 100).toFixed(1)}% (${v.can_forward_a ? 'forward ✓' : 'backward ✗'})`);
-            console.log(`      Route B: transfer ${(v.transfer_pos_b * 100).toFixed(1)}% → alight ${(v.alighting_pos * 100).toFixed(1)}% (${v.can_forward_b ? 'forward ✓' : 'backward ✗'})`);
-        });
+        const validTransfers = validityChecks.filter((v: any) => v.can_forward_a && v.can_forward_b).length;
+        console.log(`  ${validTransfers} valid transfer points found`);
         
         const routeQuery = `
             WITH start_routes AS (

@@ -91,10 +91,8 @@ export class Case7TransferStartOppositeHandler extends BaseRouteHandler {
         `;
         
         const checkResults = await query(checkQuery, [from.longitude, from.latitude]);
-        console.log('📋 Routes needing adjustment:');
-        checkResults.forEach((r: any) => {
-            console.log(`  ${r.route_code}: Original ${(r.original_pos * 100).toFixed(1)}% → Earliest transfer ${(r.earliest_transfer * 100).toFixed(1)}% = ${r.status}`);
-        });
+        const needingAdjustment = checkResults.filter((r: any) => r.status === 'needs_adjustment').length;
+        console.log(`  ${needingAdjustment} routes need start point adjustment`);
         
         const routeQuery = `
             WITH start_routes_base AS (
@@ -325,12 +323,7 @@ export class Case7TransferStartOppositeHandler extends BaseRouteHandler {
             const fare_a = this.calculateFare(route.route_a_distance);
             const fare_b = this.calculateFare(route.route_b_distance);
             
-            console.log(`  Transfer: ${route.route_a_code} → ${route.route_b_code}`);
-            console.log(`    Start originally ${route.start_dist.toFixed(0)}m away (opposite side)`);
-            console.log(`    Alternative boarding point: ${route.boarding_distance.toFixed(0)}m walk`);
-            console.log(`    Route A: ${(route.route_a_distance / 1000).toFixed(2)}km, ₱${fare_a}`);
-            console.log(`    Route B: ${(route.route_b_distance / 1000).toFixed(2)}km, ₱${fare_b}`);
-            console.log(`    Total: ${(route.total_distance / 1000).toFixed(2)}km, ₱${fare_a + fare_b}`);
+            // Reduced logging
             
             return {
                 isTransfer: true,
