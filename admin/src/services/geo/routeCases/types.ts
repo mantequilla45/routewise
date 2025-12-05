@@ -37,12 +37,64 @@ export interface RouteCalculationResult {
     debugInfo?: {
         startSideDetection?: string;
         endSideDetection?: string;
-        intersectionPoints?: any[];
+        intersectionPoints?: unknown[];
     };
 }
 
+export interface RouteData {
+    id: string;
+    route_code: string;
+    route_name?: string;
+    start_pos?: number;
+    end_pos?: number;
+    start_dist?: number;
+    end_dist?: number;
+}
+
 export interface RouteCaseHandler {
-    canHandle(from: LatLng, to: LatLng, routeData: any): Promise<boolean>;
-    calculate(from: LatLng, to: LatLng, routeData: any): Promise<RouteCalculationResult | null>;
+    canHandle(from: LatLng, to: LatLng, routeData: RouteData): Promise<boolean>;
+    calculate(from: LatLng, to: LatLng, routeData: RouteData): Promise<RouteCalculationResult | null>;
     getCaseName(): RouteCase;
+}
+
+// Database result types
+export interface RouteQueryResult {
+    id: string;
+    route_code: string;
+    route_name: string;
+    start_pos: number;
+    end_pos: number;
+    route_distance: number;
+    distance_meters?: number;  // Alternative distance field
+    segment_geojson: string;
+    walking_distance?: number;
+    walking_to_start?: number;
+    walking_from_end?: number;
+    original_start_pos?: number;
+    corrected_start_pos?: number;
+    original_end_pos?: number;
+    [key: string]: unknown;
+}
+
+export interface TransferRouteResult {
+    route_a_id: string;
+    route_a_code: string;
+    route_a_name: string;
+    route_b_id: string;
+    route_b_code: string;
+    route_b_name: string;
+    route_a_distance: number;
+    route_b_distance: number;
+    total_distance: number;
+    boarding_pos: number;
+    boarding_distance: number;
+    transfer_pos_a: number;
+    transfer_pos_b: number;
+    alighting_pos: number;
+    alighting_distance: number;
+    segment_a_geojson: string;
+    segment_b_geojson: string;
+    start_dist?: number;
+    original_dest_pos?: number;
+    [key: string]: unknown;
 }

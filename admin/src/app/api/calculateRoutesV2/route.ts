@@ -1,6 +1,45 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Case1NormalHandler } from '@/services/geo/routeCases/singleRoute/Case1NormalHandler';
 
+// Type for database query results
+interface RouteInfo {
+    id: string;
+    route_code: string;
+    route_name: string;
+    start_pos: number;
+    end_pos: number;
+    start_dist: number;
+    end_dist: number;
+}
+
+// Type for processed routes
+interface RouteSegmentInfo {
+    routeId: string;
+    routeCode: string;
+    routeName: string;
+    coordinates: Array<{latitude: number, longitude: number}>;
+    distance: number;
+    fare: number;
+}
+
+interface ProcessedRoute {
+    routeId: string;
+    routeCode: string;
+    routeName: string;
+    coordinates: Array<{latitude: number, longitude: number}>;
+    distance: number;
+    fare: number;
+    caseName: string;
+    isTransfer?: boolean;
+    firstRoute?: RouteSegmentInfo;
+    secondRoute?: RouteSegmentInfo;
+    requiresLoop?: boolean;
+    optimized?: boolean;
+    boardingWalk?: number;
+    alightingWalk?: number;
+    debugInfo?: Record<string, unknown>;
+}
+
 export async function POST(req: NextRequest) {
     try {
         const { from, to } = await req.json();
@@ -34,10 +73,10 @@ export async function POST(req: NextRequest) {
         const foundRoutes = await query(allRoutesQuery, [
             from.longitude, from.latitude,
             to.longitude, to.latitude
-        ]);
+        ]) as RouteInfo[];
 
         console.log(`📊 Found ${foundRoutes.length} routes within 500m of both points:`);
-        foundRoutes.forEach((r: any) => {
+        foundRoutes.forEach((r) => {
             console.log(`  ${r.route_code}: Start ${r.start_dist.toFixed(1)}m, End ${r.end_dist.toFixed(1)}m (${(r.start_pos * 100).toFixed(1)}% → ${(r.end_pos * 100).toFixed(1)}%)`);
         });
 
@@ -58,7 +97,7 @@ export async function POST(req: NextRequest) {
         ];
 
         // Collect ALL routes from ALL handlers
-        const allRoutes: Array<any> = [];
+        const allRoutes: ProcessedRoute[] = [];
         const handlerSummary: Array<{handler: string, routeCount: number}> = [];
 
         // Collect results from all applicable handlers
@@ -74,7 +113,7 @@ export async function POST(req: NextRequest) {
                         console.log(`  Found ${result.segments.length} route(s)`);
                         
                         // Add all routes from this handler
-                        result.segments.forEach((segment: any) => {
+                        result.segments.forEach((segment) => {
                             // Handle transfer routes differently
                             if (segment.isTransfer) {
                                 allRoutes.push({
@@ -139,11 +178,12 @@ export async function POST(req: NextRequest) {
         allRoutes.sort((a, b) => a.distance - b.distance);
 
         // Remove duplicates (same route code from different handlers)
-        const uniqueRoutes = new Map<string, any>();
+        const uniqueRoutes = new Map<string, ProcessedRoute>();
         allRoutes.forEach(route => {
             const key = route.routeId;
             // Keep the shorter route if we have duplicates
-            if (!uniqueRoutes.has(key) || uniqueRoutes.get(key).distance > route.distance) {
+            const existing = uniqueRoutes.get(key);
+            if (!existing || existing.distance > route.distance) {
                 uniqueRoutes.set(key, route);
             }
         });

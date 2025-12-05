@@ -1,15 +1,18 @@
 import MapModalContent from '@/components/Map/LocationSelector/SelectorContent';
 import NativeMap, { NativeMapRef } from '@/components/Map/NativeMap';
 import { MapPointsContext } from '@/context/map-context';
+import { useAuth } from '@/context/hybrid-auth';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack } from 'expo-router';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { Animated, StyleSheet, Text, TouchableOpacity, View, PanResponder, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { supabase } from '@/lib/supabase-client';
 
 function MapScreenContent() {
     const { isPinPlacementEnabled, setIsPinPlacementEnabled, isPointAB, setIsPointAB, pointA, pointB, isRouteFromList, setIsRouteFromList, routes, setRoutes, setAllRoutes, selectedRouteInfo, setSelectedRouteInfo, results, setSelectedRouteIndex, selectedRouteIndex } = useContext(MapPointsContext);
+    const { user } = useAuth();
     const [isSelectingLocations, setIsSelectingLocations] = useState(false);
     const [isRouteSaved, setIsRouteSaved] = useState(false);
     const mapRef = useRef<NativeMapRef>(null);
@@ -200,33 +203,90 @@ function MapScreenContent() {
                                         const route = results[selectedRouteIndex];
                                         if (!route) return;
                                         
-                                        const routeKey = `${route.routeId}_${pointA?.latitude}_${pointA?.longitude}_${pointB?.latitude}_${pointB?.longitude}`;
-                                        
                                         try {
-                                            const existingSaved = await AsyncStorage.getItem('savedRoutes');
-                                            const savedList = existingSaved ? JSON.parse(existingSaved) : [];
+                                            // Check if user is logged in
+                                            if (!user) {
+                                                console.log('Save route: No user found');
+                                                Alert.alert('Error', 'Please login to save routes');
+                                                return;
+                                            }
+
+                                            console.log('Save route: User found', { 
+                                                userId: user.id, 
+                                                email: user.email,
+                                                name: user.name 
+                                            });
+
+                                            if (isRouteSaved) {
+                                                // Remove from saved - we'll need the saved route ID
+                                                // For now, just show message
+                                                Alert.alert('Info', 'Route unsaving not implemented yet');
+                                                return;
+                                            }
                                             
-                                            if (savedList.includes(routeKey)) {
-                                                // Remove from saved
-                                                const newList = savedList.filter((id: string) => id !== routeKey);
-                                                await AsyncStorage.setItem('savedRoutes', JSON.stringify(newList));
-                                                setIsRouteSaved(false);
-                                                await AsyncStorage.removeItem(`route_${routeKey}`);
-                                                Alert.alert('Route Removed', 'Route removed from saved routes');
-                                            } else {
-                                                // Add to saved
-                                                savedList.push(routeKey);
-                                                await AsyncStorage.setItem('savedRoutes', JSON.stringify(savedList));
-                                                setIsRouteSaved(true);
+                                            // Prepare route data for saving
+                                            const jeepneyCodes = route.isTransfer 
+                                                ? [route.firstRoute?.routeCode, route.secondRoute?.routeCode].filter(Boolean)
+                                                : [route.routeCode];
+                                            
+                                            console.log('Save route: Preparing data', {
+                                                routeId: route.routeId,
+                                                jeepneyCodes,
+                                                isTransfer: route.isTransfer,
+                                                fare: route.fare || route.totalFare
+                                            });
+
+                                            const routeData = {
+                                                user_id: user.id,
+                                                route_name: jeepneyCodes.join(' → '),
+                                                start_location: `Pin A`, // You can geocode these later
+                                                end_location: `Pin B`,
+                                                start_lat: pointA?.latitude,
+                                                start_lng: pointA?.longitude,
+                                                end_lat: pointB?.latitude,
+                                                end_lng: pointB?.longitude,
+                                                jeepney_codes: jeepneyCodes,
+                                                total_fare: route.fare || route.totalFare,
+                                                transfer_points: route.isTransfer ? {
+                                                    transferPoint: route.transferPoint,
+                                                    firstRoute: route.firstRoute,
+                                                    secondRoute: route.secondRoute
+                                                } : null
+                                            };
+                                            
+                                            console.log('Save route: Sending to database', routeData);
+                                            
+                                            const { data, error } = await supabase
+                                                .from('saved_routes')
+                                                .insert(routeData)
+                                                .select()
+                                                .single();
+                                            
+                                            if (error) {
+                                                console.error('Error saving route:', error);
+                                                console.error('Error details:', {
+                                                    code: error.code,
+                                                    message: error.message,
+                                                    details: error.details,
+                                                    hint: error.hint
+                                                });
                                                 
-                                                const routeData = {
-                                                    ...route,
-                                                    pointA,
-                                                    pointB,
-                                                    savedAt: new Date().toISOString()
-                                                };
-                                                await AsyncStorage.setItem(`route_${routeKey}`, JSON.stringify(routeData));
-                                                Alert.alert('Route Saved', 'Route saved successfully');
+                                                // Check if it's an RLS policy error
+                                                if (error.code === '42501') {
+                                                    Alert.alert(
+                                                        'Permission Error', 
+                                                        'You don\'t have permission to save routes. This is a database configuration issue.\n\n' +
+                                                        'To fix this, run this SQL in Supabase:\n\n' +
+                                                        'CREATE POLICY "Users can insert own routes" ON saved_routes\n' +
+                                                        'FOR INSERT WITH CHECK (auth.uid() = user_id);'
+                                                    );
+                                                } else {
+                                                    Alert.alert('Error', 'Failed to save route: ' + error.message);
+                                                }
+                                            } else {
+                                                console.log('Save route: Success', data);
+                                                setIsRouteSaved(true);
+                                                Alert.alert('Success', 'Route saved successfully!');
                                             }
                                         } catch (error) {
                                             console.error('Error saving route:', error);

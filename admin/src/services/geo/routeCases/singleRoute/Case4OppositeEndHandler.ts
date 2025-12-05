@@ -1,6 +1,7 @@
 import { LatLng } from '@/types/GeoTypes';
 import { query } from '@/lib/db/db';
-import { BaseRouteHandler, RouteCalculationResult } from '../BaseHandler';
+import { BaseRouteHandler, RouteCalculationResult, RouteSegment } from '../BaseHandler';
+import { RouteQueryResult } from '../types';
 
 /**
  * Case 4: Opposite End
@@ -165,14 +166,15 @@ export class Case4OppositeEndHandler extends BaseRouteHandler {
         console.log(`🚗 Case 4: Found ${results.length} opposite end route(s)`);
         
         // Process all matching routes
-        const segments = results.map(route => {
+        const segments: RouteSegment[] = results.map((route: RouteQueryResult) => {
             const coordinates = this.parseGeoJson(route.segment_geojson);
-            const fare = this.calculateFare(route.distance_meters);
+            const distance = route.distance_meters || route.route_distance || 0;
+            const fare = this.calculateFare(distance);
             
-            console.log(`  Route ${route.route_code}: ${(route.distance_meters / 1000).toFixed(2)}km, ₱${fare}`);
-            console.log(`    End correction: Walk ${route.walking_distance.toFixed(0)}m from alighting point`);
+            console.log(`  Route ${route.route_code}: ${(distance / 1000).toFixed(2)}km, ₱${fare}`);
+            console.log(`    End correction: Walk ${(route.walking_distance ?? 0).toFixed(0)}m from alighting point`);
             console.log(`    Travel: ${(route.start_pos * 100).toFixed(1)}% → ${(route.end_pos * 100).toFixed(1)}%`);
-            console.log(`    Original end would have been: ${(route.original_end_pos * 100).toFixed(1)}%`);
+            console.log(`    Original end would have been: ${((route.original_end_pos ?? route.end_pos) * 100).toFixed(1)}%`);
             console.log(`    Coordinates: ${coordinates.length} points`);
             
             return {
@@ -180,7 +182,7 @@ export class Case4OppositeEndHandler extends BaseRouteHandler {
                 routeCode: route.route_code,
                 routeName: route.route_name,
                 coordinates,
-                distance: route.distance_meters,
+                distance: distance,
                 fare,
                 startPosition: route.start_pos,
                 endPosition: route.end_pos,

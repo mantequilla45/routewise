@@ -1,6 +1,7 @@
 import { LatLng } from '@/types/GeoTypes';
 import { query } from '@/lib/db/db';
-import { BaseRouteHandler, RouteCalculationResult } from '../BaseHandler';
+import { BaseRouteHandler, RouteCalculationResult, RouteSegment } from '../BaseHandler';
+import { RouteQueryResult } from '../types';
 
 /**
  * Case 3: Opposite Start
@@ -183,14 +184,15 @@ export class Case3OppositeStartHandler extends BaseRouteHandler {
         console.log(`🚗 Case 3: Found ${results.length} opposite start route(s)`);
         
         // Process all matching routes
-        const segments = results.map(route => {
+        const segments: RouteSegment[] = results.map((route: RouteQueryResult) => {
             const coordinates = this.parseGeoJson(route.segment_geojson);
-            const fare = this.calculateFare(route.distance_meters);
+            const distance = route.distance_meters || route.route_distance || 0;
+            const fare = this.calculateFare(distance);
             
-            console.log(`  Route ${route.route_code}: ${(route.distance_meters / 1000).toFixed(2)}km, ₱${fare}`);
-            console.log(`    Start correction: Walk ${route.walking_distance.toFixed(0)}m to correct side`);
-            console.log(`    Original position: ${(route.original_start_pos * 100).toFixed(1)}%, Corrected: ${(route.corrected_start_pos * 100).toFixed(1)}%`);
-            console.log(`    Travel: ${(route.corrected_start_pos * 100).toFixed(1)}% → ${(route.end_pos * 100).toFixed(1)}%`);
+            console.log(`  Route ${route.route_code}: ${(distance / 1000).toFixed(2)}km, ₱${fare}`);
+            console.log(`    Start correction: Walk ${(route.walking_distance ?? 0).toFixed(0)}m to correct side`);
+            console.log(`    Original position: ${((route.original_start_pos ?? 0) * 100).toFixed(1)}%, Corrected: ${((route.corrected_start_pos ?? route.start_pos) * 100).toFixed(1)}%`);
+            console.log(`    Travel: ${((route.corrected_start_pos ?? route.start_pos) * 100).toFixed(1)}% → ${(route.end_pos * 100).toFixed(1)}%`);
             console.log(`    Coordinates: ${coordinates.length} points`);
             
             return {
@@ -198,7 +200,7 @@ export class Case3OppositeStartHandler extends BaseRouteHandler {
                 routeCode: route.route_code,
                 routeName: route.route_name,
                 coordinates,
-                distance: route.distance_meters,
+                distance: distance,
                 fare,
                 startPosition: route.corrected_start_pos,
                 endPosition: route.end_pos,
@@ -212,8 +214,8 @@ export class Case3OppositeStartHandler extends BaseRouteHandler {
         return {
             caseName: this.getCaseName(),
             segments,
-            totalDistance: firstRoute.distance_meters,
-            totalFare: this.calculateFare(firstRoute.distance_meters),
+            totalDistance: firstRoute?.distance_meters || firstRoute?.route_distance || 0,
+            totalFare: this.calculateFare(firstRoute?.distance_meters || firstRoute?.route_distance || 0),
             confidence: 0.85,  // Lower confidence due to start correction
             debugInfo: {
                 startCorrected: true,

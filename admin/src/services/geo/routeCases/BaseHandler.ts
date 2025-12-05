@@ -11,6 +11,9 @@ export interface RouteSegment {
     startPosition?: number;
     endPosition?: number;
     requiresLoop?: boolean;
+    optimized?: boolean;  // Indicates if route was optimized (e.g., opposite side handling)
+    walkingToStart?: number;  // Walking distance to start point
+    walkingFromEnd?: number;  // Walking distance from end point
     
     // Transfer-specific properties
     isTransfer?: boolean;
@@ -49,7 +52,7 @@ export interface RouteCalculationResult {
     totalFare: number;
     transferPoints?: LatLng[];
     confidence: number;
-    debugInfo?: any;
+    debugInfo?: Record<string, unknown>;
 }
 
 export interface SideDetectionResult {
@@ -183,7 +186,7 @@ export abstract class BaseRouteHandler {
         distance: number;
         passNumber: number;
     }>> {
-        const query = `
+        const sqlQuery = `
             WITH route_samples AS (
                 SELECT 
                     generate_series(0.0, 1.0, 0.01) as position,
@@ -223,7 +226,7 @@ export abstract class BaseRouteHandler {
             ORDER BY distance;
         `;
         
-        const results = await query(query, [routeId, point.longitude, point.latitude]);
+        const results = await query(sqlQuery, [routeId, point.longitude, point.latitude]);
         return results;
     }
 
