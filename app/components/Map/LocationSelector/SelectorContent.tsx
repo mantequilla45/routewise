@@ -17,7 +17,35 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
     // Load saved routes from AsyncStorage on mount
     useEffect(() => {
         loadSavedRoutes();
+        checkForAutoCalculate();
     }, []);
+
+    // Check if we should auto-calculate (from saved route)
+    useEffect(() => {
+        if (pointA && pointB) {
+            checkForAutoCalculate();
+        }
+    }, [pointA, pointB]);
+
+    const checkForAutoCalculate = async () => {
+        try {
+            const shouldCalculate = await AsyncStorage.getItem('shouldCalculateRoute');
+            console.log('Checking auto-calculate:', { shouldCalculate, hasPointA: !!pointA, hasPointB: !!pointB });
+            
+            if (shouldCalculate === 'true' && pointA && pointB) {
+                console.log('Auto-calculating route from saved...');
+                console.log('Point A:', pointA);
+                console.log('Point B:', pointB);
+                await AsyncStorage.removeItem('shouldCalculateRoute'); // Clear flag
+                setTimeout(() => {
+                    console.log('Triggering onCalculate...');
+                    onCalculate(); // Trigger calculation
+                }, 500); // Small delay to ensure UI is ready
+            }
+        } catch (error) {
+            console.error('Error checking auto-calculate:', error);
+        }
+    };
 
     const loadSavedRoutes = async () => {
         try {
@@ -149,12 +177,14 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
     };
 
     const onCalculate = async () => {
+        console.log('🚀 onCalculate called with:', { pointA, pointB });
         try {
             if (!pointA || !pointB) {
                 console.warn("Both points must be set");
                 return;
             }
 
+            console.log('Starting route calculation...');
             // Clear existing results first
             setResults([]);
             setRoutes([]);
