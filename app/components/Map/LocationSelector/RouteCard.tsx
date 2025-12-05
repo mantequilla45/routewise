@@ -31,18 +31,18 @@ export default function RouteCard({ route, isSelected = false, onSelect, onSave,
                             <View style={styles.transferRoutesContainer}>
                                 <View style={styles.transferRouteRow}>
                                     <Text style={styles.routeCode}>
-                                        {route.firstRoute?.routeId}
+                                        {route.firstRoute?.routeCode || route.firstRoute?.routeId}
                                     </Text>
                                     <Ionicons name="arrow-forward" size={20} color="#2D2D2D" style={styles.transferArrow} />
                                     <Text style={styles.routeCode}>
-                                        {route.secondRoute?.routeId}
+                                        {route.secondRoute?.routeCode || route.secondRoute?.routeId}
                                     </Text>
                                 </View>
                                 <Text style={styles.transferLabel}>2 Jeeps Required</Text>
                             </View>
                         ) : (
                             <Text style={styles.routeCode}>
-                                {route.routeId}
+                                {route.routeCode || route.routeId}
                             </Text>
                         )}
                     </View>

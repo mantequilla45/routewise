@@ -66,6 +66,7 @@ export abstract class BaseRouteHandler {
 
     /**
      * Detects which side of the road each pin is on for all routes
+     * For routes that pass the same location multiple times, picks the best pass
      * Returns routes with side detection for both start and end points
      */
     protected async detectSidesForRoutes(from: LatLng, to: LatLng, maxDistance: number = 100): Promise<SideDetectionResult[]> {
@@ -142,6 +143,59 @@ export abstract class BaseRouteHandler {
             startSide: r.start_side,
             endSide: r.end_side
         }));
+    }
+
+    /**
+     * Detects if a route passes near a location multiple times
+     * Returns all passes with their positions and distances
+     */
+    protected async detectMultiplePasses(point: LatLng, routeId: string): Promise<Array<{
+        position: number;
+        distance: number;
+        passNumber: number;
+    }>> {
+        const query = `
+            WITH route_samples AS (
+                SELECT 
+                    generate_series(0.0, 1.0, 0.01) as position,
+                    ST_Distance(
+                        ST_LineInterpolatePoint(geom_forward, generate_series(0.0, 1.0, 0.01))::geography,
+                        ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography
+                    ) as distance
+                FROM jeepney_routes
+                WHERE id = $1
+            ),
+            close_points AS (
+                SELECT 
+                    position,
+                    distance,
+                    -- Mark when we enter/exit proximity to the point
+                    CASE 
+                        WHEN distance < 100 AND LAG(distance) OVER (ORDER BY position) >= 100 THEN 1
+                        WHEN position = 0 AND distance < 100 THEN 1
+                        ELSE 0
+                    END as new_pass_marker
+                FROM route_samples
+            ),
+            passes AS (
+                SELECT 
+                    position,
+                    distance,
+                    SUM(new_pass_marker) OVER (ORDER BY position) as pass_number
+                FROM close_points
+                WHERE distance < 100
+            )
+            SELECT 
+                MIN(position) as position,
+                MIN(distance) as distance,
+                pass_number
+            FROM passes
+            GROUP BY pass_number
+            ORDER BY distance;
+        `;
+        
+        const results = await query(query, [routeId, point.longitude, point.latitude]);
+        return results;
     }
 
     protected async findNearestRoutes(point: LatLng, maxDistance: number = 50) {

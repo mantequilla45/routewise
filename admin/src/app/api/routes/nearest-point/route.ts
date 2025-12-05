@@ -1,18 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server-client';
-
-interface RoutePoint {
-    route_id: string;
-    route_code: string;
-    point_index: number;
-    latitude: number;
-    longitude: number;
-    distance: number;
-}
+import { query } from '@/lib/db/db';
 
 export async function POST(request: NextRequest) {
     try {
-        const { latitude, longitude, maxDistance = 0.5 } = await request.json();
+        const { latitude, longitude, maxDistance = 50 } = await request.json();
         
         if (!latitude || !longitude) {
             return NextResponse.json(
@@ -21,85 +12,51 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const supabase = await createClient();
-        
-        // Query to find the nearest point on any route
-        // Uses PostGIS to calculate distance and find nearest points
-        const { data, error } = await supabase.rpc('find_nearest_route_points', {
-            lat: latitude,
-            lng: longitude,
-            max_distance_km: maxDistance
-        });
+        // Query to find the nearest point on any route using PostGIS
+        const nearestQuery = `
+            WITH route_distances AS (
+                SELECT 
+                    r.id as route_id,
+                    r.route_code,
+                    r.start_point_name,
+                    r.end_point_name,
+                    ST_Distance(
+                        r.geom_forward::geography,
+                        ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography
+                    ) as distance_meters,
+                    ST_LineLocatePoint(
+                        r.geom_forward,
+                        ST_SetSRID(ST_MakePoint($1, $2), 4326)
+                    ) as position_on_route,
+                    ST_AsGeoJSON(
+                        ST_ClosestPoint(
+                            r.geom_forward,
+                            ST_SetSRID(ST_MakePoint($1, $2), 4326)
+                        )
+                    ) as nearest_point_geojson
+                FROM jeepney_routes r
+                WHERE ST_DWithin(
+                    r.geom_forward::geography,
+                    ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography,
+                    $3
+                )
+                ORDER BY distance_meters
+                LIMIT 1
+            )
+            SELECT 
+                route_id,
+                route_code,
+                start_point_name,
+                end_point_name,
+                distance_meters,
+                position_on_route,
+                nearest_point_geojson
+            FROM route_distances;
+        `;
 
-        if (error) {
-            console.error('Error finding nearest route points:', error);
-            
-            // Fallback: Do a simpler query if the RPC doesn't exist
-            const { data: routes, error: routesError } = await supabase
-                .from('routes')
-                .select('id, route_code, route_path');
+        const result = await query(nearestQuery, [longitude, latitude, maxDistance]);
 
-            if (routesError) {
-                return NextResponse.json(
-                    { error: 'Failed to find nearest route points' },
-                    { status: 500 }
-                );
-            }
-
-            // Find nearest point manually
-            let nearestPoint: RoutePoint | null = null;
-            let minDistance = Infinity;
-
-            routes?.forEach(route => {
-                if (route.route_path && Array.isArray(route.route_path)) {
-                    route.route_path.forEach((point: unknown, index: number) => {
-                        if (Array.isArray(point) && point.length >= 2) {
-                            const pointLat = point[1];
-                            const pointLng = point[0];
-                            
-                            // Calculate distance using Haversine formula
-                            const distance = calculateDistance(
-                                latitude,
-                                longitude,
-                                pointLat,
-                                pointLng
-                            );
-
-                            if (distance < minDistance && distance <= maxDistance) {
-                                minDistance = distance;
-                                nearestPoint = {
-                                    route_id: route.id,
-                                    route_code: route.route_code,
-                                    point_index: index,
-                                    latitude: pointLat,
-                                    longitude: pointLng,
-                                    distance
-                                };
-                            }
-                        }
-                    });
-                }
-            });
-
-            if (!nearestPoint) {
-                return NextResponse.json({
-                    found: false,
-                    original: { latitude, longitude },
-                    message: 'No route points found within maximum distance'
-                });
-            }
-
-            const foundPoint = nearestPoint as RoutePoint;
-            return NextResponse.json({
-                found: true,
-                original: { latitude, longitude },
-                nearest: foundPoint,
-                snapped: foundPoint.distance < 0.05 // Snap if within 50 meters
-            });
-        }
-
-        // Process RPC result
-        if (!data || data.length === 0) {
+        if (!result || result.length === 0) {
             return NextResponse.json({
                 found: false,
                 original: { latitude, longitude },
@@ -107,19 +64,34 @@ export async function POST(request: NextRequest) {
             });
         }
 
-        const nearest = data[0];
+        const nearest = result[0];
+        
+        // Parse the nearest point coordinates
+        let nearestLat = latitude;
+        let nearestLng = longitude;
+        try {
+            const pointGeoJson = JSON.parse(nearest.nearest_point_geojson);
+            if (pointGeoJson.type === 'Point' && pointGeoJson.coordinates) {
+                nearestLng = pointGeoJson.coordinates[0];
+                nearestLat = pointGeoJson.coordinates[1];
+            }
+        } catch (e) {
+            console.error('Error parsing nearest point GeoJSON:', e);
+        }
+
         return NextResponse.json({
             found: true,
             original: { latitude, longitude },
             nearest: {
                 route_id: nearest.route_id,
                 route_code: nearest.route_code,
-                point_index: nearest.point_index,
-                latitude: nearest.point_lat,
-                longitude: nearest.point_lng,
-                distance: nearest.distance_km
+                route_name: `${nearest.start_point_name} - ${nearest.end_point_name}`,
+                latitude: nearestLat,
+                longitude: nearestLng,
+                distance: nearest.distance_meters,
+                position_on_route: nearest.position_on_route
             },
-            snapped: nearest.distance_km < 0.05 // Snap if within 50 meters
+            snapped: nearest.distance_meters < 15 // Snap if within 15 meters
         });
 
     } catch (error) {
@@ -129,16 +101,4 @@ export async function POST(request: NextRequest) {
             { status: 500 }
         );
     }
-}
-
-function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-    const R = 6371; // Earth's radius in km
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = 
-        Math.sin(dLat/2) * Math.sin(dLat/2) +
-        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-        Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c;
 }

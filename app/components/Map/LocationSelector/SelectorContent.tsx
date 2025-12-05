@@ -132,10 +132,10 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
             // Single route - find the matching polyline
             const polylineToShow = allRoutes.find(r => r.id === `route_${index}`);
             if (polylineToShow) {
-                console.log(`Selected single route ${index}: ${selectedResult.routeId}`);
+                console.log(`Selected single route ${index}: ${selectedResult.routeCode || selectedResult.routeId}`);
                 setRoutes([polylineToShow]);
             } else {
-                console.warn(`No polyline found for route ${selectedResult.routeId} at index ${index}`);
+                console.warn(`No polyline found for route ${selectedResult.routeCode || selectedResult.routeId} at index ${index}`);
                 setRoutes([]);
             }
         }
@@ -430,7 +430,7 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
                         scrollEnabled={true}
                     >
                         {results.map((route, index) => {
-                            console.log(`Rendering route card ${index}: ${route.routeId}`);
+                            console.log(`Rendering route card ${index}: ${route.routeCode || route.routeId}`);
                             return (
                                 <RouteCard
                                     key={`route-${index}-${route.routeId}`}
