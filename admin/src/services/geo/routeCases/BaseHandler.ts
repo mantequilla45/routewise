@@ -8,9 +8,37 @@ export interface RouteSegment {
     coordinates: LatLng[];
     distance: number;
     fare: number;
-    startPosition: number;
-    endPosition: number;
+    startPosition?: number;
+    endPosition?: number;
     requiresLoop?: boolean;
+    
+    // Transfer-specific properties
+    isTransfer?: boolean;
+    firstRoute?: {
+        routeId: string;
+        routeCode: string;
+        routeName: string;
+        coordinates: LatLng[];
+        distance: number;
+        fare: number;
+        startPosition: number;
+        endPosition: number;
+    };
+    secondRoute?: {
+        routeId: string;
+        routeCode: string;
+        routeName: string;
+        coordinates: LatLng[];
+        distance: number;
+        fare: number;
+        startPosition: number;
+        endPosition: number;
+    };
+    totalDistance?: number;
+    totalFare?: number;
+    boardingWalk?: number;
+    alightingWalk?: number;
+    startOpposite?: boolean;  // Indicates if start point was on opposite side
 }
 
 export interface RouteCalculationResult {

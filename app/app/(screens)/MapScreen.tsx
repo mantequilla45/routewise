@@ -177,53 +177,71 @@ function MapScreenContent() {
                             <Text style={styles.routeInfoLabel}>Showing Route</Text>
                             <Text style={styles.routeInfoCode}>{selectedRouteInfo?.id || 'Route'}</Text>
                         </View>
-                        {results && results.length > 0 && selectedRouteIndex !== null && (
+                        {isRouteFromList ? (
                             <TouchableOpacity 
-                                onPress={async () => {
-                                    const route = results[selectedRouteIndex];
-                                    if (!route) return;
-                                    
-                                    const routeKey = `${route.routeId}_${pointA?.latitude}_${pointA?.longitude}_${pointB?.latitude}_${pointB?.longitude}`;
-                                    
-                                    try {
-                                        const existingSaved = await AsyncStorage.getItem('savedRoutes');
-                                        const savedList = existingSaved ? JSON.parse(existingSaved) : [];
-                                        
-                                        if (savedList.includes(routeKey)) {
-                                            // Remove from saved
-                                            const newList = savedList.filter((id: string) => id !== routeKey);
-                                            await AsyncStorage.setItem('savedRoutes', JSON.stringify(newList));
-                                            setIsRouteSaved(false);
-                                            await AsyncStorage.removeItem(`route_${routeKey}`);
-                                            Alert.alert('Route Removed', 'Route removed from saved routes');
-                                        } else {
-                                            // Add to saved
-                                            savedList.push(routeKey);
-                                            await AsyncStorage.setItem('savedRoutes', JSON.stringify(savedList));
-                                            setIsRouteSaved(true);
-                                            
-                                            const routeData = {
-                                                ...route,
-                                                pointA,
-                                                pointB,
-                                                savedAt: new Date().toISOString()
-                                            };
-                                            await AsyncStorage.setItem(`route_${routeKey}`, JSON.stringify(routeData));
-                                            Alert.alert('Route Saved', 'Route saved successfully');
-                                        }
-                                    } catch (error) {
-                                        console.error('Error saving route:', error);
-                                        Alert.alert('Error', 'Failed to save route');
-                                    }
+                                onPress={() => {
+                                    // Clear the route from routes tab
+                                    setIsRouteFromList(false);
+                                    setRoutes([]);
+                                    setSelectedRouteInfo(null);
                                 }}
                                 style={styles.saveIconButton}
                             >
                                 <Ionicons 
-                                    name={isRouteSaved ? "bookmark" : "bookmark-outline"} 
+                                    name="close-circle" 
                                     size={24} 
-                                    color={isRouteSaved ? "#FF6B6B" : "#666"} 
+                                    color="#666" 
                                 />
                             </TouchableOpacity>
+                        ) : (
+                            results && results.length > 0 && selectedRouteIndex !== null && (
+                                <TouchableOpacity 
+                                    onPress={async () => {
+                                        const route = results[selectedRouteIndex];
+                                        if (!route) return;
+                                        
+                                        const routeKey = `${route.routeId}_${pointA?.latitude}_${pointA?.longitude}_${pointB?.latitude}_${pointB?.longitude}`;
+                                        
+                                        try {
+                                            const existingSaved = await AsyncStorage.getItem('savedRoutes');
+                                            const savedList = existingSaved ? JSON.parse(existingSaved) : [];
+                                            
+                                            if (savedList.includes(routeKey)) {
+                                                // Remove from saved
+                                                const newList = savedList.filter((id: string) => id !== routeKey);
+                                                await AsyncStorage.setItem('savedRoutes', JSON.stringify(newList));
+                                                setIsRouteSaved(false);
+                                                await AsyncStorage.removeItem(`route_${routeKey}`);
+                                                Alert.alert('Route Removed', 'Route removed from saved routes');
+                                            } else {
+                                                // Add to saved
+                                                savedList.push(routeKey);
+                                                await AsyncStorage.setItem('savedRoutes', JSON.stringify(savedList));
+                                                setIsRouteSaved(true);
+                                                
+                                                const routeData = {
+                                                    ...route,
+                                                    pointA,
+                                                    pointB,
+                                                    savedAt: new Date().toISOString()
+                                                };
+                                                await AsyncStorage.setItem(`route_${routeKey}`, JSON.stringify(routeData));
+                                                Alert.alert('Route Saved', 'Route saved successfully');
+                                            }
+                                        } catch (error) {
+                                            console.error('Error saving route:', error);
+                                            Alert.alert('Error', 'Failed to save route');
+                                        }
+                                    }}
+                                    style={styles.saveIconButton}
+                                >
+                                    <Ionicons 
+                                        name={isRouteSaved ? "bookmark" : "bookmark-outline"} 
+                                        size={24} 
+                                        color={isRouteSaved ? "#FF6B6B" : "#666"} 
+                                    />
+                                </TouchableOpacity>
+                            )
                         )}
                     </View>
                 </View>

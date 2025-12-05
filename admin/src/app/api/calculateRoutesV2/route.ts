@@ -43,11 +43,15 @@ export async function POST(req: NextRequest) {
 
         // Import handlers for opposite side scenarios
         const { Case5BothOppositeHandler } = await import('@/services/geo/routeCases/singleRoute/Case5BothOppositeHandler');
+        const { Case6SimpleTransferHandler } = await import('@/services/geo/routeCases/multiRoute/Case6SimpleTransferHandler');
+        const { Case7TransferStartOppositeHandler } = await import('@/services/geo/routeCases/multiRoute/Case7TransferStartOppositeHandler');
         
         // Try handlers and collect all possible routes
         const handlers = [
-            new Case1NormalHandler(),           // Case 1: Normal forward travel
-            new Case5BothOppositeHandler(),     // Case 5: Both pins on opposite sides
+            new Case1NormalHandler(),                  // Case 1: Normal forward travel
+            new Case5BothOppositeHandler(),            // Case 5: Both pins on opposite sides
+            new Case6SimpleTransferHandler(),          // Case 6: Two-jeep transfer
+            new Case7TransferStartOppositeHandler(),   // Case 7: Transfer with start opposite
         ];
 
         // Collect ALL routes from ALL handlers
@@ -68,21 +72,43 @@ export async function POST(req: NextRequest) {
                         
                         // Add all routes from this handler
                         result.segments.forEach((segment: any) => {
-                            allRoutes.push({
-                                routeId: segment.routeId,
-                                routeCode: segment.routeCode,
-                                routeName: segment.routeName,
-                                coordinates: segment.coordinates,
-                                distance: segment.distance,
-                                fare: segment.fare,
-                                caseName: result.caseName,
-                                requiresLoop: segment.requiresLoop || false,
-                                optimized: segment.optimized || false,
-                                debugInfo: {
-                                    ...result.debugInfo,
-                                    coordinateCount: segment.coordinates.length
-                                }
-                            });
+                            // Handle transfer routes differently
+                            if (segment.isTransfer) {
+                                allRoutes.push({
+                                    routeId: segment.routeId,
+                                    routeCode: segment.routeCode,
+                                    routeName: segment.routeName,
+                                    coordinates: segment.coordinates,
+                                    distance: segment.totalDistance || segment.distance,
+                                    fare: segment.totalFare || segment.fare,
+                                    caseName: result.caseName,
+                                    isTransfer: true,
+                                    firstRoute: segment.firstRoute,
+                                    secondRoute: segment.secondRoute,
+                                    boardingWalk: segment.boardingWalk,
+                                    alightingWalk: segment.alightingWalk,
+                                    debugInfo: {
+                                        ...result.debugInfo,
+                                        coordinateCount: segment.coordinates.length
+                                    }
+                                });
+                            } else {
+                                allRoutes.push({
+                                    routeId: segment.routeId,
+                                    routeCode: segment.routeCode,
+                                    routeName: segment.routeName,
+                                    coordinates: segment.coordinates,
+                                    distance: segment.distance,
+                                    fare: segment.fare,
+                                    caseName: result.caseName,
+                                    requiresLoop: segment.requiresLoop || false,
+                                    optimized: segment.optimized || false,
+                                    debugInfo: {
+                                        ...result.debugInfo,
+                                        coordinateCount: segment.coordinates.length
+                                    }
+                                });
+                            }
                         });
                         
                         handlerSummary.push({
