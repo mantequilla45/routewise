@@ -38,19 +38,9 @@ export async function getAllRoutes(): Promise<JeepneyRoute[]> {
     return data ?? [];
 }
 
-const savedRoutes: SavedRoute[] = [
-    {
-        id: '1',
-        jeepCode: '04A',
-        start: 'Marikina Station',
-        destination: 'Cubao Terminal',
-        favorite: true
-    },
-];
-
 export default function Saved() {
     const [searchQuery, setSearchQuery] = useState('');
-    const [routes, setRoutes] = useState<SavedRoute[]>(savedRoutes);
+    const [routes, setRoutes] = useState<SavedRoute[]>([]);
 
     useEffect(() => {
         getAllRoutes().then((fetchedRoutes: JeepneyRoute[]) => {
@@ -62,7 +52,7 @@ export default function Saved() {
                 favorite: false,
             }));
 
-            setRoutes((prev) => [...prev, ...mappedRoutes]);
+            setRoutes(mappedRoutes);
         });
     }, []);
 
