@@ -11,6 +11,7 @@ import {
   BarChart3,
   Settings,
   LogOut,
+  Users,
 } from "lucide-react";
 
 interface NavItem {
@@ -54,6 +55,11 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
       label: "Routes Management",
       href: "/routes",
       icon: <MapPin className="w-5 h-5" />,
+    },
+    {
+      label: "Users",
+      href: "/users",
+      icon: <Users className="w-5 h-5" />,
     },
     {
       label: "Database",
