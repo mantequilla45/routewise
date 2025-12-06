@@ -584,7 +584,7 @@ export default function EnhancedAddRoutePage() {
                             route_code: e.target.value,
                           })
                         }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black bg-white focus:outline-none focus:ring-2 focus:ring-gray-500"
+                        className="w-full px-3 py-2 bg-[#2D2D2D] border border-[#4C4C4C] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#FFCC66] focus:border-[#FFCC66]"
                         placeholder="e.g., 01A"
                         required
                       />
@@ -601,7 +601,7 @@ export default function EnhancedAddRoutePage() {
                         type="file"
                         accept=".kml,.kmz"
                         onChange={handleFileUpload}
-                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                        className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-[#FFCC66] file:text-black hover:file:bg-[#CC9933] file:transition-colors"
                         id="kml-upload"
                       />
                       {mapCoordinates.length > 0 && (
@@ -650,7 +650,7 @@ export default function EnhancedAddRoutePage() {
                     </label>
                     <div
                       id="points-list"
-                      className="space-y-2 h-64 overflow-y-auto border border-gray-200 rounded-lg p-2"
+                      className="space-y-2 h-64 overflow-y-auto bg-[#2D2D2D] border border-[#4C4C4C] rounded-lg p-2"
                       style={{ scrollBehavior: "smooth" }}
                     >
                       {mapCoordinates.map((coord, index) => (
@@ -728,7 +728,7 @@ export default function EnhancedAddRoutePage() {
                         </div>
                       ))}
                       {mapCoordinates.length === 0 && (
-                        <p className="text-gray-500 text-sm text-center py-4">
+                        <p className="text-gray-400 text-sm text-center py-4">
                           Click on the map to add points
                         </p>
                       )}
@@ -790,10 +790,10 @@ export default function EnhancedAddRoutePage() {
                 {/* Status Message */}
                 {status.message && (
                   <div
-                    className={`p-4 rounded-lg ${
+                    className={`p-4 rounded-lg border ${
                       status.type === "error"
-                        ? "bg-red-100 text-red-700"
-                        : "bg-green-100 text-green-700"
+                        ? "bg-red-900/20 text-red-400 border-red-500"
+                        : "bg-green-900/20 text-green-400 border-green-500"
                     }`}
                   >
                     {status.message}
@@ -824,8 +824,8 @@ export default function EnhancedAddRoutePage() {
                       />
                       <div className="relative">
                         <div
-                          className={`block w-10 h-6 rounded-full ${
-                            showPointNumbers ? "bg-blue-600" : "bg-gray-300"
+                          className={`block w-10 h-6 rounded-full transition-colors ${
+                            showPointNumbers ? "bg-[#FFCC66]" : "bg-[#4C4C4C]"
                           }`}
                         ></div>
                         <div
@@ -847,8 +847,8 @@ export default function EnhancedAddRoutePage() {
                       />
                       <div className="relative">
                         <div
-                          className={`block w-10 h-6 rounded-full ${
-                            hidePOIs ? "bg-blue-600" : "bg-gray-300"
+                          className={`block w-10 h-6 rounded-full transition-colors ${
+                            hidePOIs ? "bg-[#FFCC66]" : "bg-[#4C4C4C]"
                           }`}
                         ></div>
                         <div
@@ -902,8 +902,8 @@ export default function EnhancedAddRoutePage() {
                 {/* Map Instructions */}
                 <div className="mt-2 space-y-3">
                   {/* Legend */}
-                  <div className="p-3 bg-blue-50 rounded-lg">
-                    <h4 className="font-semibold text-gray-900 mb-2 text-sm">
+                  <div className="p-3 bg-[#2D2D2D] border border-[#4C4C4C] rounded-lg">
+                    <h4 className="font-semibold text-[#FFCC66] mb-2 text-sm">
                       Map Legend
                     </h4>
                     <div className="grid grid-cols-2 gap-2 text-xs">
@@ -911,35 +911,35 @@ export default function EnhancedAddRoutePage() {
                         <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center text-white font-bold text-[10px]">
                           ✕
                         </div>
-                        <span className="text-gray-700">Start Point</span>
+                        <span className="text-gray-300">Start Point</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center text-white font-bold text-[10px]">
                           O
                         </div>
-                        <span className="text-gray-700">End Point</span>
+                        <span className="text-gray-300">End Point</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-[10px]">
                           •
                         </div>
-                        <span className="text-gray-700">Waypoints</span>
+                        <span className="text-gray-300">Waypoints</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <div
                           className="w-5 h-1 rounded"
                           style={{ backgroundColor: "#FF6B6B" }}
                         ></div>
-                        <span className="text-gray-700">Route Path</span>
+                        <span className="text-gray-300">Route Path</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Instructions */}
-                  <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                    <h4 className="font-semibold text-blue-900 mb-2 text-sm flex items-center">
+                  <div className="p-3 bg-[#2D2D2D] rounded-lg border border-[#4C4C4C]">
+                    <h4 className="font-semibold text-[#FFCC66] mb-2 text-sm flex items-center">
                       <svg
-                        className="w-4 h-4 mr-1"
+                        className="w-4 h-4 mr-1 text-[#FFCC66]"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -953,7 +953,7 @@ export default function EnhancedAddRoutePage() {
                       </svg>
                       How to Map a Route
                     </h4>
-                    <div className="space-y-2 text-xs text-blue-800">
+                    <div className="space-y-2 text-xs text-gray-300">
                       <div>
                         <p className="font-semibold mb-1">Adding Points:</p>
                         <ul className="ml-3 space-y-0.5">
@@ -983,8 +983,8 @@ export default function EnhancedAddRoutePage() {
                           <li>• This connects the end point back to start</li>
                         </ul>
                       </div>
-                      <div className="mt-2 p-2 bg-yellow-50 rounded border border-yellow-300">
-                        <p className="text-yellow-800 font-semibold">
+                      <div className="mt-2 p-2 bg-[#4C4C4C] rounded border border-[#FFCC66]">
+                        <p className="text-[#FFCC66] font-semibold">
                           ⚠️ Important: Pin order defines travel direction!
                         </p>
                       </div>
@@ -1068,7 +1068,7 @@ export default function EnhancedAddRoutePage() {
                                     );
                                     setReviewAction(null);
                                   }}
-                                  className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
+                                  className="px-3 py-1 text-sm bg-[#FFCC66] text-black font-semibold rounded hover:bg-[#CC9933] transition-colors"
                                 >
                                   Review
                                 </button>
@@ -1081,7 +1081,7 @@ export default function EnhancedAddRoutePage() {
                                           contribution.id
                                         )
                                       }
-                                      className="px-3 py-1 text-sm bg-[#FFCC66] text-white rounded hover:bg-[#CC9933]"
+                                      className="px-3 py-1 text-sm bg-[#FFCC66] text-black font-semibold rounded hover:bg-[#CC9933] transition-colors"
                                     >
                                       Edit
                                     </button>
@@ -1091,7 +1091,7 @@ export default function EnhancedAddRoutePage() {
                                       onClick={() =>
                                         setEditingContributionId(null)
                                       }
-                                      className="px-3 py-1 text-sm bg-green-500 text-white rounded hover:bg-green-600"
+                                      className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-500 transition-colors"
                                     >
                                       Done Editing
                                     </button>
@@ -1102,7 +1102,7 @@ export default function EnhancedAddRoutePage() {
                                       setEditingContributionId(null);
                                       setContributionCoordinates([]);
                                     }}
-                                    className="px-3 py-1 text-sm bg-gray-500 text-white rounded hover:bg-gray-600"
+                                    className="px-3 py-1 text-sm bg-[#4C4C4C] text-white rounded hover:bg-[#404040] transition-colors"
                                   >
                                     Close
                                   </button>
@@ -1125,7 +1125,7 @@ export default function EnhancedAddRoutePage() {
                                       <div className="text-sm space-y-2">
                                         <p className="flex justify-between text-white">
                                           <strong>Route Code:</strong>
-                                          <span className="text-blue-600 font-medium">
+                                          <span className="text-[#FFCC66] font-medium">
                                             {contribution.route_code}
                                           </span>
                                         </p>
@@ -1208,7 +1208,7 @@ export default function EnhancedAddRoutePage() {
                                         onClick={() =>
                                           setReviewAction("approve")
                                         }
-                                        className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+                                        className="px-4 py-2 bg-green-600 text-white font-semibold rounded hover:bg-green-500 transition-colors"
                                       >
                                         Approve
                                       </button>
@@ -1216,7 +1216,7 @@ export default function EnhancedAddRoutePage() {
                                         onClick={() =>
                                           setReviewAction("reject")
                                         }
-                                        className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                                        className="px-4 py-2 bg-red-500 text-white font-semibold rounded hover:bg-red-400 transition-colors"
                                       >
                                         Reject
                                       </button>
@@ -1270,10 +1270,10 @@ export default function EnhancedAddRoutePage() {
                                               );
                                             }
                                           }}
-                                          className={`px-4 py-2 text-white rounded ${
+                                          className={`px-4 py-2 text-white font-semibold rounded transition-colors ${
                                             reviewAction === "approve"
-                                              ? "bg-green-500 hover:bg-green-600"
-                                              : "bg-red-500 hover:bg-red-600"
+                                              ? "bg-green-600 hover:bg-green-500"
+                                              : "bg-red-500 hover:bg-red-400"
                                           }`}
                                         >
                                           Confirm{" "}
@@ -1286,7 +1286,7 @@ export default function EnhancedAddRoutePage() {
                                             setReviewAction(null);
                                             setReviewNotes("");
                                           }}
-                                          className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500"
+                                          className="px-4 py-2 bg-[#4C4C4C] text-white rounded hover:bg-[#404040] transition-colors"
                                         >
                                           Cancel
                                         </button>
@@ -1454,7 +1454,7 @@ export default function EnhancedAddRoutePage() {
 Are you sure you want to close the loop?`}
         confirmText="Yes, Close Loop"
         cancelText="Cancel"
-        confirmButtonClass="bg-purple-600 hover:bg-purple-700"
+        confirmButtonClass="bg-[#FFCC66] hover:bg-[#CC9933] text-black font-bold"
       />
     </div>
   );
