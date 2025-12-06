@@ -14,7 +14,7 @@ export class Case1NormalHandler extends BaseRouteHandler {
         return 'CASE_1_NORMAL';
     }
 
-    async canHandle(_from: LatLng, _to: LatLng): Promise<boolean> {
+    async canHandle(): Promise<boolean> {
         return true;
     }
 

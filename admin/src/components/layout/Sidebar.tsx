@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ReactElement, useState, useEffect } from "react";
+import { ReactElement } from "react";
 import {
   Home,
   MapPin,
@@ -27,14 +27,7 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
-  const [currentPath, setCurrentPath] = useState("");
   const pathname = usePathname();
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      setCurrentPath(window.location.pathname);
-    }
-  }, []);
 
   const handleLogout = () => {
     if (typeof window !== "undefined") {

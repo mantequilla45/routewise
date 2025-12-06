@@ -17,7 +17,7 @@ interface User {
   last_login?: string;
   login_count?: number;
   auth_provider?: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
   commuter?: string;
 }
 

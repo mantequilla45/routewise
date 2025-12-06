@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { query } from '@/lib/db/db';
 
-export async function GET(_req: NextRequest) {
+export async function GET() {
     try {
         // Fetch all routes from the database
         const sql = `

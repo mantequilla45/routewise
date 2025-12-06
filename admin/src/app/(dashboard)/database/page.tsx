@@ -135,14 +135,14 @@ export default function DatabasePage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-white">Database Management</h1>
-          <p className="text-white mt-1">
+          <p className="text-gray-400 mt-1">
             Complete database overview and management
           </p>
         </div>
         <div className="flex space-x-3">
           <button
             onClick={exportAllData}
-            className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors flex items-center space-x-2"
+            className="px-4 py-2 bg-[#FFCC66] text-black font-semibold rounded-xl hover:bg-[#CC9933] transition-colors flex items-center space-x-2"
           >
             <svg
               className="w-4 h-4"
@@ -161,7 +161,7 @@ export default function DatabasePage() {
           </button>
           <button
             onClick={fetchDatabaseInfo}
-            className="px-4 py-2 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors flex items-center space-x-2"
+            className="px-4 py-2 bg-[#4C4C4C] text-white border border-[#404040] rounded-xl hover:bg-[#404040] transition-colors flex items-center space-x-2"
           >
             <svg
               className="w-4 h-4"
@@ -186,14 +186,14 @@ export default function DatabasePage() {
         <div className="bg-[#3A3A3A] rounded-xl p-6 border-2 border-[#FFCC66]">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-white">Total Tables</p>
+              <p className="text-sm text-gray-400">Total Tables</p>
               <p className="text-2xl font-bold text-white mt-1">
                 {totalTables}
               </p>
             </div>
-            <div className="p-3 bg-[#CC9933] rounded-lg">
+            <div className="p-3 bg-[#FFCC66] rounded-lg">
               <svg
-                className="w-6 h-6 text-white"
+                className="w-6 h-6 text-black"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -212,14 +212,14 @@ export default function DatabasePage() {
         <div className="bg-[#3A3A3A] rounded-xl p-6 border-2 border-[#FFCC66]">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-white">Total Rows</p>
+              <p className="text-sm text-gray-400">Total Rows</p>
               <p className="text-2xl font-bold text-white mt-1">
                 {totalRows.toLocaleString()}
               </p>
             </div>
-            <div className="p-3 bg-[#CC9933] rounded-lg">
+            <div className="p-3 bg-[#FFCC66] rounded-lg">
               <svg
-                className="w-6 h-6 text-white"
+                className="w-6 h-6 text-black"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -238,14 +238,14 @@ export default function DatabasePage() {
         <div className="bg-[#3A3A3A] rounded-xl p-6 border-2 border-[#FFCC66]">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-white">Total Columns</p>
+              <p className="text-sm text-gray-400">Total Columns</p>
               <p className="text-2xl font-bold text-white mt-1">
                 {totalColumns}
               </p>
             </div>
-            <div className="p-3 bg-[#CC9933] rounded-lg">
+            <div className="p-3 bg-[#FFCC66] rounded-lg">
               <svg
-                className="w-6 h-6 text-white"
+                className="w-6 h-6 text-black"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -264,14 +264,14 @@ export default function DatabasePage() {
         <div className="bg-[#3A3A3A] rounded-xl p-6 border-2 border-[#FFCC66]">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-white">Database</p>
-              <p className="text-sm font-semibold text-white mt-1">
+              <p className="text-sm text-gray-400">Database</p>
+              <p className="text-sm font-semibold text-[#FFCC66] mt-1">
                 PostgreSQL + PostGIS
               </p>
             </div>
-            <div className="p-3 bg-[#CC9933] rounded-lg">
+            <div className="p-3 bg-[#FFCC66] rounded-lg">
               <svg
-                className="w-6 h-6 text-white"
+                className="w-6 h-6 text-black"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -293,7 +293,7 @@ export default function DatabasePage() {
         {/* Left Sidebar - Table List */}
         <div className="w-64 flex-shrink-0">
           <div className="flex items-start justify-start mb-2">
-            <h3 className="font-semibold text-white">TABLES</h3>
+            <h3 className="font-semibold text-[#FFCC66]">TABLES</h3>
           </div>
           <div className="overflow-hidden">
             <div className="max-h-[600px] overflow-y-auto">
@@ -314,12 +314,12 @@ export default function DatabasePage() {
                       <div>
                         <p
                           className={`text-sm font-medium ${
-                            isSelected ? "text-white" : "text-gray-600"
+                            isSelected ? "text-white" : "text-gray-400"
                           }`}
                         >
                           {table}
                         </p>
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-gray-400 mt-1">
                           {tableData.rowCount} rows • {tableData.columnCount}{" "}
                           cols
                         </p>
@@ -356,14 +356,14 @@ export default function DatabasePage() {
           <div className="rounded-xl p-4 mb-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center justify-between space-x-4">
-                <h3 className="font-semibold text-white">{selectedTable}</h3>
+                <h3 className="font-semibold text-[#FFCC66]">{selectedTable}</h3>
                 <div className="flex space-x-2">
                   <button
                     onClick={() => setViewMode("table")}
                     className={`px-3 py-1.5 rounded-lg transition-colors ${
                       viewMode === "table"
                         ? "bg-[#3A3A3A] text-white"
-                        : "text-gray-600 hover:bg-[#3A3A3A]"
+                        : "text-gray-400 hover:bg-[#3A3A3A] hover:text-white"
                     }`}
                   >
                     Table
@@ -373,7 +373,7 @@ export default function DatabasePage() {
                     className={`px-3 py-1.5 rounded-lg transition-colors ${
                       viewMode === "schema"
                         ? "bg-[#3A3A3A] text-white"
-                        : "text-gray-600 hover:bg-[#3A3A3A]"
+                        : "text-gray-400 hover:bg-[#3A3A3A] hover:text-white"
                     }`}
                   >
                     Schema
@@ -383,7 +383,7 @@ export default function DatabasePage() {
                     className={`px-3 py-1.5 rounded-lg transition-colors ${
                       viewMode === "raw"
                         ? "bg-[#3A3A3A] text-white"
-                        : "text-gray-600 hover:bg-[#3A3A3A]"
+                        : "text-gray-400 hover:bg-[#3A3A3A] hover:text-white"
                     }`}
                   >
                     JSON
@@ -397,11 +397,11 @@ export default function DatabasePage() {
                   placeholder="Search in table..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="text-white px-4 py-2 bg-[#3A3A3A] rounded-lg focus:outline-none focus:ring-2 focus:ring-bg-white"
+                  className="px-4 py-2 bg-[#2D2D2D] border border-[#4C4C4C] text-white rounded-lg placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#FFCC66] focus:border-[#FFCC66]"
                 />
                 <button
                   onClick={() => exportTableData(selectedTable)}
-                  className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer"
+                  className="px-3 py-2 bg-[#4C4C4C] hover:bg-[#404040] text-white rounded-lg transition-colors cursor-pointer"
                   title="Export this table"
                 >
                   <svg
@@ -424,54 +424,54 @@ export default function DatabasePage() {
 
           {/* Data Display */}
           {currentTableData && (
-            <div className="bg-white rounded-xl border border-gray-100">
+            <div className="bg-[#3A3A3A] rounded-xl border border-[#404040]">
               {currentTableData.error ? (
-                <div className="p-6 text-center text-red-600">
+                <div className="p-6 text-center text-red-400">
                   Error loading table: {currentTableData.error}
                 </div>
               ) : viewMode === "schema" ? (
                 <div className="p-6 overflow-auto max-h-[600px]">
                   <table className="divide-y divide-gray-200">
-                    <thead className="bg-gray-50 sticky top-0">
+                    <thead className="bg-[#2D2D2D] sticky top-0">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-[#FFCC66] uppercase tracking-wider">
                           Column Name
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-[#FFCC66] uppercase tracking-wider">
                           Data Type
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-[#FFCC66] uppercase tracking-wider">
                           Nullable
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-[#FFCC66] uppercase tracking-wider">
                           Default
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
+                    <tbody className="bg-[#3A3A3A] divide-y divide-[#404040]">
                       {currentTableData.columns.map((column) => (
                         <tr
                           key={column.column_name}
-                          className="hover:bg-gray-50"
+                          className="hover:bg-[#404040] transition-colors"
                         >
-                          <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                          <td className="px-6 py-4 text-sm font-medium text-white">
                             {column.column_name}
                           </td>
-                          <td className="px-6 py-4 text-sm text-gray-500">
-                            <code className="bg-gray-100 px-2 py-1 rounded">
+                          <td className="px-6 py-4 text-sm text-gray-300">
+                            <code className="bg-[#2D2D2D] border border-[#4C4C4C] px-2 py-1 rounded text-[#FFCC66]">
                               {column.data_type}
                             </code>
                           </td>
-                          <td className="px-6 py-4 text-sm text-gray-500">
+                          <td className="px-6 py-4 text-sm text-gray-300">
                             {column.is_nullable === "YES" ? (
-                              <span className="text-green-600">✓ Yes</span>
+                              <span className="text-green-400">✓ Yes</span>
                             ) : (
-                              <span className="text-red-600">✗ No</span>
+                              <span className="text-red-400">✗ No</span>
                             )}
                           </td>
-                          <td className="px-6 py-4 text-sm text-gray-500">
+                          <td className="px-6 py-4 text-sm text-gray-300">
                             {column.column_default ? (
-                              <code className="bg-gray-100 px-2 py-1 rounded text-xs">
+                              <code className="bg-[#2D2D2D] border border-[#4C4C4C] px-2 py-1 rounded text-xs text-[#FFCC66]">
                                 {column.column_default}
                               </code>
                             ) : (
@@ -484,8 +484,8 @@ export default function DatabasePage() {
                   </table>
                 </div>
               ) : viewMode === "raw" ? (
-                <div className="bg-gray-900 p-6 overflow-x-auto max-h-[600px]">
-                  <pre className="text-green-400 text-xs font-mono">
+                <div className="bg-[#2D2D2D] border border-[#4C4C4C] p-6 overflow-x-auto max-h-[600px] rounded-lg">
+                  <pre className="text-[#FFCC66] text-xs font-mono">
                     {JSON.stringify(filteredData, null, 2)}
                   </pre>
                 </div>
@@ -493,7 +493,7 @@ export default function DatabasePage() {
                 <div className="p-6 overflow-auto max-h-[600px]">
                   {filteredData.length > 0 ? (
                     <table className="divide-y divide-gray-200">
-                      <thead className="bg-gray-50 sticky top-0">
+                      <thead className="bg-[#2D2D2D] sticky top-0">
                         <tr>
                           {currentTableData.columns.map((column) => (
                             <th
@@ -505,18 +505,18 @@ export default function DatabasePage() {
                           ))}
                         </tr>
                       </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
+                      <tbody className="bg-[#3A3A3A] divide-y divide-[#404040]">
                         {filteredData.slice(0, 100).map((row, idx) => (
-                          <tr key={idx} className="hover:bg-gray-50">
+                          <tr key={idx} className="hover:bg-[#404040] transition-colors">
                             {currentTableData.columns.map((column) => (
                               <td
                                 key={column.column_name}
-                                className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
+                                className="px-6 py-4 whitespace-nowrap text-sm text-gray-300"
                               >
                                 {row[column.column_name] !== null ? (
                                   typeof row[column.column_name] ===
                                   "object" ? (
-                                    <code className="bg-gray-100 px-2 py-1 rounded text-xs">
+                                    <code className="bg-[#2D2D2D] border border-[#4C4C4C] px-2 py-1 rounded text-xs text-[#FFCC66]">
                                       {JSON.stringify(
                                         row[column.column_name]
                                       ).slice(0, 50)}
@@ -543,7 +543,7 @@ export default function DatabasePage() {
                     </table>
                   ) : (
                     <div className="text-center py-12">
-                      <p className="text-gray-500">
+                      <p className="text-gray-400">
                         {searchTerm
                           ? "No matching data found"
                           : "No data in this table"}
@@ -551,7 +551,7 @@ export default function DatabasePage() {
                     </div>
                   )}
                   {filteredData.length > 100 && (
-                    <div className="px-6 py-3 bg-gray-50 text-center text-sm text-gray-500 border-t">
+                    <div className="px-6 py-3 bg-[#2D2D2D] text-center text-sm text-gray-400 border-t border-[#404040]">
                       Showing first 100 rows of {filteredData.length} total
                     </div>
                   )}

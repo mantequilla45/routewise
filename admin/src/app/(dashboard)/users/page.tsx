@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Edit, Trash2, Search, Eye, EyeOff } from "lucide-react";
+import { Plus, Edit, Trash2, Search } from "lucide-react";
 import EditUserModal from "@/components/users/EditUserModal";
 
 interface User {
@@ -18,7 +18,7 @@ interface User {
   last_login?: string;
   login_count?: number;
   auth_provider?: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
   commuter?: string;
 }
 
@@ -191,10 +191,11 @@ export default function UsersPage() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         {(user.avatar_url || user.picture) && (
+                          // eslint-disable-next-line @next/next/no-img-element
                           <img
                             className="h-10 w-10 rounded-full mr-3"
                             src={user.avatar_url || user.picture}
-                            alt=""
+                            alt="User avatar"
                           />
                         )}
                         <div>
