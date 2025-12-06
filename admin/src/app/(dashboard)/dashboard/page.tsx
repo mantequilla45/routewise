@@ -20,7 +20,7 @@ export default function DashboardPage() {
     // revenue: 0,
   });
 
-  const [isLoading, setIsLoading] = useState(true);
+  const [, setIsLoading] = useState(true);
 
   const fetchDashboardData = async () => {
     try {
@@ -127,15 +127,6 @@ export default function DashboardPage() {
     // }
   ];
 
-  const getColorClasses = (color: string) => {
-    const colors = {
-      blue: "from-blue-500 to-blue-600",
-      green: "from-green-500 to-green-600",
-      purple: "from-purple-500 to-purple-600",
-      yellow: "from-yellow-500 to-yellow-600",
-    };
-    return colors[color as keyof typeof colors];
-  };
 
   // if (isLoading) {
   //   return (
@@ -151,12 +142,12 @@ export default function DashboardPage() {
       {/* Page Header */}
       <div>
         <h1 className="text-3xl font-bold text-white">Dashboard Overview</h1>
-        <p className="text-white mt-1">
+        <p className="text-gray-400 mt-1">
           Here&apos;s what&apos;s happening with your routes today.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 bg-[#CC9933] p-4 rounded-2xl">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left Column */}
         <div className="space-y-6">
           {/* Statistic Cards */}
@@ -168,14 +159,14 @@ export default function DashboardPage() {
               >
                 <div className="p-6 bg-[#3A3A3A]">
                   <div className="flex items-center justify-between mb-4">
-                    <div className={`p-3 rounded-xl bg-[#CC9933]`}>
-                      <span className="text-white">{stat.icon}</span>
+                    <div className={`p-3 rounded-xl bg-[#FFCC66]`}>
+                      <span className="text-black">{stat.icon}</span>
                     </div>
                     <span
                       className={`text-sm font-medium ${
                         stat.changeType === "positive"
-                          ? "text-green-600"
-                          : "text-red-600"
+                          ? "text-green-400"
+                          : "text-red-400"
                       }`}
                     >
                       {stat.change}
@@ -184,7 +175,7 @@ export default function DashboardPage() {
                   <h3 className="text-2xl font-bold text-white">
                     {stat.value}
                   </h3>
-                  <p className="text-sm text-white mt-1">{stat.title}</p>
+                  <p className="text-sm text-gray-400 mt-1">{stat.title}</p>
                 </div>
                 <div className="h-1 bg-gradient-to-r from-transparent via-[#FFCC66] to-transparent"></div>
               </div>
@@ -194,10 +185,10 @@ export default function DashboardPage() {
           {/* Activity Chart */}
           <div className="bg-[#3A3A3A] rounded-2xl shadow-sm p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-white">
+              <h2 className="text-lg font-semibold text-[#FFCC66]">
                 Route Activity (Total Fare)
               </h2>
-              <select className="text-sm border border-gray-300 bg-white rounded-lg px-3 py-1 focus:outline-none focus:ring-1 focus:ring-[#CC9933]">
+              <select className="text-sm bg-[#2D2D2D] border border-[#4C4C4C] text-white rounded-lg px-3 py-1 focus:outline-none focus:ring-2 focus:ring-[#FFCC66] focus:border-[#FFCC66]">
                 <option>Last 7 days</option>
                 <option>Last 30 days</option>
                 <option>Last 3 months</option>
@@ -213,16 +204,16 @@ export default function DashboardPage() {
                 { day: 5, value: 163, percentage: 89 },
               ].map((item) => (
                 <div key={item.day} className="flex items-center space-x-4">
-                  <span className="text-sm text-white w-16 flex-shrink-0">
+                  <span className="text-sm text-gray-400 w-16 flex-shrink-0">
                     Day {item.day}
                   </span>
-                  <div className="flex-1 bg-gray-200 rounded-full h-2 text-white">
+                  <div className="flex-1 bg-[#2D2D2D] rounded-full h-2">
                     <div
-                      className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all duration-300"
+                      className="bg-gradient-to-r from-[#FFCC66] to-[#CC9933] h-2 rounded-full transition-all duration-300"
                       style={{ width: `${item.percentage}%` }}
                     ></div>
                   </div>
-                  <span className="text-sm font-medium text-white w-12 text-right flex-shrink-0">
+                  <span className="text-sm font-medium text-gray-300 w-12 text-right flex-shrink-0">
                     {item.value}
                   </span>
                 </div>
@@ -235,7 +226,7 @@ export default function DashboardPage() {
         <div className="h-full">
           {/* Recent Activity */}
           <div className="bg-[#3A3A3A] rounded-2xl shadow-sm p-6 h-full">
-            <h2 className="text-lg font-semibold text-white mb-6">
+            <h2 className="text-lg font-semibold text-[#FFCC66] mb-6">
               Recent Routes
             </h2>
             <div className="flex flex-col h-full justify-between">
@@ -246,7 +237,7 @@ export default function DashboardPage() {
                       key={route.id || index}
                       className="flex items-start space-x-3 p-2 bg-[#404040] rounded-lg transition-colors hover:bg-[#4c4c4c]"
                     >
-                      <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                      <div className="w-2 h-2 bg-[#FFCC66] rounded-full mt-2 flex-shrink-0"></div>
                       <div className="flex-1 min-w-0 text-white">
                         <p className="text-sm">
                           Route{" "}
@@ -261,14 +252,14 @@ export default function DashboardPage() {
                     </div>
                   ))
                 ) : (
-                  <div className="text-center text-gray-500 text-sm py-4">
+                  <div className="text-center text-gray-400 text-sm py-4">
                     No routes added yet
                   </div>
                 )}
                 {recentRoutes.length > 0 && (
                   <a
                     href="/routes"
-                    className="text-sm text-blue-600 hover:text-blue-800 font-medium inline-flex items-center mt-auto ml-auto pt-4"
+                    className="text-sm text-[#FFCC66] hover:text-[#CC9933] font-medium inline-flex items-center mt-auto ml-auto pt-4 transition-colors"
                   >
                     View all routes
                     <svg
@@ -294,7 +285,7 @@ export default function DashboardPage() {
 
       {/* Quick Actions */}
       <div>
-        <h2 className="text-lg font-semibold text-white mb-4">Quick Actions</h2>
+        <h2 className="text-lg font-semibold text-[#FFCC66] mb-4">Quick Actions</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <a
             href="/routes"

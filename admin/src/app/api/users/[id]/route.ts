@@ -3,15 +3,16 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const supabase = createAdminClient();
-    
+
     const { data: user, error } = await supabase
       .from("users")
       .select("*")
-      .eq("id", params.id)
+      .eq("id", id)
       .single();
 
     if (error) {
@@ -34,16 +35,17 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const supabase = createAdminClient();
     const body = await request.json();
-    
-    const updateData: any = {
+
+    const updateData: Record<string, unknown> = {
       updated_at: new Date().toISOString(),
     };
-    
+
     // Only update fields that are provided
     if (body.full_name !== undefined) updateData.full_name = body.full_name;
     if (body.phone_number !== undefined) updateData.phone_number = body.phone_number;
@@ -51,11 +53,11 @@ export async function PUT(
     if (body.commuter !== undefined) updateData.commuter = body.commuter;
     if (body.avatar_url !== undefined) updateData.avatar_url = body.avatar_url;
     if (body.metadata !== undefined) updateData.metadata = body.metadata;
-    
+
     const { data: user, error } = await supabase
       .from("users")
       .update(updateData)
-      .eq("id", params.id)
+      .eq("id", id)
       .select()
       .single();
 
@@ -79,15 +81,16 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const supabase = createAdminClient();
-    
+
     const { error } = await supabase
       .from("users")
       .delete()
-      .eq("id", params.id);
+      .eq("id", id);
 
     if (error) {
       console.error("Error deleting user:", error);

@@ -84,7 +84,7 @@ export default function RoutesList({
     if (sortField !== field) {
       return (
         <svg
-          className="w-4 h-4 text-gray-400"
+          className="w-4 h-4 text-gray-500"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -100,7 +100,7 @@ export default function RoutesList({
     }
     return sortDirection === "asc" ? (
       <svg
-        className="w-4 h-4 text-blue-600"
+        className="w-4 h-4 text-[#FFCC66]"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -114,7 +114,7 @@ export default function RoutesList({
       </svg>
     ) : (
       <svg
-        className="w-4 h-4 text-blue-600"
+        className="w-4 h-4 text-[#FFCC66]"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -165,9 +165,9 @@ export default function RoutesList({
   }
 
   return (
-    <div className="rounded-lg shadow-md  gap-3 p-3">
+    <div className="rounded-lg gap-3 p-3">
       <div className="flex justify-between items-start p-2">
-        <h2 className="text-xl font-bold text-gray-200">
+        <h2 className="text-xl font-bold text-white">
           Existing Routes ({routes.length})
         </h2>
         <input
@@ -175,33 +175,33 @@ export default function RoutesList({
           placeholder="Search routes..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="px-3 py-2 border border-gray-300 rounded-lg text-black bg-white focus:outline-none focus:ring-2 focus:ring-gray-500"
+          className="px-3 py-2 bg-[#2D2D2D] border border-[#4C4C4C] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#FFCC66] focus:border-[#FFCC66]"
         />
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-sm border border-[#404040] rounded-lg overflow-hidden">
           <thead>
-            <tr className="border-b bg-gray-50">
-              <th className="text-left p-2 text-black font-semibold rounded-tl-xl">
+            <tr className="border-b bg-[#2D2D2D] border-[#404040]">
+              <th className="text-left p-2 text-[#FFCC66] font-semibold rounded-tl-xl">
                 <button
                   onClick={() => handleSort("route_code")}
-                  className="flex items-center gap-1 hover:bg-gray-100 px-2 py-1 rounded -ml-2"
+                  className="flex items-center gap-1 hover:bg-[#404040] px-2 py-1 rounded -ml-2 transition-colors"
                 >
                   Code
                   {getSortIcon("route_code")}
                 </button>
               </th>
-              <th className="text-left p-2 text-black font-semibold">
+              <th className="text-left p-2 text-[#FFCC66] font-semibold">
                 <button
                   onClick={() => handleSort("modified_at")}
-                  className="flex items-center gap-1 hover:bg-gray-100 px-2 py-1 rounded -ml-2"
+                  className="flex items-center gap-1 hover:bg-[#404040] px-2 py-1 rounded -ml-2 transition-colors"
                 >
                   Modified At
                   {getSortIcon("modified_at")}
                 </button>
               </th>
-              <th className="text-left p-2 text-black font-semibold rounded-tr-xl">
+              <th className="text-left p-2 text-[#FFCC66] font-semibold rounded-tr-xl">
                 Actions
               </th>
             </tr>
@@ -210,12 +210,12 @@ export default function RoutesList({
             {filteredRoutes.map((route) => (
               <tr
                 key={route.id}
-                className="border-b bg-white border-bl-xl border-br-xl"
+                className="border-b bg-[#3A3A3A] border-[#404040] hover:bg-[#404040] transition-colors"
               >
-                <td className="p-2 font-medium text-black">
+                <td className="p-2 font-medium text-white">
                   {route.route_code}
                 </td>
-                <td className="p-2 text-gray-900 text-sm">
+                <td className="p-2 text-gray-300 text-sm">
                   {route.updated_at ? (
                     <div>
                       <div>
@@ -228,7 +228,7 @@ export default function RoutesList({
                           }
                         )}
                       </div>
-                      <div className="text-xs text-gray-500">
+                      <div className="text-xs text-gray-400">
                         {new Date(route.updated_at).toLocaleTimeString(
                           "en-US",
                           {
@@ -250,7 +250,7 @@ export default function RoutesList({
                           }
                         )}
                       </div>
-                      <div className="text-xs text-gray-500">
+                      <div className="text-xs text-gray-400">
                         {new Date(route.created_at).toLocaleTimeString(
                           "en-US",
                           {

@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 
 const AddRouteMap = dynamic(() => import('@/components/routes/AddRouteMap'), { 
     ssr: false,
-    loading: () => <div className="h-96 bg-gray-100 animate-pulse rounded-lg flex items-center justify-center">Loading map...</div>
+    loading: () => <div className="h-96 bg-[#2D2D2D] animate-pulse rounded-lg flex items-center justify-center text-gray-400">Loading map...</div>
 });
 
 interface EditRouteModalProps {
@@ -345,9 +345,9 @@ export default function EditRouteModal({ routeId, isOpen, onClose, onUpdate }: E
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
-                <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
-                    <h2 className="text-2xl font-bold text-gray-900">Edit Route</h2>
+            <div className="bg-[#3A3A3A] rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto border border-[#404040]">
+                <div className="sticky top-0 bg-[#3A3A3A] border-b border-[#404040] px-6 py-4 flex justify-between items-center">
+                    <h2 className="text-2xl font-bold text-white">Edit Route</h2>
                     <button
                         onClick={onClose}
                         className="text-gray-500 hover:text-gray-700"
@@ -375,7 +375,7 @@ export default function EditRouteModal({ routeId, isOpen, onClose, onUpdate }: E
                                         type="text"
                                         value={formData.route_code}
                                         onChange={e => setFormData({...formData, route_code: e.target.value})}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="w-full px-3 py-2 bg-[#2D2D2D] border border-[#4C4C4C] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#FFCC66] focus:border-[#FFCC66]"
                                         required
                                     />
                                 </div>
@@ -406,7 +406,7 @@ export default function EditRouteModal({ routeId, isOpen, onClose, onUpdate }: E
                                                     className={`flex items-center justify-between text-sm p-2 rounded cursor-pointer transition-all ${
                                                         selectedPointIndex === index 
                                                             ? 'bg-yellow-100 border-2 border-yellow-400 shadow-md' 
-                                                            : 'bg-gray-50 hover:bg-gray-100 border border-gray-200'
+                                                            : 'bg-[#2D2D2D] hover:bg-[#404040] border border-[#4C4C4C]'
                                                     }`}
                                                     onClick={() => handlePointSelect(index)}
                                                     role="button"
@@ -441,7 +441,7 @@ export default function EditRouteModal({ routeId, isOpen, onClose, onUpdate }: E
                                                                 className={`px-2 py-1 text-xs font-medium rounded ${
                                                                     insertMode 
                                                                         ? 'bg-green-500 text-white hover:bg-green-600' 
-                                                                        : 'bg-blue-500 text-white hover:bg-blue-600'
+                                                                        : 'bg-[#FFCC66] text-black hover:bg-[#CC9933]'
                                                                 }`}
                                                                 title={insertMode ? 'Exit insert mode' : 'Insert point after this'}
                                                             >
@@ -485,7 +485,7 @@ export default function EditRouteModal({ routeId, isOpen, onClose, onUpdate }: E
                                                 className="sr-only"
                                             />
                                             <div className="relative">
-                                                <div className={`block w-9 h-5 rounded-full ${showPointNumbers ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
+                                                <div className={`block w-9 h-5 rounded-full transition-colors ${showPointNumbers ? 'bg-[#FFCC66]' : 'bg-[#4C4C4C]'}`}></div>
                                                 <div className={`absolute left-0.5 top-0.5 bg-white w-4 h-4 rounded-full transition ${showPointNumbers ? 'transform translate-x-4' : ''}`}></div>
                                             </div>
                                             <span className="ml-2 text-xs font-medium text-gray-700">Numbers</span>
@@ -498,7 +498,7 @@ export default function EditRouteModal({ routeId, isOpen, onClose, onUpdate }: E
                                                 className="sr-only"
                                             />
                                             <div className="relative">
-                                                <div className={`block w-9 h-5 rounded-full ${hidePOIs ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
+                                                <div className={`block w-9 h-5 rounded-full transition-colors ${hidePOIs ? 'bg-[#FFCC66]' : 'bg-[#4C4C4C]'}`}></div>
                                                 <div className={`absolute left-0.5 top-0.5 bg-white w-4 h-4 rounded-full transition ${hidePOIs ? 'transform translate-x-4' : ''}`}></div>
                                             </div>
                                             <span className="ml-2 text-xs font-medium text-gray-700">Hide Places</span>
@@ -552,7 +552,7 @@ export default function EditRouteModal({ routeId, isOpen, onClose, onUpdate }: E
                                     Math.abs(mapCoordinates[0].lng - mapCoordinates[mapCoordinates.length - 1].lng) < 0.000001)}
                                 className={`px-4 py-2 rounded-lg font-medium transition-all ${
                                     mapCoordinates.length < 2
-                                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                        ? 'bg-[#2D2D2D] text-gray-500 cursor-not-allowed'
                                         : (mapCoordinates.length > 2 && 
                                             Math.abs(mapCoordinates[0].lat - mapCoordinates[mapCoordinates.length - 1].lat) < 0.000001 && 
                                             Math.abs(mapCoordinates[0].lng - mapCoordinates[mapCoordinates.length - 1].lng) < 0.000001)
@@ -573,7 +573,7 @@ export default function EditRouteModal({ routeId, isOpen, onClose, onUpdate }: E
                                     type="button"
                                     onClick={onClose}
                                     disabled={isSubmitting}
-                                    className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="px-6 py-2 bg-[#4C4C4C] text-white border border-[#404040] rounded-lg hover:bg-[#404040] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                 >
                                     Cancel
                                 </button>
@@ -582,8 +582,8 @@ export default function EditRouteModal({ routeId, isOpen, onClose, onUpdate }: E
                                     disabled={isSubmitting}
                                     className={`px-6 py-2 rounded-lg font-medium text-white flex items-center space-x-2 ${
                                         isSubmitting
-                                            ? 'bg-gray-400 cursor-not-allowed'
-                                            : 'bg-blue-500 hover:bg-blue-600'
+                                            ? 'bg-gray-500 text-gray-300 cursor-not-allowed'
+                                            : 'bg-[#FFCC66] hover:bg-[#CC9933] text-black font-bold'
                                     }`}
                                 >
                                     {isSubmitting ? (

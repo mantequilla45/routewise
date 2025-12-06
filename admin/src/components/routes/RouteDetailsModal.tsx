@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 
 const SimpleRouteMap = dynamic(() => import('./SimpleRouteMap'), { 
     ssr: false,
-    loading: () => <div className="h-96 bg-gray-100 animate-pulse rounded-lg flex items-center justify-center"><span>Loading map...</span></div>
+    loading: () => <div className="h-96 bg-[#2D2D2D] animate-pulse rounded-lg flex items-center justify-center"><span className="text-gray-400">Loading map...</span></div>
 });
 
 interface GeoJSONGeometry {
@@ -79,14 +79,14 @@ export default function RouteDetailsModal({ routeId, onClose }: RouteDetailsModa
     if (!routeId) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
+            <div className="bg-[#3A3A3A] rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-[#404040]">
                 {/* Header */}
-                <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center">
-                    <h2 className="text-2xl font-bold text-black">Route Details</h2>
+                <div className="sticky top-0 bg-[#3A3A3A] border-b border-[#404040] p-4 flex justify-between items-center">
+                    <h2 className="text-2xl font-bold text-white">Route Details</h2>
                     <button
                         onClick={onClose}
-                        className="text-gray-500 hover:text-gray-700 text-2xl"
+                        className="text-gray-400 hover:text-[#FFCC66] text-2xl transition-colors"
                     >
                         ×
                     </button>
@@ -95,35 +95,35 @@ export default function RouteDetailsModal({ routeId, onClose }: RouteDetailsModa
                 {/* Content */}
                 {loading ? (
                     <div className="p-8 flex justify-center">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FFCC66]"></div>
                     </div>
                 ) : route ? (
                     <div className="p-6 space-y-6">
                         {/* Route Information */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="text-sm font-semibold text-gray-600">Route Code</label>
-                                <p className="text-lg font-bold text-black">{route.route_code}</p>
+                                <label className="text-sm font-semibold text-gray-400">Route Code</label>
+                                <p className="text-lg font-bold text-[#FFCC66]">{route.route_code}</p>
                             </div>
                             <div>
-                                <label className="text-sm font-semibold text-gray-600">Route Type</label>
-                                <p className="text-lg text-black">
+                                <label className="text-sm font-semibold text-gray-400">Route Type</label>
+                                <p className="text-lg text-white">
                                     {route.horizontal_or_vertical_road ? 'Horizontal (East-West)' : 'Vertical (North-South)'}
                                 </p>
                             </div>
                             <div>
-                                <label className="text-sm font-semibold text-gray-600">Primary Terminal</label>
-                                <p className="text-lg text-black">{route.start_point_name}</p>
+                                <label className="text-sm font-semibold text-gray-400">Primary Terminal</label>
+                                <p className="text-lg text-white">{route.start_point_name}</p>
                             </div>
                             <div>
-                                <label className="text-sm font-semibold text-gray-600">Secondary Terminal</label>
-                                <p className="text-lg text-black">{route.end_point_name}</p>
+                                <label className="text-sm font-semibold text-gray-400">Secondary Terminal</label>
+                                <p className="text-lg text-white">{route.end_point_name}</p>
                             </div>
                         </div>
 
                         {/* Map */}
                         <div>
-                            <h3 className="text-lg font-semibold text-black mb-3">Route Path</h3>
+                            <h3 className="text-lg font-semibold text-[#FFCC66] mb-3">Route Path</h3>
                             <SimpleRouteMap 
                                 coordinates={coordinates}
                                 height="400px"
@@ -132,13 +132,13 @@ export default function RouteDetailsModal({ routeId, onClose }: RouteDetailsModa
 
                         {/* Coordinates */}
                         <div>
-                            <h3 className="text-lg font-semibold text-black mb-3">
+                            <h3 className="text-lg font-semibold text-[#FFCC66] mb-3">
                                 Route Coordinates ({coordinates.length} points)
                             </h3>
-                            <div className="bg-gray-50 p-4 rounded-lg max-h-48 overflow-y-auto">
+                            <div className="bg-[#2D2D2D] border border-[#4C4C4C] p-4 rounded-lg max-h-48 overflow-y-auto">
                                 <div className="space-y-1 font-mono text-sm">
                                     {coordinates.map((coord, index) => (
-                                        <div key={index} className="text-black">
+                                        <div key={index} className="text-gray-300">
                                             Point {index + 1}: {coord[0].toFixed(6)}, {coord[1].toFixed(6)}
                                         </div>
                                     ))}
@@ -157,20 +157,20 @@ export default function RouteDetailsModal({ routeId, onClose }: RouteDetailsModa
                                     navigator.clipboard.writeText(coordText);
                                     alert('Coordinates copied to clipboard!');
                                 }}
-                                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                                className="px-4 py-2 bg-[#FFCC66] text-black font-semibold rounded-lg hover:bg-[#CC9933] transition-colors"
                             >
                                 Copy Coordinates
                             </button>
                             <button
                                 onClick={onClose}
-                                className="px-4 py-2 bg-gray-300 text-black rounded-lg hover:bg-gray-400"
+                                className="px-4 py-2 bg-[#4C4C4C] text-white rounded-lg hover:bg-[#404040] transition-colors border border-[#404040]"
                             >
                                 Close
                             </button>
                         </div>
                     </div>
                 ) : (
-                    <div className="p-8 text-center text-gray-500">
+                    <div className="p-8 text-center text-gray-400">
                         Route not found
                     </div>
                 )}
