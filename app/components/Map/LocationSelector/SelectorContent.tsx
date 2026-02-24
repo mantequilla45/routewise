@@ -3,8 +3,8 @@ import { MapPointsContext } from "@/context/map-context";
 import { latLongStringifier } from "@/lib/util/latLngStringifier";
 import { Ionicons } from "@expo/vector-icons";
 import { GoogleMapsPolyline } from "expo-maps/build/google/GoogleMaps.types";
-import { useContext, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useCallback, useContext, useEffect, useState } from "react";
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import RouteCard from "./RouteCard";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -12,171 +12,8 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
     const { setIsPointAB, setIsPinPlacementEnabled, pointA, pointB, setPointA, setPointB, setRoutes, allRoutes, setAllRoutes, results, setResults, isPinPlacementEnabled, selectedRouteIndex, setSelectedRouteIndex, setSelectedRouteInfo } = useContext(MapPointsContext)
     const [wasSelectingFirstLocation, setWasSelectingFirstLocation] = useState(false)
     const [isCalculating, setIsCalculating] = useState(false)
-    const [savedRoutes, setSavedRoutes] = useState<string[]>([])
 
-    // Load saved routes from AsyncStorage on mount
-    useEffect(() => {
-        loadSavedRoutes();
-        checkForAutoCalculate();
-    }, []);
-
-    // Check if we should auto-calculate (from saved route)
-    useEffect(() => {
-        if (pointA && pointB) {
-            checkForAutoCalculate();
-        }
-    }, [pointA, pointB]);
-
-    const checkForAutoCalculate = async () => {
-        try {
-            const shouldCalculate = await AsyncStorage.getItem('shouldCalculateRoute');
-            console.log('Checking auto-calculate:', { shouldCalculate, hasPointA: !!pointA, hasPointB: !!pointB });
-            
-            if (shouldCalculate === 'true' && pointA && pointB) {
-                console.log('Auto-calculating route from saved...');
-                console.log('Point A:', pointA);
-                console.log('Point B:', pointB);
-                await AsyncStorage.removeItem('shouldCalculateRoute'); // Clear flag
-                setTimeout(() => {
-                    console.log('Triggering onCalculate...');
-                    onCalculate(); // Trigger calculation
-                }, 500); // Small delay to ensure UI is ready
-            }
-        } catch (error) {
-            console.error('Error checking auto-calculate:', error);
-        }
-    };
-
-    const loadSavedRoutes = async () => {
-        try {
-            const saved = await AsyncStorage.getItem('savedRoutes');
-            if (saved) {
-                setSavedRoutes(JSON.parse(saved));
-            }
-        } catch (error) {
-            console.error('Error loading saved routes:', error);
-        }
-    };
-
-    const saveRoute = async (route: any, index: number) => {
-        try {
-            // Create a unique ID for the route
-            const routeKey = `${route.routeId}_${pointA?.latitude}_${pointA?.longitude}_${pointB?.latitude}_${pointB?.longitude}`;
-            
-            // Get existing saved routes
-            const existingSaved = await AsyncStorage.getItem('savedRoutes');
-            const savedList = existingSaved ? JSON.parse(existingSaved) : [];
-            
-            // Toggle save state
-            if (savedList.includes(routeKey)) {
-                // Remove from saved
-                const newList = savedList.filter((id: string) => id !== routeKey);
-                await AsyncStorage.setItem('savedRoutes', JSON.stringify(newList));
-                setSavedRoutes(newList);
-                
-                // Also save the full route details
-                await AsyncStorage.removeItem(`route_${routeKey}`);
-                
-                Alert.alert('Route Removed', 'Route removed from saved routes');
-            } else {
-                // Add to saved
-                savedList.push(routeKey);
-                await AsyncStorage.setItem('savedRoutes', JSON.stringify(savedList));
-                setSavedRoutes(savedList);
-                
-                // Save the full route details
-                const routeData = {
-                    ...route,
-                    pointA,
-                    pointB,
-                    savedAt: new Date().toISOString()
-                };
-                await AsyncStorage.setItem(`route_${routeKey}`, JSON.stringify(routeData));
-                
-                Alert.alert('Route Saved', 'Route saved successfully');
-            }
-        } catch (error) {
-            console.error('Error saving route:', error);
-            Alert.alert('Error', 'Failed to save route');
-        }
-    };
-
-    const isRouteSaved = (route: any) => {
-        const routeKey = `${route.routeId}_${pointA?.latitude}_${pointA?.longitude}_${pointB?.latitude}_${pointB?.longitude}`;
-        return savedRoutes.includes(routeKey);
-    };
-
-    // Auto-open second location selection after first location is selected
-    useEffect(() => {
-        if (wasSelectingFirstLocation && pointA && !isPinPlacementEnabled) {
-            // First location was just selected, now open second location selection
-            setWasSelectingFirstLocation(false);
-            setTimeout(() => {
-                setIsPinPlacementEnabled(true);
-                setIsPointAB(false);
-                setShowBottomSheet(false);
-            }, 100);
-        }
-    }, [pointA, isPinPlacementEnabled, wasSelectingFirstLocation]);
-
-    // Monitor allRoutes changes
-    useEffect(() => {
-        console.log(`allRoutes updated: now contains ${allRoutes.length} polylines`);
-        if (allRoutes.length > 0) {
-            console.log(`allRoutes polyline IDs:`, allRoutes.map(r => r.id || 'no-id'));
-        }
-    }, [allRoutes]);
-
-    // Handle route selection
-    const handleRouteSelect = (index: number) => {
-        console.log(`Route card clicked: index ${index}, current selected: ${selectedRouteIndex}`);
-        console.log(`Current allRoutes array length: ${allRoutes.length}`);
-
-        // Find the corresponding route in results
-        const selectedResult: any = results[index];
-        if (!selectedResult) {
-            console.warn(`No result found at index ${index}`);
-            return;
-        }
-
-        setSelectedRouteIndex(index);
-        
-        // Set the route info to display in header
-        setSelectedRouteInfo({
-            id: selectedResult.routeCode || selectedResult.routeId,
-            name: selectedResult.routeName || selectedResult.routeId
-        });
-
-        // Check if it's a transfer route
-        if ('isTransfer' in selectedResult && selectedResult.isTransfer) {
-            // Find polylines for both segments
-            const polylinesToShow = allRoutes.filter(r =>
-                r.id && r.id.startsWith(`route_${index}_`)
-            );
-
-            console.log(`Selected transfer route ${index}: ${selectedResult.routeId}, showing ${polylinesToShow.length} polylines`);
-            setRoutes(polylinesToShow);
-        } else {
-            // Single route - find the matching polyline
-            const polylineToShow = allRoutes.find(r => r.id === `route_${index}`);
-            if (polylineToShow) {
-                console.log(`Selected single route ${index}: ${selectedResult.routeCode || selectedResult.routeId}`);
-                setRoutes([polylineToShow]);
-            } else {
-                console.warn(`No polyline found for route ${selectedResult.routeCode || selectedResult.routeId} at index ${index}`);
-                setRoutes([]);
-            }
-        }
-        
-        // Hide the modal smoothly after selecting a route
-        if (hideModal) {
-            hideModal();
-        } else {
-            setShowBottomSheet(false);
-        }
-    };
-
-    const onCalculate = async () => {
+    const onCalculate = useCallback(async () => {
         console.log('🚀 onCalculate called with:', { pointA, pointB });
         try {
             if (!pointA || !pointB) {
@@ -191,7 +28,7 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
             setAllRoutes([]);
             setSelectedRouteIndex(null);
             setSelectedRouteInfo(null);
-            
+
             setIsCalculating(true);
             const routes = await calculatePossibleRoutes(pointA, pointB);
 
@@ -202,7 +39,7 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
                     const distB = b.distanceMeters || Number.MAX_VALUE;
                     return distA - distB;
                 });
-                console.log('Routes sorted by distance:', sortedRoutes.map(r => 
+                console.log('Routes sorted by distance:', sortedRoutes.map(r =>
                     `${r.routeId}: ${r.distanceMeters}m`
                 ));
                 setResults(sortedRoutes);
@@ -319,6 +156,109 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
             );
         } finally {
             setIsCalculating(false);
+        }
+    }, [pointA, pointB, setResults, setRoutes, setAllRoutes, setSelectedRouteIndex, setSelectedRouteInfo]);
+
+    // Check if we should auto-calculate (from saved route)
+    const checkForAutoCalculate = useCallback(async () => {
+        try {
+            const shouldCalculate = await AsyncStorage.getItem('shouldCalculateRoute');
+            console.log('Checking auto-calculate:', { shouldCalculate, hasPointA: !!pointA, hasPointB: !!pointB });
+
+            if (shouldCalculate === 'true' && pointA && pointB) {
+                console.log('Auto-calculating route from saved...');
+                console.log('Point A:', pointA);
+                console.log('Point B:', pointB);
+                await AsyncStorage.removeItem('shouldCalculateRoute'); // Clear flag
+                setTimeout(() => {
+                    console.log('Triggering onCalculate...');
+                    onCalculate(); // Trigger calculation
+                }, 500); // Small delay to ensure UI is ready
+            }
+        } catch (error) {
+            console.error('Error checking auto-calculate:', error);
+        }
+    }, [pointA, pointB, onCalculate]);
+
+    // Check on mount
+    useEffect(() => {
+        checkForAutoCalculate();
+    }, [checkForAutoCalculate]);
+
+    // Check if we should auto-calculate when points change
+    useEffect(() => {
+        if (pointA && pointB) {
+            checkForAutoCalculate();
+        }
+    }, [pointA, pointB, checkForAutoCalculate]);
+
+    // Auto-open second location selection after first location is selected
+    useEffect(() => {
+        if (wasSelectingFirstLocation && pointA && !isPinPlacementEnabled) {
+            // First location was just selected, now open second location selection
+            setWasSelectingFirstLocation(false);
+            setTimeout(() => {
+                setIsPinPlacementEnabled(true);
+                setIsPointAB(false);
+                setShowBottomSheet(false);
+            }, 100);
+        }
+    }, [pointA, isPinPlacementEnabled, wasSelectingFirstLocation, setIsPinPlacementEnabled, setIsPointAB, setShowBottomSheet]);
+
+    // Monitor allRoutes changes
+    useEffect(() => {
+        console.log(`allRoutes updated: now contains ${allRoutes.length} polylines`);
+        if (allRoutes.length > 0) {
+            console.log(`allRoutes polyline IDs:`, allRoutes.map(r => r.id || 'no-id'));
+        }
+    }, [allRoutes]);
+
+    // Handle route selection
+    const handleRouteSelect = (index: number) => {
+        console.log(`Route card clicked: index ${index}, current selected: ${selectedRouteIndex}`);
+        console.log(`Current allRoutes array length: ${allRoutes.length}`);
+
+        // Find the corresponding route in results
+        const selectedResult: any = results[index];
+        if (!selectedResult) {
+            console.warn(`No result found at index ${index}`);
+            return;
+        }
+
+        setSelectedRouteIndex(index);
+
+        // Set the route info to display in header
+        setSelectedRouteInfo({
+            id: selectedResult.routeCode || selectedResult.routeId,
+            name: selectedResult.routeName || selectedResult.routeId
+        });
+
+        // Check if it's a transfer route
+        if ('isTransfer' in selectedResult && selectedResult.isTransfer) {
+            // Find polylines for both segments
+            const polylinesToShow = allRoutes.filter(r =>
+                r.id && r.id.startsWith(`route_${index}_`)
+            );
+
+            console.log(`Selected transfer route ${index}: ${selectedResult.routeId}, showing ${polylinesToShow.length} polylines`);
+            setRoutes(polylinesToShow);
+        } else {
+            // Single route - find the matching polyline
+            const polylineToShow = allRoutes.find(r => r.id === `route_${index}`);
+            if (polylineToShow) {
+                console.log(`Selected single route ${index}: ${selectedResult.routeCode || selectedResult.routeId}`);
+                setRoutes([polylineToShow]);
+            } else {
+                console.warn(`No polyline found for route ${selectedResult.routeCode || selectedResult.routeId} at index ${index}`);
+                setRoutes([]);
+            }
+        }
+
+        // Hide the modal smoothly after selecting a route
+        if (hideModal) {
+            hideModal();
+        } else {
+            setShowBottomSheet(false);
         }
     };
 
