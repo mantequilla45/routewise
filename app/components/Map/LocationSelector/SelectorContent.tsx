@@ -1,4 +1,4 @@
-import { calculatePossibleRoutes } from "@/app/services/routes/calculatePossibleRoutes";
+import calculatePossibleRoutes  from "@/app/services/routes/calculatePossibleRoutes";
 import { MapPointsContext } from "@/context/map-context";
 import { latLongStringifier } from "@/lib/util/latLngStringifier";
 import { Ionicons } from "@expo/vector-icons";

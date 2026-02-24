@@ -1,7 +1,7 @@
 import { LatLng, MappedGeoRouteResult } from "@/types/GeoTypes";
 import { adjustToNearestRoad } from "../maps/roadAdjustment";
 
-export async function calculatePossibleRoutes(
+export default async function calculatePossibleRoutes(
     from: LatLng | null,
     to: LatLng | null
 ): Promise<MappedGeoRouteResult[] | { error: string; warning?: string }> {
