@@ -14,6 +14,7 @@ export type AuthUser = {
     picture: string | null;
     email_verified?: boolean;
     provider?: string;
+    commuter?: string | null;
 };
 
 const AuthContext = React.createContext({
@@ -22,6 +23,8 @@ const AuthContext = React.createContext({
     signOut: () => { },
     isLoading: false,
     error: null as string | null,
+    updateUser: async (_: any) => { },
+    refreshProfile: async () => { },
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -76,6 +79,54 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         });
 
         return () => subscription.remove();
+    }, []);
+
+    // Subscribe to Supabase auth state changes so other sign-in methods (email/password)
+    // update this context's `user` immediately.
+    React.useEffect(() => {
+        // If supabase isn't available, skip
+        if (!supabase || !supabase.auth || !supabase.auth.onAuthStateChange) return;
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            try {
+                if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+                    // Try to get the authenticated user from Supabase
+                    const userResponse = await supabase.auth.getUser();
+                    const supaUser = userResponse?.data?.user;
+
+                    if (supaUser && supaUser.email) {
+                        // Try to load profile from users table
+                        const { data: profile } = await supabase
+                            .from('users')
+                            .select('*')
+                            .eq('email', supaUser.email)
+                            .single();
+
+                        const userData = {
+                            id: profile?.id || supaUser.id,
+                            email: supaUser.email,
+                            name: profile?.full_name || null,
+                            picture: profile?.avatar_url || null,
+                            commuter: profile?.commuter || profile?.commuter_type || null,
+                            email_verified: supaUser.email_confirmed || supaUser.email_confirmed_at || undefined,
+                            provider: supaUser?.app_metadata?.provider || 'email',
+                        } as AuthUser;
+
+                        setUser(userData);
+                        await SecureStore.setItemAsync('user_data', JSON.stringify(userData));
+                    }
+                }
+
+                if (event === 'SIGNED_OUT') {
+                    setUser(null);
+                    await SecureStore.deleteItemAsync('user_data');
+                }
+            } catch (e) {
+                console.warn('Error handling auth state change:', e);
+            }
+        });
+
+        return () => subscription?.unsubscribe?.();
     }, []);
 
     const signIn = async () => {
@@ -295,6 +346,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 email: googleUser.email,
                 name: googleUser.name,
                 picture: googleUser.picture,
+                commuter: dbUser?.commuter || dbUser?.commuter_type || null,
                 email_verified: googleUser.verified_email,
                 provider: 'google'
             };
@@ -329,6 +381,56 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     };
 
+    // Allow components to update the cached user in context and SecureStore
+    const updateUser = async (updates: any) => {
+        try {
+            const newUser = { ...(user as any) || {}, ...updates };
+            setUser(newUser as AuthUser);
+            await SecureStore.setItemAsync('user_data', JSON.stringify(newUser));
+        } catch (e) {
+            console.warn('updateUser error', e);
+        }
+    };
+
+    // Re-fetch the current user's profile from the DB and update context
+    const refreshProfile = async () => {
+        try {
+            if (!supabase) return;
+            // Try to identify the user by current context user id or stored session
+            const stored = await SecureStore.getItemAsync('user_data');
+            let email: string | undefined;
+            let id: string | undefined;
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                email = parsed.email;
+                id = parsed.id;
+            }
+
+            // If we have an id or email, fetch profile
+            if (!id && !email) return;
+
+            const q = supabase.from('users').select('*').maybeSingle();
+            const query = id ? supabase.from('users').select('*').eq('id', id).maybeSingle() : supabase.from('users').select('*').eq('email', email).maybeSingle();
+            const { data: profile } = await query;
+            if (!profile) return;
+
+            const newUser: AuthUser = {
+                id: profile.id,
+                email: profile.email,
+                name: profile.full_name || null,
+                picture: profile.avatar_url || null,
+                commuter: profile.commuter || profile.commuter_type || null,
+                email_verified: undefined,
+                provider: profile.auth_provider || 'email',
+            };
+
+            setUser(newUser);
+            await SecureStore.setItemAsync('user_data', JSON.stringify(newUser));
+        } catch (e) {
+            console.warn('refreshProfile error', e);
+        }
+    };
+
     return (
         <AuthContext.Provider value={{
             user,
@@ -336,6 +438,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             signOut,
             isLoading,
             error,
+            updateUser,
+            refreshProfile,
         }}>
             {children}
         </AuthContext.Provider>

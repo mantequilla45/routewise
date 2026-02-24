@@ -21,13 +21,12 @@ export default function TabLayout() {
         headerTintColor: '#fff',
         tabBarStyle: {
           backgroundColor: '#25292e',
-          position: 'absolute',
           paddingTop: 10,
-          paddingBottom: 10,
-          bottom: 50,
-          borderRadius: 35,
-          marginHorizontal: 50,
-          height: 80
+          paddingBottom: insets.bottom > 0 ? insets.bottom : 10,
+          borderRadius: 0,
+          height: 70 + (insets.bottom > 0 ? insets.bottom : 0),
+          borderTopWidth: 1,
+          borderTopColor: '#404040',
         },
         tabBarLabelStyle: {
           fontFamily: 'Lexend_400Regular',
@@ -44,9 +43,18 @@ export default function TabLayout() {
           ),
         }} />
       <Tabs.Screen
+        name="routes"
+        options={{
+          title: 'Routes',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'bus' : 'bus-outline'} color={color} size={24} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="saved"
         options={{
-          title: 'Saved Routes',
+          title: 'Saved',
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name={focused ? 'bookmark' : 'bookmark-outline'} color={color} size={24} />
           ),

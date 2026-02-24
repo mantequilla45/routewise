@@ -3,161 +3,507 @@ import { MapPointsContext } from "@/context/map-context";
 import { latLongStringifier } from "@/lib/util/latLngStringifier";
 import { Ionicons } from "@expo/vector-icons";
 import { GoogleMapsPolyline } from "expo-maps/build/google/GoogleMaps.types";
-import { useContext } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useContext, useEffect, useState } from "react";
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import RouteCard from "./RouteCard";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export default function MapModalContent({ exit, setShowBottomSheet }: Readonly<{ exit: () => void, setShowBottomSheet: (value: boolean) => void }>) {
-    const { setIsPointAB, setIsPinPlacementEnabled, pointA, pointB, setRoutes, results, setResults } = useContext(MapPointsContext)
+export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlacementMode, hideModal }: Readonly<{ exit: () => void, setShowBottomSheet: (value: boolean) => void, enterPinPlacementMode?: (isPointA: boolean) => void, hideModal?: () => void }>) {
+    const { setIsPointAB, setIsPinPlacementEnabled, pointA, pointB, setPointA, setPointB, setRoutes, allRoutes, setAllRoutes, results, setResults, isPinPlacementEnabled, selectedRouteIndex, setSelectedRouteIndex, setSelectedRouteInfo } = useContext(MapPointsContext)
+    const [wasSelectingFirstLocation, setWasSelectingFirstLocation] = useState(false)
+    const [isCalculating, setIsCalculating] = useState(false)
+    const [savedRoutes, setSavedRoutes] = useState<string[]>([])
+
+    // Load saved routes from AsyncStorage on mount
+    useEffect(() => {
+        loadSavedRoutes();
+        checkForAutoCalculate();
+    }, []);
+
+    // Check if we should auto-calculate (from saved route)
+    useEffect(() => {
+        if (pointA && pointB) {
+            checkForAutoCalculate();
+        }
+    }, [pointA, pointB]);
+
+    const checkForAutoCalculate = async () => {
+        try {
+            const shouldCalculate = await AsyncStorage.getItem('shouldCalculateRoute');
+            console.log('Checking auto-calculate:', { shouldCalculate, hasPointA: !!pointA, hasPointB: !!pointB });
+            
+            if (shouldCalculate === 'true' && pointA && pointB) {
+                console.log('Auto-calculating route from saved...');
+                console.log('Point A:', pointA);
+                console.log('Point B:', pointB);
+                await AsyncStorage.removeItem('shouldCalculateRoute'); // Clear flag
+                setTimeout(() => {
+                    console.log('Triggering onCalculate...');
+                    onCalculate(); // Trigger calculation
+                }, 500); // Small delay to ensure UI is ready
+            }
+        } catch (error) {
+            console.error('Error checking auto-calculate:', error);
+        }
+    };
+
+    const loadSavedRoutes = async () => {
+        try {
+            const saved = await AsyncStorage.getItem('savedRoutes');
+            if (saved) {
+                setSavedRoutes(JSON.parse(saved));
+            }
+        } catch (error) {
+            console.error('Error loading saved routes:', error);
+        }
+    };
+
+    const saveRoute = async (route: any, index: number) => {
+        try {
+            // Create a unique ID for the route
+            const routeKey = `${route.routeId}_${pointA?.latitude}_${pointA?.longitude}_${pointB?.latitude}_${pointB?.longitude}`;
+            
+            // Get existing saved routes
+            const existingSaved = await AsyncStorage.getItem('savedRoutes');
+            const savedList = existingSaved ? JSON.parse(existingSaved) : [];
+            
+            // Toggle save state
+            if (savedList.includes(routeKey)) {
+                // Remove from saved
+                const newList = savedList.filter((id: string) => id !== routeKey);
+                await AsyncStorage.setItem('savedRoutes', JSON.stringify(newList));
+                setSavedRoutes(newList);
+                
+                // Also save the full route details
+                await AsyncStorage.removeItem(`route_${routeKey}`);
+                
+                Alert.alert('Route Removed', 'Route removed from saved routes');
+            } else {
+                // Add to saved
+                savedList.push(routeKey);
+                await AsyncStorage.setItem('savedRoutes', JSON.stringify(savedList));
+                setSavedRoutes(savedList);
+                
+                // Save the full route details
+                const routeData = {
+                    ...route,
+                    pointA,
+                    pointB,
+                    savedAt: new Date().toISOString()
+                };
+                await AsyncStorage.setItem(`route_${routeKey}`, JSON.stringify(routeData));
+                
+                Alert.alert('Route Saved', 'Route saved successfully');
+            }
+        } catch (error) {
+            console.error('Error saving route:', error);
+            Alert.alert('Error', 'Failed to save route');
+        }
+    };
+
+    const isRouteSaved = (route: any) => {
+        const routeKey = `${route.routeId}_${pointA?.latitude}_${pointA?.longitude}_${pointB?.latitude}_${pointB?.longitude}`;
+        return savedRoutes.includes(routeKey);
+    };
+
+    // Auto-open second location selection after first location is selected
+    useEffect(() => {
+        if (wasSelectingFirstLocation && pointA && !isPinPlacementEnabled) {
+            // First location was just selected, now open second location selection
+            setWasSelectingFirstLocation(false);
+            setTimeout(() => {
+                setIsPinPlacementEnabled(true);
+                setIsPointAB(false);
+                setShowBottomSheet(false);
+            }, 100);
+        }
+    }, [pointA, isPinPlacementEnabled, wasSelectingFirstLocation]);
+
+    // Monitor allRoutes changes
+    useEffect(() => {
+        console.log(`allRoutes updated: now contains ${allRoutes.length} polylines`);
+        if (allRoutes.length > 0) {
+            console.log(`allRoutes polyline IDs:`, allRoutes.map(r => r.id || 'no-id'));
+        }
+    }, [allRoutes]);
+
+    // Handle route selection
+    const handleRouteSelect = (index: number) => {
+        console.log(`Route card clicked: index ${index}, current selected: ${selectedRouteIndex}`);
+        console.log(`Current allRoutes array length: ${allRoutes.length}`);
+
+        // Find the corresponding route in results
+        const selectedResult: any = results[index];
+        if (!selectedResult) {
+            console.warn(`No result found at index ${index}`);
+            return;
+        }
+
+        setSelectedRouteIndex(index);
+        
+        // Set the route info to display in header
+        setSelectedRouteInfo({
+            id: selectedResult.routeCode || selectedResult.routeId,
+            name: selectedResult.routeName || selectedResult.routeId
+        });
+
+        // Check if it's a transfer route
+        if ('isTransfer' in selectedResult && selectedResult.isTransfer) {
+            // Find polylines for both segments
+            const polylinesToShow = allRoutes.filter(r =>
+                r.id && r.id.startsWith(`route_${index}_`)
+            );
+
+            console.log(`Selected transfer route ${index}: ${selectedResult.routeId}, showing ${polylinesToShow.length} polylines`);
+            setRoutes(polylinesToShow);
+        } else {
+            // Single route - find the matching polyline
+            const polylineToShow = allRoutes.find(r => r.id === `route_${index}`);
+            if (polylineToShow) {
+                console.log(`Selected single route ${index}: ${selectedResult.routeCode || selectedResult.routeId}`);
+                setRoutes([polylineToShow]);
+            } else {
+                console.warn(`No polyline found for route ${selectedResult.routeCode || selectedResult.routeId} at index ${index}`);
+                setRoutes([]);
+            }
+        }
+        
+        // Hide the modal smoothly after selecting a route
+        if (hideModal) {
+            hideModal();
+        } else {
+            setShowBottomSheet(false);
+        }
+    };
 
     const onCalculate = async () => {
+        console.log('🚀 onCalculate called with:', { pointA, pointB });
         try {
             if (!pointA || !pointB) {
                 console.warn("Both points must be set");
                 return;
             }
 
+            console.log('Starting route calculation...');
+            // Clear existing results first
+            setResults([]);
+            setRoutes([]);
+            setAllRoutes([]);
+            setSelectedRouteIndex(null);
+            setSelectedRouteInfo(null);
+            
+            setIsCalculating(true);
             const routes = await calculatePossibleRoutes(pointA, pointB);
 
             if (Array.isArray(routes) && routes.length > 0) {
-                setResults(routes);
-                const googlePolylineRoutes: GoogleMapsPolyline[] = routes.map(
-                    (r) => ({
-                        id: r.routeId,
-                        coordinates: r.latLng,
-                        color: '#33ff00ff',
-                        width: 16,
-                        geodesic: true
-                    })
-                );
-                setRoutes(googlePolylineRoutes);
+                // Sort routes by distance (shortest first)
+                const sortedRoutes = [...routes].sort((a, b) => {
+                    const distA = a.distanceMeters || Number.MAX_VALUE;
+                    const distB = b.distanceMeters || Number.MAX_VALUE;
+                    return distA - distB;
+                });
+                console.log('Routes sorted by distance:', sortedRoutes.map(r => 
+                    `${r.routeId}: ${r.distanceMeters}m`
+                ));
+                setResults(sortedRoutes);
+
+                // Build polylines for ALL routes to maintain consistent indexing
+                const googlePolylineRoutes: GoogleMapsPolyline[] = [];
+
+                sortedRoutes.forEach((r: any, resultIndex) => {
+                    // Check if it's a transfer route by checking for the isTransfer property
+                    const isTransfer = 'isTransfer' in r && r.isTransfer === true;
+
+                    if (isTransfer && r.firstRoute && r.secondRoute) {
+                        // Create two polylines for transfer routes with different colors
+                        if (r.firstRoute.coordinates && r.firstRoute.coordinates.length > 0) {
+                            const firstPolyline: GoogleMapsPolyline = {
+                                id: `route_${resultIndex}_first`,
+                                coordinates: r.firstRoute.coordinates.map((coord: any) => ({
+                                    latitude: coord.latitude,
+                                    longitude: coord.longitude
+                                })),
+                                color: '#4CAF50', // Green for first segment
+                                width: 16,
+                                geodesic: true
+                            };
+                            googlePolylineRoutes.push(firstPolyline);
+                        }
+
+                        if (r.secondRoute.coordinates && r.secondRoute.coordinates.length > 0) {
+                            const secondPolyline: GoogleMapsPolyline = {
+                                id: `route_${resultIndex}_second`,
+                                coordinates: r.secondRoute.coordinates.map((coord: any) => ({
+                                    latitude: coord.latitude,
+                                    longitude: coord.longitude
+                                })),
+                                color: '#FF6B6B', // Red for second segment
+                                width: 16,
+                                geodesic: true
+                            };
+                            googlePolylineRoutes.push(secondPolyline);
+                        }
+
+                        console.log(`Created transfer polylines for result ${resultIndex} (${r.routeId})`);
+                    } else if ((r.latLng && r.latLng.length > 0) || (r.coordinates && r.coordinates.length > 0)) {
+                        // Single route polyline - handle both V1 (latLng) and V2 (coordinates) formats
+                        const routeCoords = r.coordinates || r.latLng;
+                        const polyline: GoogleMapsPolyline = {
+                            id: `route_${resultIndex}`,
+                            coordinates: routeCoords.map((coord: any) => ({
+                                latitude: coord.latitude,
+                                longitude: coord.longitude
+                            })),
+                            color: '#33ff00', // Default green
+                            width: 16,
+                            geodesic: true
+                        };
+
+                        googlePolylineRoutes.push(polyline);
+                        console.log(`Created polyline for result ${resultIndex} (${r.routeId}) with ${routeCoords.length} coordinates`);
+                    } else {
+                        // Push empty polyline to maintain index consistency
+                        const emptyPolyline: GoogleMapsPolyline = {
+                            id: `route_${resultIndex}_empty`,
+                            coordinates: [],
+                            color: '#33ff00',
+                            width: 16,
+                            geodesic: true
+                        };
+                        googlePolylineRoutes.push(emptyPolyline);
+                        console.log(`Created empty polyline for result ${resultIndex} (${r.routeId})`);
+                    }
+                });
+
+                console.log(`Created ${googlePolylineRoutes.length} polylines from ${sortedRoutes.length} results`);
+
+                // Store all routes (no need for index map anymore since indices match directly)
+                console.log(`Setting allRoutes with ${googlePolylineRoutes.length} polylines`);
+                setAllRoutes(googlePolylineRoutes);
+
+                // Don't display any route initially - wait for user selection
+                if (googlePolylineRoutes.length > 0 && sortedRoutes.length > 0) {
+                    // Clear any previous route display
+                    setRoutes([]);
+                    setSelectedRouteIndex(null);
+                    setSelectedRouteInfo(null);
+                } else {
+                    setRoutes([]);
+                    setSelectedRouteIndex(null);
+                    setSelectedRouteInfo(null);
+                }
             } else if (routes && "error" in routes) {
                 console.warn("Server error:", routes.error);
+                // Show error message to user
+                Alert.alert(
+                    "Route Not Available",
+                    routes.error,
+                    [{ text: "OK", style: "default" }]
+                );
+                setRoutes([]);
+                setSelectedRouteIndex(null);
             } else {
                 console.warn("No routes returned");
+                Alert.alert(
+                    "No Routes Found",
+                    "No jeepney routes available between these locations.",
+                    [{ text: "OK", style: "default" }]
+                );
             }
         } catch (error) {
             console.error("Error calculating routes:", error);
+            Alert.alert(
+                "Connection Error",
+                "Unable to calculate routes. Please check your connection and try again.",
+                [{ text: "OK", style: "default" }]
+            );
+        } finally {
+            setIsCalculating(false);
         }
     };
 
-    return (
-        <Pressable onPress={() => setIsPinPlacementEnabled(false)}>
-            <View
-                onStartShouldSetResponder={() => true}
-            >
-                <View style={styles.bottomSheetTopRow}>
-                    <Text style={styles.bottomSheetTitleText}>Directions</Text>
-                </View>
+    const onClear = () => {
+        // Clear all points and routes
+        console.log("Clearing map... (onClear called)");
+        console.trace("onClear call stack"); // This will show what called onClear
+        setResults([]); // Clear route results first
+        setRoutes([]); // Clear polylines from map
+        setAllRoutes([]); // Clear stored routes
+        setSelectedRouteIndex(null); // Clear selection
+        setSelectedRouteInfo(null); // Clear route info header
 
-                <View style={styles.bottomSheetRow}>
-                    <View style={styles.pointInputBox}>
-                        <View style={styles.pointInputContainer}>
-                            <TouchableOpacity onPress={() => {
+        // Use a small delay to ensure routes are cleared before points
+        setTimeout(() => {
+            setPointA(null);
+            setPointB(null);
+            setIsPinPlacementEnabled(false);
+            console.log("Map cleared - all points and routes removed");
+        }, 50);
+    };
+
+    return (
+        <View style={styles.container}>
+            <View style={styles.bottomSheetTopRow}>
+                <Text style={styles.bottomSheetTitleText}>
+                    {!pointA ? "Select your first location" :
+                        !pointB ? "Select your second location" :
+                            "Directions"}
+                </Text>
+                {(pointA || pointB) && (
+                    <TouchableOpacity onPress={onClear} style={styles.clearButton}>
+                        <Ionicons name="refresh-outline" color="white" size={20} />
+                    </TouchableOpacity>
+                )}
+            </View>
+
+            <View style={styles.bottomSheetRow}>
+                <View style={styles.pointInputBox}>
+                    <View style={styles.pointInputContainer}>
+                        <TouchableOpacity onPress={() => {
+                            if (enterPinPlacementMode) {
+                                enterPinPlacementMode(true);
+                            } else {
                                 setIsPinPlacementEnabled(true);
                                 setIsPointAB(true);
+                                setWasSelectingFirstLocation(true);
                                 setShowBottomSheet(false);
-                            }}>
-                                <View style={styles.pointInputRow}>
-                                    <View style={styles.pointInputBlock}>
-                                        <View style={styles.pointInputIconLeft}>
-                                            <Ionicons name={'navigate-circle-outline'} color="blue" size={18} />
-                                        </View>
-                                        <Text style={styles.pointInputText}
-                                            numberOfLines={1}
-                                            ellipsizeMode="tail">
-                                            {latLongStringifier(pointA)}
-                                        </Text>
+                            }
+                        }}>
+                            <View style={styles.pointInputRow}>
+                                <View style={styles.pointInputBlock}>
+                                    <View style={styles.pointInputIconLeft}>
+                                        <Ionicons name={'navigate-circle-outline'} color="blue" size={18} />
                                     </View>
-
-                                    <View style={[styles.pointInputBlock, { justifyContent: 'flex-end' }]}>
-                                        <Text style={styles.pointPickerText}
-                                            numberOfLines={1}>
-                                            Choose on Map
-                                        </Text>
-                                        <View style={styles.pointInputIconRight}>
-                                            <Ionicons name={'globe-outline'} color={'black'} size={16} />
-                                        </View>
-                                    </View>
+                                    <Text style={styles.pointInputText}
+                                        numberOfLines={1}
+                                        ellipsizeMode="tail">
+                                        {pointA ? latLongStringifier(pointA) : "Select starting point"}
+                                    </Text>
                                 </View>
 
-                            </TouchableOpacity>
+                                <View style={[styles.pointInputBlock, { justifyContent: 'flex-end' }]}>
+                                    <Text style={styles.pointPickerText}
+                                        numberOfLines={1}>
+                                        Select on Map
+                                    </Text>
+                                    <View style={styles.pointInputIconRight}>
+                                        <Ionicons name={'globe-outline'} color={'black'} size={16} />
+                                    </View>
+                                </View>
+                            </View>
 
-                            <View style={styles.line}></View>
+                        </TouchableOpacity>
 
-                            <TouchableOpacity onPress={() => {
+                        <View style={styles.line}></View>
+
+                        <TouchableOpacity onPress={() => {
+                            if (enterPinPlacementMode) {
+                                enterPinPlacementMode(false);
+                            } else {
                                 setIsPinPlacementEnabled(true);
                                 setIsPointAB(false);
                                 setShowBottomSheet(false);
-                            }}>
-                                <View style={styles.pointInputRow}>
-                                    <View style={styles.pointInputBlock}>
-                                        <View style={styles.pointInputIconLeft}>
-                                            <Ionicons name={'location-outline'} color="blue" size={18} />
-                                        </View>
-                                        <Text style={styles.pointInputText}
-                                            numberOfLines={1}
-                                            ellipsizeMode="tail">
-                                            {latLongStringifier(pointB)}
-                                        </Text>
-
+                            }
+                        }}>
+                            <View style={styles.pointInputRow}>
+                                <View style={styles.pointInputBlock}>
+                                    <View style={styles.pointInputIconLeft}>
+                                        <Ionicons name={'location-outline'} color="blue" size={18} />
                                     </View>
-                                    <View style={[styles.pointInputBlock, { justifyContent: 'flex-end' }]}>
-                                        <Text style={styles.pointPickerText}
-                                            numberOfLines={1}>
-                                            Choose on Map
-                                        </Text>
-                                        <View style={styles.pointInputIconRight}>
-                                            <Ionicons name={'globe-outline'} color={'black'} size={16} />
-                                        </View>
+                                    <Text style={styles.pointInputText}
+                                        numberOfLines={1}
+                                        ellipsizeMode="tail">
+                                        {pointB ? latLongStringifier(pointB) : "Select destination"}
+                                    </Text>
+
+                                </View>
+                                <View style={[styles.pointInputBlock, { justifyContent: 'flex-end' }]}>
+                                    <Text style={styles.pointPickerText}
+                                        numberOfLines={1}>
+                                        Select on Map
+                                    </Text>
+                                    <View style={styles.pointInputIconRight}>
+                                        <Ionicons name={'globe-outline'} color={'black'} size={16} />
                                     </View>
                                 </View>
-                            </TouchableOpacity>
-                        </View>
+                            </View>
+                        </TouchableOpacity>
                     </View>
                 </View>
+            </View>
 
-                <View style={styles.bottomSheetRow}>
-                    <TouchableOpacity style={styles.calculateButton} onPress={onCalculate}>
-                        <Text style={styles.calculateButtonText}>Calculate Price</Text>
-                    </TouchableOpacity>
-                </View>
+            <View style={styles.bottomSheetRow}>
+                <TouchableOpacity
+                    style={[styles.calculateButton, isCalculating && styles.calculateButtonDisabled]}
+                    onPress={onCalculate}
+                    disabled={isCalculating || !pointA || !pointB}
+                >
+                    {isCalculating ? (
+                        <View style={styles.loadingContainer}>
+                            <ActivityIndicator size="small" color="white" />
+                            <Text style={styles.calculateButtonText}>Finding Routes...</Text>
+                        </View>
+                    ) : (
+                        <Text style={styles.calculateButtonText}>Find Jeeps</Text>
+                    )}
+                </TouchableOpacity>
+            </View>
 
+            {results && results.length > 0 && (
                 <View style={styles.routeList}>
+                    <Text style={{ color: 'white', fontFamily: 'Lexend_400Regular', marginBottom: 10 }}>Results</Text>
                     <ScrollView
-                        style={{ flex: 1 }}  // Add this
-                        contentContainerStyle={styles.routeCard}
-                        showsVerticalScrollIndicator={true}  // Add this to debug
+                        style={{ maxHeight: 400 }}
+                        contentContainerStyle={styles.routeCardContainer}
+                        showsVerticalScrollIndicator={true}
+                        nestedScrollEnabled={true}
+                        scrollEnabled={true}
                     >
-                        {results?.map((route, index) => (
-                            <RouteCard key={route.routeId || index} route={route} />
-                        ))}
-                        {results?.map((route, index) => (
-                            <RouteCard key={"dup-" + (route.routeId || index)} route={route} />
-                        ))}
+                        {results.map((route, index) => {
+                            console.log(`Rendering route card ${index}: ${route.routeCode || route.routeId}`);
+                            return (
+                                <RouteCard
+                                    key={`route-${index}-${route.routeId}`}
+                                    route={route}
+                                    isSelected={selectedRouteIndex === index}
+                                    onSelect={() => handleRouteSelect(index)}
+                                />
+                            );
+                        })}
                     </ScrollView>
                 </View>
-            </View>
-        </Pressable>
+            )}
+        </View>
     )
 }
 
 const styles = StyleSheet.create({
+    container: {
+        padding: 5
+    },
     bottomSheetTopRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 16,
+        marginBottom: 12,
     },
 
     bottomSheetTitleText: {
         color: 'white',
         textAlign: 'left',
-        fontSize: 24,
+        fontSize: 20,
         fontWeight: '600',
-        fontFamily: 'Lexend_500Medium'
+        fontFamily: 'Lexend_500Medium',
+        flex: 1,
     },
 
+    clearButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 6,
+        borderRadius: 16,
+        gap: 4,
+    },
     closeButton: {
         width: 32,
         height: 32,
@@ -171,8 +517,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'flex-start',
         alignItems: 'center',
-        marginBottom: 12,
-
+        marginBottom: 10,
     },
 
     pointInputBox: {
@@ -258,14 +603,27 @@ const styles = StyleSheet.create({
         marginRight: 5,
     },
 
-    routeList: {
-        minHeight: '80%',
-        marginBottom: 12,
-        width: '100%',
+    calculateButtonDisabled: {
+        opacity: 0.7,
+        backgroundColor: '#E0B050',
     },
 
-    routeCard: {
-        paddingVertical: 10,
-        gap: 20,
+    loadingContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 10,
+    },
+
+    routeList: {
+        marginTop: 10,
+        width: '100%',
+        minHeight: 400,
+        maxHeight: 800,
+    },
+
+    routeCardContainer: {
+        paddingBottom: 10,
+        gap: 15,
     }
 });

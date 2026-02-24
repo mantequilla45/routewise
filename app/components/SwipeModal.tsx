@@ -8,9 +8,10 @@ type Props = {
     onClose: () => void;
     height: number | `${number}%` | "auto";
     children?: React.ReactNode;
+    style?: any;
 };
 
-export default function SwipeModal({ isVisible, onClose, children, height }: Readonly<Props>) {
+export default function SwipeModal({ isVisible, onClose, children, height, style }: Readonly<Props>) {
     const translateY = useRef(new Animated.Value(screenHeight)).current;
     const overlayOpacity = useRef(new Animated.Value(0)).current;
     const panResponder = useRef(
@@ -91,7 +92,8 @@ export default function SwipeModal({ isVisible, onClose, children, height }: Rea
                 <Animated.View
                     style={[
                         styles.modalContent,
-                        { height, transform: [{ translateY }] }
+                        { height, transform: [{ translateY }] },
+                        style
                     ]}
                     {...panResponder.panHandlers}
                 >
@@ -107,7 +109,7 @@ export default function SwipeModal({ isVisible, onClose, children, height }: Rea
 const styles = StyleSheet.create({
     overlay: {
         flex: 1,
-        backgroundColor: "rgba(0, 0, 0, 0.5)",
+        backgroundColor: "transparent",
         justifyContent: "flex-end"
     },
     modalContent: {

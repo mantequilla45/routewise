@@ -2,41 +2,83 @@ import { MapPointsContext } from '@/context/map-context';
 import { LatLng } from '@/types/GeoTypes';
 import { AppleMaps, Coordinates, GoogleMaps } from 'expo-maps';
 import { GoogleMapsMarker } from 'expo-maps/build/google/GoogleMaps.types';
-import { useContext } from 'react';
-import { Platform, StyleSheet, Text } from 'react-native';
+import { forwardRef, useContext, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { Platform, StyleSheet, Text, Vibration } from 'react-native';
 
-export default function NativeMap() {
+export interface NativeMapRef {
+  getCurrentCenter: () => Promise<LatLng | null>;
+  setLocationAtCenter: () => void;
+}
 
-  const { pointA, pointB, setPointA, setPointB, isPointAB, isPinPlacementEnabled, routes } = useContext(MapPointsContext);
+const NativeMap = forwardRef<NativeMapRef>((props, ref) => {
+  const { pointA, pointB, setPointA, setPointB, isPointAB, isPinPlacementEnabled, setIsPinPlacementEnabled, routes } = useContext(MapPointsContext);
+  const [lastSelectedPoint, setLastSelectedPoint] = useState<'A' | 'B' | null>(null);
+  const [currentCenter, setCurrentCenter] = useState<LatLng>({ latitude: 10.3157, longitude: 123.8854 });
+  const mapRef = useRef<any>(null);
 
-  const handleMapPress = (event: { coordinates: Coordinates }) => {
-    console.log(isPinPlacementEnabled)
-    if (!isPinPlacementEnabled) return;
+  // Provide haptic feedback when a pin is placed
+  useEffect(() => {
+    if (lastSelectedPoint) {
+      // Small vibration to confirm pin placement
+      if (Platform.OS !== 'web') {
+        Vibration.vibrate(50);
+      }
+      setLastSelectedPoint(null);
+    }
+  }, [lastSelectedPoint]);
 
-    const { coordinates } = event;
-
-    if (coordinates.latitude == null || coordinates.longitude == null) return;
-
-    const point: LatLng = {
-      latitude: coordinates.latitude,
-      longitude: coordinates.longitude,
-    };
-
-    if (isPointAB) {
-      setPointA(point);
-    } else {
-      setPointB(point);
+  // Update center when camera moves
+  const handleCameraChange = (event: any) => {
+    if (event.coordinates) {
+      setCurrentCenter({
+        latitude: event.coordinates.latitude,
+        longitude: event.coordinates.longitude
+      });
     }
   };
+
+  // Expose methods to parent component
+  useImperativeHandle(ref, () => ({
+    getCurrentCenter: async () => {
+      return currentCenter;
+    },
+    setLocationAtCenter: () => {
+      if (!isPinPlacementEnabled) return;
+
+      console.log('Setting location at center:', currentCenter);
+
+      // Just set the point without snapping - we'll snap when calculating routes
+      if (isPointAB) {
+        setPointA(currentCenter);
+        setLastSelectedPoint('A');
+        console.log('Set point A:', currentCenter);
+      } else {
+        setPointB(currentCenter);
+        setLastSelectedPoint('B');
+        console.log('Set point B:', currentCenter);
+      }
+
+      // Disable pin placement after selecting a location
+      setIsPinPlacementEnabled(false);
+    }
+  }));
 
   const markers: GoogleMapsMarker[] = [];
 
   if (pointA) {
-    markers.push({ coordinates: pointA, title: 'Point A' });
+    markers.push({
+      coordinates: pointA,
+      title: 'Starting Point',
+      snippet: 'Your journey begins here'
+    });
   }
 
   if (pointB) {
-    markers.push({ coordinates: pointB, title: 'Point B' });
+    markers.push({
+      coordinates: pointB,
+      title: 'Destination',
+      snippet: 'Your journey ends here'
+    });
   }
 
   const commonCamera = {
@@ -50,34 +92,51 @@ export default function NativeMap() {
     compassEnabled: true,
   };
 
+  // Debug routes
+  useEffect(() => {
+    console.log('NativeMap routes update:', routes?.length ?? 0, 'polylines');
+    if (routes && routes.length > 0) {
+      console.log('First route:', routes[0]);
+    }
+  }, [routes]);
+
   if (Platform.OS === 'android') {
     return (
-
       <GoogleMaps.View
+        ref={mapRef}
         style={styles.map}
         cameraPosition={commonCamera}
         uiSettings={commonUISettings}
-        onMapClick={handleMapPress}
+        mapOptions={{
+          mapId: process.env.EXPO_PUBLIC_GOOGLE_MAPS_ID
+        }}
+        properties={{
+          isMyLocationEnabled: false, // Requires location permissions
+          isTrafficEnabled: false,
+        }}
+        onCameraMove={handleCameraChange}
         markers={markers}
-        polylines={routes ?? undefined}
+        polylines={routes.length > 0 ? routes : []}
       />
     );
   } else if (Platform.OS === 'ios') {
     return (
       <AppleMaps.View
+        ref={mapRef}
         style={styles.map}
         cameraPosition={commonCamera}
-        onMapClick={handleMapPress}
+        onCameraMove={handleCameraChange}
         markers={markers}
-        polylines={routes ?? undefined}
+        polylines={routes.length > 0 ? routes : []}
       />
     );
   } else {
     return <Text>Maps are only available on Android and iOS</Text>;
   }
-}
-
-const styles = StyleSheet.create({
-  map: { flex: 1 },
 });
 
+const styles = StyleSheet.create({
+  map: { flex: 1, },
+});
+
+export default NativeMap;

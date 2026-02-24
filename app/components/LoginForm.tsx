@@ -1,12 +1,93 @@
 import { useAuth } from "@/context/hybrid-auth";
 import React, { useState } from "react";
-import { View, Text, Button, StyleSheet, TextInput, TouchableOpacity } from "react-native";
+import { View, Text, Button, StyleSheet, TextInput, TouchableOpacity, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons"; // install with expo: expo install @expo/vector-icons
 import { AntDesign } from '@expo/vector-icons';
+import { supabase } from "@/lib/supabase-client"; 
+import * as SecureStore from 'expo-secure-store';
 export default function LoginForm() {
     const { signIn } = useAuth();
     const [passwordVisible, setPasswordVisible] = useState(false); // toggle password visibility
     const [checked, setChecked] = useState(false);
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    // Load saved credentials if present
+    React.useEffect(() => {
+        const loadSaved = async () => {
+            try {
+                const saved = await SecureStore.getItemAsync('saved_credentials');
+                if (saved) {
+                    const obj = JSON.parse(saved);
+                    setEmail(obj.email || '');
+                    setPassword(obj.password || '');
+                    setChecked(true);
+                }
+            } catch (e) {
+                console.warn('Failed to load saved credentials', e);
+            }
+        };
+
+        loadSaved();
+    }, []);
+
+    const handleLogin = async () => {
+        if (!email || !password) {
+            Alert.alert('Validation', 'Please enter email and password');
+            return;
+        }
+
+        try {
+            setLoading(true);
+
+            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+            if (error) {
+                console.error('Sign in error:', error);
+                Alert.alert('Login failed', error.message || 'Invalid credentials');
+                return;
+            }
+
+            // Fetch user profile from `users` table by email
+            try {
+                const { data: userRow, error: fetchError } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('email', email)
+                    .single();
+
+                if (fetchError) {
+                    console.warn('Could not fetch user row:', fetchError.message);
+                }
+
+                const userData = {
+                    id: userRow?.id || data?.user?.id,
+                    email: email,
+                    name: userRow?.full_name || null,
+                    picture: userRow?.avatar_url || null,
+                    provider: 'email',
+                };
+
+                await SecureStore.setItemAsync('user_data', JSON.stringify(userData));
+            } catch (e) {
+                console.warn('Error fetching user profile:', e);
+            }
+
+            // Handle remember credentials
+            if (checked) {
+                await SecureStore.setItemAsync('saved_credentials', JSON.stringify({ email, password }));
+            } else {
+                await SecureStore.deleteItemAsync('saved_credentials');
+            }
+
+            Alert.alert('Login', 'Logged in successfully');
+        } catch (e) {
+            console.error('Unexpected login error:', e);
+            Alert.alert('Login failed', 'Unexpected error');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <View style={styles.container}>
@@ -14,7 +95,15 @@ export default function LoginForm() {
                 // EMAIL RELATED STUFF IS HERE */}
             <View style={styles.emailcontainer} >
                 <Text style={styles.text}> Email </Text>
-                <TextInput style={styles.emailtextbox} placeholder="email@example.com" placeholderTextColor="#585756" />
+                <TextInput
+                    style={styles.emailtextbox}
+                    placeholder="email@example.com"
+                    placeholderTextColor="#585756"
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                />
             </View>
 
             {/* // PASSWORD CONTAINER
@@ -27,6 +116,9 @@ export default function LoginForm() {
                         placeholder="Password"
                         placeholderTextColor="#585756"
                         secureTextEntry={!passwordVisible}  // hide/show
+                        value={password}
+                        onChangeText={setPassword}
+                        autoCapitalize="none"
                     />
                     <TouchableOpacity
                         onPress={() => setPasswordVisible(!passwordVisible)}
@@ -64,8 +156,13 @@ export default function LoginForm() {
             </View>
             
             {/* // LOGIN BUTTON */}
-            <TouchableOpacity style={styles.loginbutton}>
-                <Text style={styles.loginbuttonText}>Log In</Text>
+            <TouchableOpacity
+                style={styles.loginbutton}
+                onPress={handleLogin}
+                disabled={loading}
+                accessibilityRole="button"
+            >
+                <Text style={styles.loginbuttonText}>{loading ? 'Loading...' : 'Log In'}</Text>
             </TouchableOpacity>
 
             {/* // divider rani para sa or login with */}
@@ -124,6 +221,7 @@ const styles = StyleSheet.create({
         borderColor: '#585756',    // default black border, change if you want
         borderRadius: 8,        // 8px corner radius
         height: 40,             // optional: keeps the box nicely sized
+        color: 'white',
     },
     passwordWrapper: {
         flexDirection: 'row',      // input and eye icon in a row
@@ -138,6 +236,7 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontFamily: 'Lexend_400Regular',
         paddingVertical: 8,        // adjust instead of fixed height
+        color: 'white',
     },
     eyeButton: {
         marginLeft: 10,
