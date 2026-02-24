@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Button from '@/components/ui/Button';
 import dynamic from 'next/dynamic';
 
 const AddRouteMap = dynamic(() => import('@/components/routes/AddRouteMap'), { 
@@ -350,7 +351,7 @@ export default function EditRouteModal({ routeId, isOpen, onClose, onUpdate }: E
                     <h2 className="text-2xl font-bold text-white">Edit Route</h2>
                     <button
                         onClick={onClose}
-                        className="text-gray-500 hover:text-gray-700"
+                        className="text-gray-400 hover:text-[#FFCC66] transition-colors"
                     >
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -368,7 +369,7 @@ export default function EditRouteModal({ routeId, isOpen, onClose, onUpdate }: E
                             {/* Left Column - Form Fields */}
                             <div className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-1">
+                                    <label className="block text-sm font-semibold text-gray-300 mb-1">
                                         Route Code*
                                     </label>
                                     <input
@@ -383,7 +384,7 @@ export default function EditRouteModal({ routeId, isOpen, onClose, onUpdate }: E
 
                                 {/* Coordinates Input */}
                                     <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-1">
+                                        <label className="block text-sm font-semibold text-gray-300 mb-1">
                                             Added Points ({mapCoordinates?.length || 0})
                                             {mapCoordinates && mapCoordinates.length > 2 && 
                                              Math.abs(mapCoordinates[0].lat - mapCoordinates[mapCoordinates.length - 1].lat) < 0.000001 &&
@@ -391,12 +392,12 @@ export default function EditRouteModal({ routeId, isOpen, onClose, onUpdate }: E
                                                 <span className="ml-2 text-purple-600 text-xs font-medium">🔄 Closed Loop</span>
                                             )}
                                         </label>
-                                        <div className="mb-2 text-xs text-gray-600">
+                                        <div className="mb-2 text-xs text-gray-500">
                                             💡 Tip: Select a point and click &quot;Insert&quot; to add a new point after it. For closed loops, new points are added before the closing point.
                                         </div>
-                                        <div 
+                                        <div
                                             id="edit-points-list"
-                                            className="space-y-2 max-h-40 overflow-y-auto border border-gray-200 rounded-lg p-2"
+                                            className="space-y-2 max-h-40 overflow-y-auto border border-[#333] rounded-lg p-2 bg-[#111111]"
                                             style={{ scrollBehavior: 'smooth' }}
                                         >
                                             {(mapCoordinates || []).map((coord, index) => (
@@ -404,9 +405,9 @@ export default function EditRouteModal({ routeId, isOpen, onClose, onUpdate }: E
                                                     key={index}
                                                     id={`edit-point-${index}`}
                                                     className={`flex items-center justify-between text-sm p-2 rounded cursor-pointer transition-all ${
-                                                        selectedPointIndex === index 
-                                                            ? 'bg-yellow-100 border-2 border-yellow-400 shadow-md' 
-                                                            : 'bg-[#2D2D2D] hover:bg-[#404040] border border-[#4C4C4C]'
+                                                        selectedPointIndex === index
+                                                            ? 'bg-[#2A2500] border-2 border-[#FFCC66] shadow-md'
+                                                            : 'bg-[#1A1A1A] hover:bg-[#252525] border border-[#333333]'
                                                     }`}
                                                     onClick={() => handlePointSelect(index)}
                                                     role="button"
@@ -418,16 +419,16 @@ export default function EditRouteModal({ routeId, isOpen, onClose, onUpdate }: E
                                                         }
                                                     }}
                                                 >
-                                                    <span 
-                                                        className="text-gray-800 flex-1 select-none"
+                                                    <span
+                                                        className="text-gray-200 flex-1 select-none"
                                                         style={{ pointerEvents: 'none' }}
                                                     >
                                                         {coord.label}: {coord.lat.toFixed(6)}, {coord.lng.toFixed(6)}
                                                         {selectedPointIndex === index && !insertMode && (
-                                                            <span className="ml-2 text-yellow-600 font-medium">(Click map to move)</span>
+                                                            <span className="ml-2 text-[#FFCC66] font-medium">(Click map to move)</span>
                                                         )}
                                                         {selectedPointIndex === index && insertMode && (
-                                                            <span className="ml-2 text-green-600 font-medium">(Click map to add after)</span>
+                                                            <span className="ml-2 text-green-400 font-medium">(Click map to add after)</span>
                                                         )}
                                                     </span>
                                                     <div className="flex gap-1">
@@ -466,7 +467,7 @@ export default function EditRouteModal({ routeId, isOpen, onClose, onUpdate }: E
                                                 </div>
                                             ))}
                                             {(!mapCoordinates || mapCoordinates.length === 0) && (
-                                                <p className="text-gray-500 text-sm text-center py-4">Click on the map to add points</p>
+                                                <p className="text-gray-400 text-sm text-center py-4">Click on the map to add points</p>
                                             )}
                                         </div>
                                     </div>
@@ -475,7 +476,7 @@ export default function EditRouteModal({ routeId, isOpen, onClose, onUpdate }: E
                             {/* Right Column - Map */}
                             <div>
                                 <div className="flex justify-between items-center mb-2">
-                                    <h3 className="text-lg font-semibold text-gray-700">Click to Edit Points</h3>
+                                    <h3 className="text-lg font-semibold text-white">Click to Edit Points</h3>
                                     <div className="flex items-center gap-3">
                                         <label className="flex items-center cursor-pointer">
                                             <input
@@ -488,7 +489,7 @@ export default function EditRouteModal({ routeId, isOpen, onClose, onUpdate }: E
                                                 <div className={`block w-9 h-5 rounded-full transition-colors ${showPointNumbers ? 'bg-[#FFCC66]' : 'bg-[#4C4C4C]'}`}></div>
                                                 <div className={`absolute left-0.5 top-0.5 bg-white w-4 h-4 rounded-full transition ${showPointNumbers ? 'transform translate-x-4' : ''}`}></div>
                                             </div>
-                                            <span className="ml-2 text-xs font-medium text-gray-700">Numbers</span>
+                                            <span className="ml-2 text-xs font-medium text-gray-300">Numbers</span>
                                         </label>
                                         <label className="flex items-center cursor-pointer">
                                             <input
@@ -501,7 +502,7 @@ export default function EditRouteModal({ routeId, isOpen, onClose, onUpdate }: E
                                                 <div className={`block w-9 h-5 rounded-full transition-colors ${hidePOIs ? 'bg-[#FFCC66]' : 'bg-[#4C4C4C]'}`}></div>
                                                 <div className={`absolute left-0.5 top-0.5 bg-white w-4 h-4 rounded-full transition ${hidePOIs ? 'transform translate-x-4' : ''}`}></div>
                                             </div>
-                                            <span className="ml-2 text-xs font-medium text-gray-700">Hide Places</span>
+                                            <span className="ml-2 text-xs font-medium text-gray-300">Hide Places</span>
                                         </label>
                                     </div>
                                 </div>
@@ -521,83 +522,57 @@ export default function EditRouteModal({ routeId, isOpen, onClose, onUpdate }: E
 
                         {/* Error Message */}
                         {error && (
-                            <div className="mt-4 p-4 bg-red-100 text-red-700 rounded-lg">
+                            <div className="mt-4 p-4 bg-red-900/20 text-red-400 border border-red-500 rounded-lg">
                                 {error}
                             </div>
                         )}
 
                         {/* Action Buttons */}
-                        <div className="flex justify-between items-center mt-6 pt-4 border-t">
+                        <div className="flex justify-between items-center mt-6 pt-4 border-t border-[#333]">
                             {/* Close Loop Button */}
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    if (mapCoordinates.length < 2) return;
-                                    
-                                    const isAlreadyClosed = mapCoordinates.length > 2 && 
-                                        Math.abs(mapCoordinates[0].lat - mapCoordinates[mapCoordinates.length - 1].lat) < 0.000001 && 
-                                        Math.abs(mapCoordinates[0].lng - mapCoordinates[mapCoordinates.length - 1].lng) < 0.000001;
-                                        
-                                    if (isAlreadyClosed) return;
-                                    
-                                    const firstPoint = mapCoordinates[0];
-                                    const closingPoint = {
-                                        ...firstPoint,
-                                        label: `Point ${mapCoordinates.length + 1} (Loop Close)`
-                                    };
-                                    setMapCoordinates([...mapCoordinates, closingPoint]);
-                                }}
-                                disabled={mapCoordinates.length < 2 || (mapCoordinates.length > 2 && 
-                                    Math.abs(mapCoordinates[0].lat - mapCoordinates[mapCoordinates.length - 1].lat) < 0.000001 && 
-                                    Math.abs(mapCoordinates[0].lng - mapCoordinates[mapCoordinates.length - 1].lng) < 0.000001)}
-                                className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                                    mapCoordinates.length < 2
-                                        ? 'bg-[#2D2D2D] text-gray-500 cursor-not-allowed'
-                                        : (mapCoordinates.length > 2 && 
-                                            Math.abs(mapCoordinates[0].lat - mapCoordinates[mapCoordinates.length - 1].lat) < 0.000001 && 
-                                            Math.abs(mapCoordinates[0].lng - mapCoordinates[mapCoordinates.length - 1].lng) < 0.000001)
-                                            ? 'bg-green-500 text-white cursor-not-allowed'
-                                            : 'bg-purple-600 text-white hover:bg-purple-700'
-                                }`}
-                                title={mapCoordinates.length < 2 ? 'Need at least 2 points to close loop' : ''}
-                            >
-                                {(mapCoordinates.length > 2 && 
-                                    Math.abs(mapCoordinates[0].lat - mapCoordinates[mapCoordinates.length - 1].lat) < 0.000001 && 
-                                    Math.abs(mapCoordinates[0].lng - mapCoordinates[mapCoordinates.length - 1].lng) < 0.000001)
-                                    ? '✓ Loop Closed'
-                                    : 'Close Loop'}
-                            </button>
-
-                            <div className="flex space-x-4">
-                                <button
+                            {(mapCoordinates.length > 2 &&
+                                Math.abs(mapCoordinates[0].lat - mapCoordinates[mapCoordinates.length - 1].lat) < 0.000001 &&
+                                Math.abs(mapCoordinates[0].lng - mapCoordinates[mapCoordinates.length - 1].lng) < 0.000001) ? (
+                                <Button variant="success" disabled>
+                                    ✓ Loop Closed
+                                </Button>
+                            ) : (
+                                <Button
                                     type="button"
-                                    onClick={onClose}
+                                    variant="outline"
+                                    disabled={mapCoordinates.length < 2}
+                                    title={mapCoordinates.length < 2 ? 'Need at least 2 points to close loop' : ''}
+                                    onClick={() => {
+                                        if (mapCoordinates.length < 2) return;
+                                        const firstPoint = mapCoordinates[0];
+                                        const closingPoint = {
+                                            ...firstPoint,
+                                            label: `Point ${mapCoordinates.length + 1} (Loop Close)`
+                                        };
+                                        setMapCoordinates([...mapCoordinates, closingPoint]);
+                                    }}
+                                >
+                                    Close Loop
+                                </Button>
+                            )}
+
+                            <div className="flex space-x-3">
+                                <Button
+                                    type="button"
+                                    variant="secondary"
                                     disabled={isSubmitting}
-                                    className="px-6 py-2 bg-[#4C4C4C] text-white border border-[#404040] rounded-lg hover:bg-[#404040] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    onClick={onClose}
                                 >
                                     Cancel
-                                </button>
-                                <button
+                                </Button>
+                                <Button
                                     type="submit"
-                                    disabled={isSubmitting}
-                                    className={`px-6 py-2 rounded-lg font-medium text-white flex items-center space-x-2 ${
-                                        isSubmitting
-                                            ? 'bg-gray-500 text-gray-300 cursor-not-allowed'
-                                            : 'bg-[#FFCC66] hover:bg-[#CC9933] text-black font-bold'
-                                    }`}
+                                    variant="primary"
+                                    loading={isSubmitting}
+                                    size="md"
                                 >
-                                    {isSubmitting ? (
-                                        <>
-                                            <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                            </svg>
-                                            <span>Updating...</span>
-                                        </>
-                                    ) : (
-                                        <span>Update Route</span>
-                                    )}
-                                </button>
+                                    {isSubmitting ? "Updating..." : "Update Route"}
+                                </Button>
                             </div>
                         </div>
                     </form>

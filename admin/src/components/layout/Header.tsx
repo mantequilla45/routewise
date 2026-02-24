@@ -3,11 +3,10 @@
 export default function Header() {
 
   return (
-    <header className="bg-[#2D2D2D] px-6 py-4 border-b-2 border-[#404040] sticky top-0 left-0 flex flex-col z-50">
+    <header className="bg-[#111111] px-6 pt-4 sticky top-0 left-0 flex flex-col z-50">
       <div className="flex items-center justify-between">
         {/* Search Bar */}
         <div className="flex-1 max-w-3xl text-[#FFCC66] text-xl">
-          <p>WELCOME ADMIN! YOU ARE NOW IN THE ROUTEWISE ADMIN DASHBOARD.</p>
 
           {/* <div className="relative">
             <svg

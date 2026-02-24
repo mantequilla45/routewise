@@ -12,14 +12,14 @@ export default function DashboardLayout({
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50">
+    <div className="flex h-screen overflow-hidden bg-[#111111]">
       <Sidebar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
       <div
-        className={`bg-[#2D2D2D] flex-1 flex flex-col min-h-screen transition-all duration-300`}
+        className={`bg-[#111111] flex-1 flex flex-col overflow-hidden transition-all duration-300`}
       >
         <Header />
-        <main className="flex-1 p-6 overflow-y-auto">
-          <div className="animate-fade-in">{children}</div>
+        <main className="flex-1 px-10 pb-6 overflow-hidden flex flex-col">
+          <div className="animate-fade-in flex-1 min-h-0 flex flex-col">{children}</div>
         </main>
       </div>
     </div>

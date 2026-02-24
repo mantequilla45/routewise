@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
+import Button from "@/components/ui/Button";
 
 interface User {
   id: string;
@@ -199,20 +200,12 @@ export default function EditUserModal({
           )}
 
           <div className="flex justify-end space-x-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-gray-300 bg-[#2D2D2D] rounded-lg hover:bg-[#404040] transition-colors border border-[#4C4C4C]"
-            >
+            <Button type="button" variant="secondary" onClick={onClose}>
               Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-4 py-2 bg-[#FFCC66] text-black font-semibold rounded-lg hover:bg-[#CC9933] transition-colors disabled:opacity-50"
-            >
+            </Button>
+            <Button type="submit" variant="primary" loading={loading}>
               {loading ? "Saving..." : "Save"}
-            </button>
+            </Button>
           </div>
         </form>
       </div>

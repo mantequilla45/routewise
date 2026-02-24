@@ -23,6 +23,8 @@ interface Route {
 type SortField = "route_code" | "modified_at";
 type SortDirection = "asc" | "desc";
 
+const ITEMS_PER_PAGE = 10;
+
 export default function RoutesList({
   onRouteSelect,
 }: {
@@ -35,10 +37,16 @@ export default function RoutesList({
   const [editingRouteId, setEditingRouteId] = useState<string | null>(null);
   const [sortField, setSortField] = useState<SortField>("modified_at");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     fetchRoutes();
   }, []);
+
+  // Reset to page 1 whenever filters or sort change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, sortField, sortDirection]);
 
   const fetchRoutes = async () => {
     try {
@@ -71,10 +79,8 @@ export default function RoutesList({
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
-      // Toggle direction if same field
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {
-      // New field, default to ascending for code, descending for dates
       setSortField(field);
       setSortDirection(field === "route_code" ? "asc" : "desc");
     }
@@ -141,8 +147,6 @@ export default function RoutesList({
         aValue = a.route_code.toLowerCase();
         bValue = b.route_code.toLowerCase();
       } else {
-        // modified_at
-        // Use updated_at if available, otherwise created_at
         const aDate = a.updated_at || a.created_at || "";
         const bDate = b.updated_at || b.created_at || "";
         aValue = new Date(aDate).getTime();
@@ -156,6 +160,25 @@ export default function RoutesList({
       }
     });
 
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(filteredRoutes.length / ITEMS_PER_PAGE));
+  const clampedPage = Math.min(currentPage, totalPages);
+  const startIndex = (clampedPage - 1) * ITEMS_PER_PAGE;
+  const paginatedRoutes = filteredRoutes.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+  const getPageRange = (): (number | "...")[] => {
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    if (clampedPage <= 4) {
+      return [1, 2, 3, 4, 5, "...", totalPages];
+    }
+    if (clampedPage >= totalPages - 3) {
+      return [1, "...", totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+    }
+    return [1, "...", clampedPage - 1, clampedPage, clampedPage + 1, "...", totalPages];
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -165,128 +188,114 @@ export default function RoutesList({
   }
 
   return (
-    <div className="rounded-lg gap-3 p-3">
-      <div className="flex justify-between items-start p-2">
-        <h2 className="text-xl font-bold text-white">
-          Existing Routes ({routes.length})
-        </h2>
-        <input
-          type="text"
-          placeholder="Search routes..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="px-3 py-2 bg-[#2D2D2D] border border-[#4C4C4C] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#FFCC66] focus:border-[#FFCC66]"
-        />
+    <div className="flex flex-col h-full gap-3 p-3">
+      <div className="flex justify-between items-center px-3">
+        <div className="flex items-center gap-3">
+          <h2 className="text-xl font-bold text-white">Existing Routes</h2>
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-[#2A2A2A] border border-[#333] text-sm text-gray-400 font-medium">
+            {routes.length}
+          </span>
+        </div>
+        <div className="relative">
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            type="text"
+            placeholder="Search routes..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-9 pr-3 py-2 bg-[#1A1A1A] border border-[#2A2A2A] rounded-lg text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-[#FFCC66] focus:border-[#FFCC66] text-sm w-52"
+          />
+        </div>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm border border-[#404040] rounded-lg overflow-hidden">
+      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-auto">
+        <table className="w-full text-sm border border-[#2A2A2A] rounded-xl overflow-hidden">
           <thead>
-            <tr className="border-b bg-[#2D2D2D] border-[#404040]">
-              <th className="text-left p-2 text-[#FFCC66] font-semibold rounded-tl-xl">
+            <tr className="bg-[#1A1A1A] border-b border-[#2A2A2A]">
+              <th className="text-left px-4 py-3 text-[#FFCC66] font-semibold w-36">
                 <button
                   onClick={() => handleSort("route_code")}
-                  className="flex items-center gap-1 hover:bg-[#404040] px-2 py-1 rounded -ml-2 transition-colors"
+                  className="flex items-center gap-1 hover:bg-[#2A2A2A] px-2 py-1 rounded -ml-2 transition-colors"
                 >
-                  Code
+                  Route Code
                   {getSortIcon("route_code")}
                 </button>
               </th>
-              <th className="text-left p-2 text-[#FFCC66] font-semibold">
+              <th className="text-left px-4 py-3 text-[#FFCC66] font-semibold w-40">
                 <button
                   onClick={() => handleSort("modified_at")}
-                  className="flex items-center gap-1 hover:bg-[#404040] px-2 py-1 rounded -ml-2 transition-colors"
+                  className="flex items-center gap-1 hover:bg-[#2A2A2A] px-2 py-1 rounded -ml-2 transition-colors"
                 >
                   Modified At
                   {getSortIcon("modified_at")}
                 </button>
               </th>
-              <th className="text-left p-2 text-[#FFCC66] font-semibold rounded-tr-xl">
+              <th className="text-right px-4 py-3 text-[#FFCC66] font-semibold w-36">
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody>
-            {filteredRoutes.map((route) => (
+          <tbody className="divide-y divide-[#2A2A2A]">
+            {paginatedRoutes.map((route) => (
               <tr
                 key={route.id}
-                className="border-b bg-[#3A3A3A] border-[#404040] hover:bg-[#404040] transition-colors"
+                className="bg-[#111111] hover:bg-[#1A1A1A] transition-colors group"
               >
-                <td className="p-2 font-medium text-white">
-                  {route.route_code}
+                <td className="px-4 py-3">
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-md border border-[#333] text-white font-mono font-semibold text-sm">
+                    {route.route_code}
+                  </span>
                 </td>
-                <td className="p-2 text-gray-300 text-sm">
+                <td className="px-4 py-3 text-sm">
                   {route.updated_at ? (
                     <div>
-                      <div>
-                        {new Date(route.updated_at).toLocaleDateString(
-                          "en-US",
-                          {
-                            year: "numeric",
-                            month: "short",
-                            day: "numeric",
-                          }
-                        )}
+                      <div className="text-gray-300">
+                        {new Date(route.updated_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
                       </div>
-                      <div className="text-xs text-gray-400">
-                        {new Date(route.updated_at).toLocaleTimeString(
-                          "en-US",
-                          {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          }
-                        )}
+                      <div className="text-xs text-gray-500">
+                        {new Date(route.updated_at).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
                       </div>
                     </div>
                   ) : route.created_at ? (
                     <div>
-                      <div>
-                        {new Date(route.created_at).toLocaleDateString(
-                          "en-US",
-                          {
-                            year: "numeric",
-                            month: "short",
-                            day: "numeric",
-                          }
-                        )}
+                      <div className="text-gray-300">
+                        {new Date(route.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
                       </div>
-                      <div className="text-xs text-gray-400">
-                        {new Date(route.created_at).toLocaleTimeString(
-                          "en-US",
-                          {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          }
-                        )}{" "}
-                        (created)
+                      <div className="text-xs text-gray-500">
+                        {new Date(route.created_at).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}{" "}
+                        <span className="text-gray-600">(created)</span>
                       </div>
                     </div>
                   ) : (
-                    <span className="text-gray-400">N/A</span>
+                    <span className="text-gray-600">—</span>
                   )}
                 </td>
-                <td className="p-2">
-                  <button
-                    onClick={() => {
-                      setSelectedRouteId(route.id);
-                      if (onRouteSelect) onRouteSelect(route);
-                    }}
-                    className="text-[#FFCC66] hover:text-[#CC9933] mr-3 font-medium transition-colors"
-                  >
-                    View
-                  </button>
-                  <button
-                    onClick={() => setEditingRouteId(route.id)}
-                    className="text-[#CC9933] hover:text-[#FFCC66] mr-3 font-medium transition-colors"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => deleteRoute(route.id)}
-                    className="text-red-500 hover:text-red-400 font-medium transition-colors"
-                  >
-                    Delete
-                  </button>
+                <td className="px-4 py-3">
+                  <div className="flex items-center justify-end gap-1">
+                    <button
+                      onClick={() => {
+                        setSelectedRouteId(route.id);
+                        if (onRouteSelect) onRouteSelect(route);
+                      }}
+                      className="px-2.5 py-1.5 text-xs rounded-lg text-[#FFCC66] hover:bg-[#2A2500] border border-transparent hover:border-[#FFCC66]/30 font-medium transition-all"
+                    >
+                      View
+                    </button>
+                    <button
+                      onClick={() => setEditingRouteId(route.id)}
+                      className="px-2.5 py-1.5 text-xs rounded-lg text-gray-300 hover:bg-[#2A2A2A] border border-transparent hover:border-[#333] font-medium transition-all"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => deleteRoute(route.id)}
+                      className="px-2.5 py-1.5 text-xs rounded-lg text-red-500 hover:bg-red-500/10 border border-transparent hover:border-red-500/30 font-medium transition-all"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -294,11 +303,81 @@ export default function RoutesList({
         </table>
 
         {filteredRoutes.length === 0 && (
-          <div className="text-center py-8 text-gray-400 font-medium">
-            No routes found
+          <div className="text-center py-12 text-gray-500">
+            <svg className="w-10 h-10 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+            </svg>
+            <p className="font-medium">No routes found</p>
+            {searchTerm && <p className="text-sm mt-1">Try a different search term</p>}
           </div>
         )}
       </div>
+
+      {/* Pagination */}
+      {filteredRoutes.length > ITEMS_PER_PAGE && (
+        <div className="flex items-center justify-between px-2 pt-4">
+          {/* Showing X–Y of Z */}
+          <p className="text-sm text-gray-400">
+            Showing{" "}
+            <span className="text-white font-medium">{startIndex + 1}</span>
+            {" – "}
+            <span className="text-white font-medium">
+              {Math.min(startIndex + ITEMS_PER_PAGE, filteredRoutes.length)}
+            </span>{" "}
+            of{" "}
+            <span className="text-white font-medium">{filteredRoutes.length}</span>{" "}
+            routes
+          </p>
+
+          {/* Page controls */}
+          <div className="flex items-center gap-1">
+            {/* Previous */}
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={clampedPage === 1}
+              className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-[#2A2A2A] hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              aria-label="Previous page"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+
+            {/* Page numbers */}
+            {getPageRange().map((page, i) =>
+              page === "..." ? (
+                <span key={`ellipsis-${i}`} className="w-8 h-8 flex items-center justify-center text-gray-500 text-sm">
+                  …
+                </span>
+              ) : (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page as number)}
+                  className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-medium transition-all ${
+                    clampedPage === page
+                      ? "bg-gradient-to-b from-[#FFCC66] to-[#CC9933] text-black shadow-sm"
+                      : "text-gray-400 hover:bg-[#2A2A2A] hover:text-white"
+                  }`}
+                >
+                  {page}
+                </button>
+              )
+            )}
+
+            {/* Next */}
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={clampedPage === totalPages}
+              className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-[#2A2A2A] hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              aria-label="Next page"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Route Details Modal */}
       <RouteDetailsModal
@@ -314,7 +393,7 @@ export default function RoutesList({
           onClose={() => setEditingRouteId(null)}
           onUpdate={() => {
             setEditingRouteId(null);
-            fetchRoutes(); // Refresh the list after update
+            fetchRoutes();
           }}
         />
       )}

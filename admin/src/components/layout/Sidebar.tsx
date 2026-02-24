@@ -75,7 +75,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
     <aside
       className={`${
         isCollapsed ? "w-22" : "w-65"
-      } transition-all duration-300 bg-[#2D2D2D] h-screen sticky top-0 left-0 flex flex-col z-50`}
+      } transition-all duration-300 bg-[#161616] border-r border-[#222222] h-screen sticky top-0 left-0 flex flex-col z-50`}
     >
       {/* Logo Section */}
       <div className="flex items-center justify-between p-6 h-[72px] border-none border-gray-100">
@@ -137,8 +137,8 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
               href={item.href}
               className={`flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-300 group relative ${
                 isActive
-                  ? "bg-[#3A3A3A] text-white shadow-sm"
-                  : "hover:bg-[#404040] text-gray-600 hover:text-[#CC9933]"
+                  ? "bg-[#1F1F1F] text-white"
+                  : "hover:bg-[#1A1A1A] text-gray-500 hover:text-[#FFCC66]"
               }`}
             >
               <div className="flex items-start space-x-3">
@@ -146,7 +146,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
                   className={`${
                     isActive
                       ? "text-[#FFCC66]"
-                      : "text-gray-600 group-hover:text-[#CC9933]"
+                      : "text-gray-500 group-hover:text-[#FFCC66]"
                   } transition-colors`}
                 >
                   {item.icon}
@@ -171,7 +171,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
       </nav>
 
       {/* User Section */}
-      <div className="p-2 border-t">
+      <div className="p-2 border-t border-[#222222]">
         <div
           className={`flex items-center space-x-3 p-3 rounded-xl transition-all group ${
             isCollapsed ? "justify-start w-full" : ""

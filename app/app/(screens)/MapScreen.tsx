@@ -15,6 +15,7 @@ function MapScreenContent() {
     const { user } = useAuth();
     const [isSelectingLocations, setIsSelectingLocations] = useState(false);
     const [isRouteSaved, setIsRouteSaved] = useState(false);
+    const [isModalVisible, setIsModalVisible] = useState(!isRouteFromList);
     const mapRef = useRef<NativeMapRef>(null);
     const insets = useSafeAreaInsets();
     
@@ -44,6 +45,7 @@ function MapScreenContent() {
 
     // Helper functions for modal visibility
     const showModal = (callback?: () => void) => {
+        setIsModalVisible(true);
         Animated.parallel([
             Animated.spring(modalPosition, {
                 toValue: 0,
@@ -60,6 +62,7 @@ function MapScreenContent() {
     };
 
     const hideModal = (callback?: () => void) => {
+        setIsModalVisible(false);
         Animated.parallel([
             Animated.timing(modalPosition, {
                 toValue: 800,
@@ -384,7 +387,7 @@ function MapScreenContent() {
                         styles.swipeUpIndicator,
                         {
                             opacity: indicatorOpacity,
-                            pointerEvents: 'auto'
+                            pointerEvents: isModalVisible ? 'none' : 'auto'
                         }
                     ]}
                 >

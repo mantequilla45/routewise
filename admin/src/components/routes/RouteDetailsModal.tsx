@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Button from '@/components/ui/Button';
 import dynamic from 'next/dynamic';
 
 const SimpleRouteMap = dynamic(() => import('./SimpleRouteMap'), { 
@@ -147,26 +148,21 @@ export default function RouteDetailsModal({ routeId, onClose }: RouteDetailsModa
                         </div>
 
                         {/* Actions */}
-                        <div className="flex gap-4 pt-4 border-t">
-                            <button
+                        <div className="flex gap-4 pt-4 border-t border-[#333]">
+                            <Button
                                 onClick={() => {
-                                    // Copy coordinates to clipboard
                                     const coordText = coordinates
                                         .map(coord => `${coord[0]},${coord[1]}`)
                                         .join('\n');
                                     navigator.clipboard.writeText(coordText);
                                     alert('Coordinates copied to clipboard!');
                                 }}
-                                className="px-4 py-2 bg-[#FFCC66] text-black font-semibold rounded-lg hover:bg-[#CC9933] transition-colors"
                             >
                                 Copy Coordinates
-                            </button>
-                            <button
-                                onClick={onClose}
-                                className="px-4 py-2 bg-[#4C4C4C] text-white rounded-lg hover:bg-[#404040] transition-colors border border-[#404040]"
-                            >
+                            </Button>
+                            <Button variant="secondary" onClick={onClose}>
                                 Close
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 ) : (

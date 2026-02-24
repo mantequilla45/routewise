@@ -76,6 +76,7 @@ export default function AddRouteMap({
     const mapInstanceRef = useRef<google.maps.Map | null>(null);
     const markersRef = useRef<MapMarker[]>([]);
     const polylineRef = useRef<MapPolyline | null>(null);
+    const infoWindowRef = useRef<google.maps.InfoWindow | null>(null);
     const [isMapReady, setIsMapReady] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const previousCoordinatesLength = useRef(0);
@@ -191,6 +192,11 @@ export default function AddRouteMap({
 
         const map = mapInstanceRef.current;
         
+        // Close and clear info window when re-rendering markers
+        if (infoWindowRef.current) {
+            infoWindowRef.current.close();
+        }
+
         // Clear existing markers safely
         if (markersRef.current && markersRef.current.length > 0) {
             markersRef.current.forEach(marker => {
@@ -456,12 +462,22 @@ export default function AddRouteMap({
                     }
                     
                     const marker = new window.google.maps.Marker(markerOptions);
-                    
+
                     // Add click listener to markers if editing is enabled
                     if (enableClickToAdd && onPointClick) {
                         marker.addListener('click', () => {
                             onPointClick(index);
                         });
+                    }
+
+                    // Auto-open info window on the selected marker
+                    if (index === highlightedIndex && enableClickToAdd) {
+                        if (!infoWindowRef.current) {
+                            infoWindowRef.current = new window.google.maps.InfoWindow();
+                        }
+                        const iw = infoWindowRef.current;
+                        iw.setContent(`<style>.gm-ui-hover-effect{display:none!important}</style><div style="font-size:12px;color:#1a1a1a;padding:2px 4px;font-weight:500">Point ${index + 1} — Click map to move</div>`);
+                        iw.open(mapInstanceRef.current, marker);
                     }
                     
                     markersRef.current.push(marker);
