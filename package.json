@@ -1,0 +1,14 @@
+{
+  "name": "routewise",
+  "private": true,
+  "scripts": {
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "pnpm --dir app lint && pnpm --dir admin lint && pnpm --dir backend lint",
+    "typecheck": "pnpm --dir app exec tsc --noEmit && pnpm --dir admin exec tsc --noEmit && pnpm --dir backend typecheck",
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck"
+  },
+  "devDependencies": {
+    "prettier": "^3.5.0"
+  }
+}

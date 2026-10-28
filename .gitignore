@@ -1,6 +1,10 @@
-mobile/.vscode/settings.json
-
 node_modules
+.DS_Store
 
-# Claude instructions
-CLAUDE.local.md
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Per-machine Claude Code settings
+.claude/settings.local.json

@@ -1,0 +1,19 @@
+# Dependencies and build output
+node_modules
+.expo
+.next
+.vercel
+ios
+android
+dist
+build
+out
+
+# Lockfiles and generated files
+pnpm-lock.yaml
+package-lock.json
+expo-env.d.ts
+next-env.d.ts
+
+# Hand-formatted documentation
+docs
