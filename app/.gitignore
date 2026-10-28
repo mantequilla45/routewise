@@ -44,3 +44,6 @@ app-example
 
 # env files with secrets
 .env
+
+# Android emulator bug reports
+bugreport-*.zip
