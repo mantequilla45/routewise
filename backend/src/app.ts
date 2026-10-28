@@ -3,7 +3,9 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import { HttpError } from './lib/http';
+import { admin } from './routes/admin';
 import { auth } from './routes/auth';
+import { contributions } from './routes/contributions';
 import { me } from './routes/me';
 import { routes } from './routes/routes';
 import { savedRoutes } from './routes/savedRoutes';
@@ -23,6 +25,8 @@ app.route('/auth', auth);
 app.route('/me', me);
 app.route('/saved-routes', savedRoutes);
 app.route('/routes', routes);
+app.route('/contributions', contributions);
+app.route('/admin', admin);
 
 app.notFound((c) => c.json({ error: 'Not found' }, 404));
 

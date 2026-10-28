@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Search } from 'lucide-react';
 import EditUserModal from '@/components/users/EditUserModal';
+import { api } from '@/lib/api';
 
 interface User {
   id: string;
@@ -36,10 +37,7 @@ export default function UsersPage() {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch('/api/users');
-      if (!response.ok) throw new Error('Failed to fetch users');
-      const data = await response.json();
-      setUsers(data);
+      setUsers(await api.users.list<User>());
     } catch (error) {
       console.error('Error fetching users:', error);
     } finally {
@@ -51,12 +49,7 @@ export default function UsersPage() {
     if (!confirm('Are you sure you want to delete this user?')) return;
 
     try {
-      const response = await fetch(`/api/users/${id}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) throw new Error('Failed to delete user');
-
+      await api.users.remove(id);
       setUsers(users.filter((user) => user.id !== id));
     } catch (error) {
       console.error('Error deleting user:', error);
@@ -78,20 +71,9 @@ export default function UsersPage() {
 
   const handleSaveUser = async (userData: Partial<User>) => {
     try {
-      const url = isCreating ? '/api/users' : `/api/users/${selectedUser?.id}`;
-      const method = isCreating ? 'POST' : 'PUT';
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(userData),
-      });
-
-      if (!response.ok) throw new Error('Failed to save user');
-
-      const savedUser = await response.json();
+      const savedUser = isCreating
+        ? await api.users.create<User>(userData)
+        : await api.users.update<User>(selectedUser?.id ?? '', userData);
 
       if (isCreating) {
         setUsers([...users, savedUser]);

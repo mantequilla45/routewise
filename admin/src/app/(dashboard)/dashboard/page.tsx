@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { api } from '@/lib/api';
 
 interface RecentRoute {
   id: string;
@@ -17,8 +18,7 @@ export default function DashboardPage() {
 
   const fetchDashboardData = async () => {
     try {
-      const response = await fetch('/api/routes/add');
-      const data = await response.json();
+      const data = await api.routes.list<RecentRoute>();
 
       if (data.success) {
         setTotalRoutes(data.routes?.length || 0);

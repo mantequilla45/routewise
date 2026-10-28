@@ -7,11 +7,12 @@ linking: each has its own `package.json`, lockfile and `node_modules`.
 | ---------- | ------------------------------------ | -------------------------- | ------------- |
 | `app/`     | Mobile app, frontend only            | Expo (React Native), TS    | EAS           |
 | `backend/` | API the mobile app talks to          | Hono on Node, pg, Supabase | Vercel (sin1) |
-| `admin/`   | Admin dashboard (map editor, users)  | Next.js, Supabase          | Vercel        |
+| `admin/`   | Admin dashboard, frontend only       | Next.js, TS                | Vercel        |
 | `docs/`    | Design docs, presentation, task list | Markdown                   | –             |
 
-Database and auth are Supabase. The mobile app holds no Supabase or Google credentials; every
-request goes through `backend/`. `backend/db/` has the SQL for the PostGIS functions.
+Database and auth are Supabase. Neither frontend holds server secrets: every data request from
+`app/` and `admin/` goes through `backend/`. Admin uses Supabase Auth in the browser (public key
+only) to sign in, then sends that session token to the backend, which checks `users.is_admin`. `backend/db/` has the SQL for the PostGIS functions.
 
 ## Commands
 
@@ -52,6 +53,9 @@ and UI pieces into `components/`. Delete dead code instead of commenting it out;
 **Backend.** Routes in `src/routes/` validate input and call `src/services/`. Throw `HttpError`
 from services for non-500 responses. Protected routes use `requireAuth`, which sets `profile`
 (the `users` table row; its `id` is the app user id, not the Supabase auth uid).
+
+**Admin.** `src/lib/api.ts` is the only place that calls the backend; admin-only endpoints live
+under `/admin/*` behind `requireAdmin`. Don't add Next.js API routes or database access to admin.
 
 **Mobile.** `lib/api.ts` is the only place that calls the backend. Add new endpoints there with
 types, then use `api.*` from screens. Auth state lives in `context/auth.tsx`.

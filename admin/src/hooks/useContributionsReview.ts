@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { Contribution, Coordinate, ReviewAction } from '@/lib/routes/types';
 import { fromLngLatPairs, pointLabel, toLngLatPairs } from '@/lib/routes/points';
+import { api } from '@/lib/api';
 
 /**
  * Pending route contributions and the state of the one currently under review:
@@ -22,8 +23,7 @@ export function useContributionsReview() {
   const fetchContributions = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/routes/contribute?status=pending');
-      const data = await response.json();
+      const data = await api.contributions.list<Contribution>('pending');
       if (data.success) {
         setContributions(data.contributions);
       }
@@ -69,28 +69,18 @@ export function useContributionsReview() {
   const approveContribution = async (contribution: Contribution) => {
     try {
       // First, add the route to the main routes table
-      const response = await fetch('/api/routes/add', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          route_code: contribution.route_code,
-          start_point_name: 'Terminal A',
-          end_point_name: 'Terminal B',
-          coordinates_forward: contribution.forward_geojson.coordinates,
-        }),
+      const result = await api.routes.add({
+        route_code: contribution.route_code,
+        start_point_name: 'Terminal A',
+        end_point_name: 'Terminal B',
+        coordinates_forward: contribution.forward_geojson.coordinates,
       });
 
-      const result = await response.json();
-
       if (result.success) {
-        await fetch(`/api/routes/contribute/${contribution.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            status: 'approved',
-            review_notes: reviewNotes,
-            transferred_route_id: result.route.id,
-          }),
+        await api.contributions.review(contribution.id, {
+          status: 'approved',
+          review_notes: reviewNotes,
+          transferred_route_id: result.route.id,
         });
 
         finishReview();
@@ -104,10 +94,9 @@ export function useContributionsReview() {
 
   const rejectContribution = async (contribution: Contribution) => {
     try {
-      await fetch(`/api/routes/contribute/${contribution.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'rejected', review_notes: reviewNotes }),
+      await api.contributions.review(contribution.id, {
+        status: 'rejected',
+        review_notes: reviewNotes,
       });
 
       finishReview();

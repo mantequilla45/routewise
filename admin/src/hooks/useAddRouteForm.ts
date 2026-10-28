@@ -4,6 +4,7 @@ import { useState } from 'react';
 import type { Coordinate } from '@/lib/routes/types';
 import { toLngLatPairs } from '@/lib/routes/points';
 import { parseKML, readFileAsText } from '@/lib/routes/kml';
+import { api } from '@/lib/api';
 
 export interface FormStatus {
   type: '' | 'info' | 'success' | 'error';
@@ -39,18 +40,12 @@ export function useAddRouteForm({
         throw new Error('Please add at least 2 points on the map');
       }
 
-      const response = await fetch('/api/routes/add', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          route_code: routeCode,
-          start_point_name: 'Terminal A',
-          end_point_name: 'Terminal B',
-          coordinates_forward: toLngLatPairs(points),
-        }),
+      const result = await api.routes.add({
+        route_code: routeCode,
+        start_point_name: 'Terminal A',
+        end_point_name: 'Terminal B',
+        coordinates_forward: toLngLatPairs(points),
       });
-
-      const result = await response.json();
 
       if (result.success) {
         setStatus({

@@ -7,6 +7,7 @@ import EditPointsList from './edit/EditPointsList';
 import MapDisplayToggles from './edit/MapDisplayToggles';
 import { isClosedLoop } from './edit/coordinateUtils';
 import { useRoutePointEditor } from './edit/useRoutePointEditor';
+import { api } from '@/lib/api';
 
 const AddRouteMap = dynamic(() => import('@/components/routes/AddRouteMap'), {
   ssr: false,
@@ -72,8 +73,7 @@ export default function EditRouteModal({
     setError(null);
 
     try {
-      const response = await fetch(`/api/routes/${routeId}`);
-      const data = await response.json();
+      const data = await api.routes.get(routeId);
 
       if (data.success && data.route) {
         const route = data.route;
@@ -119,18 +119,12 @@ export default function EditRouteModal({
         coord.lat,
       ]);
 
-      const response = await fetch(`/api/routes/${routeId}/update`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          route_code: formData.route_code,
-          start_point_name: 'Terminal A',
-          end_point_name: 'Terminal B',
-          coordinates_forward,
-        }),
+      const result = await api.routes.update(routeId, {
+        route_code: formData.route_code,
+        start_point_name: 'Terminal A',
+        end_point_name: 'Terminal B',
+        coordinates_forward,
       });
-
-      const result = await response.json();
 
       if (result.success) {
         onUpdate();

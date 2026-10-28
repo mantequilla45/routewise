@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { listRoutesWithGeometry } from '../services/admin/routes';
 import type { LatLng } from '../types/GeoTypes';
 import { calculateRoutes } from '../services/routing/calculateRoutes';
 import { calculateMultiRoutes } from '../services/routing/calculateMultiRoutes';
@@ -27,6 +28,11 @@ async function parseFromTo(c: { req: { json: () => Promise<unknown> } }) {
 routes.get('/', async (c) => {
   return c.json(await listRoutes());
 });
+
+// Full rows with geometry, for the admin browse page. Route data is public.
+routes.get('/catalog', async (c) =>
+  c.json({ success: true, routes: await listRoutesWithGeometry() }),
+);
 
 routes.get('/:id', async (c) => {
   return c.json(await getRouteForDisplay(c.req.param('id')));

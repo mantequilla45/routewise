@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { api } from '@/lib/api';
 
 export interface ColumnInfo {
   column_name: string;
@@ -47,8 +48,7 @@ export function useDatabaseTables() {
 
   const fetchDatabaseInfo = useCallback(async () => {
     try {
-      const response = await fetch('/api/database/tables');
-      const data = await response.json();
+      const data = await api.database.tables<DatabaseInfo>();
 
       if (data.success) {
         setDatabaseInfo(data);

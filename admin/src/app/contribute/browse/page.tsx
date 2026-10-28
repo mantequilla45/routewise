@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
+import { api } from '@/lib/api';
 
 const SimpleRouteMap = dynamic(() => import('@/components/routes/SimpleRouteMap'), {
   ssr: false,
@@ -32,8 +33,7 @@ export default function ViewRoutesPage() {
 
   const fetchRoutes = async () => {
     try {
-      const response = await fetch('/api/routes');
-      const data = await response.json();
+      const data = await api.routes.catalog<Route>();
       if (data.success) {
         // Filter out contribution routes
         const publicRoutes = data.routes.filter(

@@ -5,28 +5,40 @@ the app goes through here; the app itself holds no Supabase or Google credential
 
 ## Endpoints
 
-| Method | Path                                                       | Auth   | Purpose                                                               |
-| ------ | ---------------------------------------------------------- | ------ | --------------------------------------------------------------------- |
-| GET    | `/health`                                                  | –      | Liveness check                                                        |
-| POST   | `/auth/signup`                                             | –      | `{ email, password }` → session, or `202` if email confirmation is on |
-| POST   | `/auth/login`                                              | –      | `{ email, password }` → session                                       |
-| POST   | `/auth/refresh`                                            | –      | `{ refresh_token }` → new session                                     |
-| POST   | `/auth/logout`                                             | Bearer | Revokes the session                                                   |
-| GET    | `/auth/google/authorize?redirect_uri=routewise://&state=…` | –      | Opens Google sign-in                                                  |
-| GET    | `/auth/google/callback`                                    | –      | Google redirects here; deep-links back to the app with tokens         |
-| GET    | `/me`                                                      | Bearer | Current user profile                                                  |
-| PATCH  | `/me`                                                      | Bearer | `{ name?, commuter? }`                                                |
-| GET    | `/saved-routes`                                            | Bearer | List the caller's saved routes                                        |
-| POST   | `/saved-routes`                                            | Bearer | Save a route                                                          |
-| DELETE | `/saved-routes/:id`                                        | Bearer | Delete one of the caller's saved routes                               |
-| GET    | `/routes`                                                  | –      | All jeepney routes (summary)                                          |
-| GET    | `/routes/:id`                                              | –      | One route with polyline coordinates                                   |
-| POST   | `/routes/nearest-point`                                    | –      | `{ latitude, longitude, maxDistance? }`                               |
-| POST   | `/routes/calculate`                                        | –      | `{ from, to }` → single and transfer route options                    |
-| POST   | `/routes/calculate-multi`                                  | –      | `{ from, to }` → two-jeep combinations                                |
+| Method         | Path                                                       | Auth   | Purpose                                                               |
+| -------------- | ---------------------------------------------------------- | ------ | --------------------------------------------------------------------- |
+| GET            | `/health`                                                  | –      | Liveness check                                                        |
+| POST           | `/auth/signup`                                             | –      | `{ email, password }` → session, or `202` if email confirmation is on |
+| POST           | `/auth/login`                                              | –      | `{ email, password }` → session                                       |
+| POST           | `/auth/refresh`                                            | –      | `{ refresh_token }` → new session                                     |
+| POST           | `/auth/logout`                                             | Bearer | Revokes the session                                                   |
+| GET            | `/auth/google/authorize?redirect_uri=routewise://&state=…` | –      | Opens Google sign-in                                                  |
+| GET            | `/auth/google/callback`                                    | –      | Google redirects here; deep-links back to the app with tokens         |
+| GET            | `/me`                                                      | Bearer | Current user profile                                                  |
+| PATCH          | `/me`                                                      | Bearer | `{ name?, commuter? }`                                                |
+| GET            | `/saved-routes`                                            | Bearer | List the caller's saved routes                                        |
+| POST           | `/saved-routes`                                            | Bearer | Save a route                                                          |
+| DELETE         | `/saved-routes/:id`                                        | Bearer | Delete one of the caller's saved routes                               |
+| GET            | `/routes`                                                  | –      | All jeepney routes (summary)                                          |
+| GET            | `/routes/:id`                                              | –      | One route with polyline coordinates                                   |
+| POST           | `/routes/nearest-point`                                    | –      | `{ latitude, longitude, maxDistance? }`                               |
+| POST           | `/routes/calculate`                                        | –      | `{ from, to }` → single and transfer route options                    |
+| POST           | `/routes/calculate-multi`                                  | –      | `{ from, to }` → two-jeep combinations                                |
+| POST           | `/contributions`                                           | Bearer | Submit a route for review (any signed-in user)                        |
+| GET            | `/routes/catalog`                                          | –      | All routes with geometry (admin browse page)                          |
+| GET            | `/admin/routes`                                            | Admin  | Routes with geometry                                                  |
+| POST           | `/admin/routes`                                            | Admin  | Add a route                                                           |
+| GET/PUT/DELETE | `/admin/routes/:id`                                        | Admin  | Read, replace, delete a route                                         |
+| GET            | `/admin/contributions?status=`                             | Admin  | Contributions awaiting review                                         |
+| GET/PATCH      | `/admin/contributions/:id`                                 | Admin  | Read / review (`approved`, `rejected`, `needs_revision`)              |
+| GET/POST       | `/admin/users`                                             | Admin  | List / create users                                                   |
+| GET/PUT/DELETE | `/admin/users/:id`                                         | Admin  | Read, update, delete a user                                           |
+| GET            | `/admin/database/tables`                                   | Admin  | Table browser used by the dashboard                                   |
 
 A session looks like `{ access_token, refresh_token, expires_in, expires_at, user }`. Send
 `Authorization: Bearer <access_token>` on protected routes; `401` means refresh and retry.
+"Admin" routes additionally require `users.is_admin` for the caller (`403` otherwise). The admin
+dashboard sends its Supabase session token the same way.
 
 ## Run locally
 

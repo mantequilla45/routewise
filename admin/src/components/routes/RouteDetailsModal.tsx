@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Button from '@/components/ui/Button';
 import dynamic from 'next/dynamic';
+import { api } from '@/lib/api';
 
 const SimpleRouteMap = dynamic(() => import('./SimpleRouteMap'), {
   ssr: false,
@@ -43,8 +44,7 @@ export default function RouteDetailsModal({ routeId, onClose }: RouteDetailsModa
 
     try {
       setLoading(true);
-      const response = await fetch(`/api/routes/${routeId}`);
-      const data = await response.json();
+      const data = await api.routes.get<RouteDetails>(routeId);
 
       if (data.success && data.route) {
         setRoute(data.route);
@@ -55,7 +55,7 @@ export default function RouteDetailsModal({ routeId, onClose }: RouteDetailsModa
           const geojson = data.route.forward_geojson;
 
           if (geojson.type === 'LineString' && geojson.coordinates) {
-            setCoordinates(geojson.coordinates);
+            setCoordinates(geojson.coordinates as [number, number][]);
           }
         } else {
         }

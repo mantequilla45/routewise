@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
+import { api } from '@/lib/api';
 
 const RouteDetailsModal = dynamic(() => import('./RouteDetailsModal'), {
   ssr: false,
@@ -46,8 +47,7 @@ export default function RoutesList({ onRouteSelect }: { onRouteSelect?: (route: 
 
   const fetchRoutes = async () => {
     try {
-      const response = await fetch('/api/routes/add');
-      const data = await response.json();
+      const data = await api.routes.list<Route>();
       if (data.success) {
         setRoutes(data.routes);
       }
@@ -62,12 +62,8 @@ export default function RoutesList({ onRouteSelect }: { onRouteSelect?: (route: 
     if (!confirm('Are you sure you want to delete this route?')) return;
 
     try {
-      const response = await fetch(`/api/routes/${id}`, {
-        method: 'DELETE',
-      });
-      if (response.ok) {
-        setRoutes(routes.filter((r) => r.id !== id));
-      }
+      await api.routes.remove(id);
+      setRoutes(routes.filter((r) => r.id !== id));
     } catch (error) {
       console.error('Failed to delete route:', error);
     }

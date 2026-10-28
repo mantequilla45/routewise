@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
+import { api } from '@/lib/api';
 
 export interface Coordinate {
   lat: number;
@@ -136,19 +137,12 @@ export function useContributeRoute() {
         coord.lat,
       ]);
 
-      const response = await fetch('/api/routes/contribute', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          route_code: formData.route_code,
-          contributor_name: formData.contributor_name,
-          contributor_email: formData.contributor_email,
-          coordinates_forward,
-          status: 'pending', // Mark as pending for admin review
-        }),
+      const result = await api.contributions.submit({
+        route_code: formData.route_code,
+        contributor_name: formData.contributor_name,
+        contributor_email: formData.contributor_email,
+        coordinates_forward,
       });
-
-      const result = await response.json();
 
       if (result.success) {
         setStatus({
