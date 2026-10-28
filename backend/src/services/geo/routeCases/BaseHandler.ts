@@ -2,107 +2,111 @@ import { LatLng } from '../../../types/GeoTypes';
 import { query } from '../../../lib/db';
 
 export interface RouteSegment {
+  routeId: string;
+  routeCode: string;
+  routeName: string;
+  coordinates: LatLng[];
+  distance: number;
+  fare: number;
+  startPosition?: number;
+  endPosition?: number;
+  requiresLoop?: boolean;
+  optimized?: boolean; // Indicates if route was optimized (e.g., opposite side handling)
+  walkingToStart?: number; // Walking distance to start point
+  walkingFromEnd?: number; // Walking distance from end point
+
+  // Transfer-specific properties
+  isTransfer?: boolean;
+  firstRoute?: {
     routeId: string;
     routeCode: string;
     routeName: string;
     coordinates: LatLng[];
     distance: number;
     fare: number;
-    startPosition?: number;
-    endPosition?: number;
-    requiresLoop?: boolean;
-    optimized?: boolean;  // Indicates if route was optimized (e.g., opposite side handling)
-    walkingToStart?: number;  // Walking distance to start point
-    walkingFromEnd?: number;  // Walking distance from end point
-    
-    // Transfer-specific properties
-    isTransfer?: boolean;
-    firstRoute?: {
-        routeId: string;
-        routeCode: string;
-        routeName: string;
-        coordinates: LatLng[];
-        distance: number;
-        fare: number;
-        startPosition: number;
-        endPosition: number;
-    };
-    secondRoute?: {
-        routeId: string;
-        routeCode: string;
-        routeName: string;
-        coordinates: LatLng[];
-        distance: number;
-        fare: number;
-        startPosition: number;
-        endPosition: number;
-    };
-    totalDistance?: number;
-    totalFare?: number;
-    boardingWalk?: number;
-    alightingWalk?: number;
-    startOpposite?: boolean;  // Indicates if start point was on opposite side
-    endOpposite?: boolean;    // Indicates if end point was on opposite side
+    startPosition: number;
+    endPosition: number;
+  };
+  secondRoute?: {
+    routeId: string;
+    routeCode: string;
+    routeName: string;
+    coordinates: LatLng[];
+    distance: number;
+    fare: number;
+    startPosition: number;
+    endPosition: number;
+  };
+  totalDistance?: number;
+  totalFare?: number;
+  boardingWalk?: number;
+  alightingWalk?: number;
+  startOpposite?: boolean; // Indicates if start point was on opposite side
+  endOpposite?: boolean; // Indicates if end point was on opposite side
 }
 
 export interface RouteCalculationResult {
-    caseName: string;
-    segments: RouteSegment[];
-    totalDistance: number;
-    totalFare: number;
-    transferPoints?: LatLng[];
-    confidence: number;
-    debugInfo?: Record<string, unknown>;
+  caseName: string;
+  segments: RouteSegment[];
+  totalDistance: number;
+  totalFare: number;
+  transferPoints?: LatLng[];
+  confidence: number;
+  debugInfo?: Record<string, unknown>;
 }
 
 export interface SideDetectionResult {
-    routeId: string;
-    routeCode: string;
-    startPos: number;
-    endPos: number;
-    startDist: number;
-    endDist: number;
-    startSide: 'correct' | 'opposite';
-    endSide: 'correct' | 'opposite';
+  routeId: string;
+  routeCode: string;
+  startPos: number;
+  endPos: number;
+  startDist: number;
+  endDist: number;
+  startSide: 'correct' | 'opposite';
+  endSide: 'correct' | 'opposite';
 }
 
 export abstract class BaseRouteHandler {
-    protected FARE_PER_KM = 2.20;
-    protected MINIMUM_FARE = 13;
+  protected FARE_PER_KM = 2.2;
+  protected MINIMUM_FARE = 13;
 
-    abstract getCaseName(): string;
-    abstract canHandle(from: LatLng, to: LatLng): Promise<boolean>;
-    abstract calculate(from: LatLng, to: LatLng): Promise<RouteCalculationResult | null>;
+  abstract getCaseName(): string;
+  abstract canHandle(from: LatLng, to: LatLng): Promise<boolean>;
+  abstract calculate(from: LatLng, to: LatLng): Promise<RouteCalculationResult | null>;
 
-    protected calculateFare(distanceInMeters: number): number {
-        const distanceInKm = distanceInMeters / 1000;
-        const calculatedFare = distanceInKm * this.FARE_PER_KM;
-        return Math.max(this.MINIMUM_FARE, Math.ceil(calculatedFare));
+  protected calculateFare(distanceInMeters: number): number {
+    const distanceInKm = distanceInMeters / 1000;
+    const calculatedFare = distanceInKm * this.FARE_PER_KM;
+    return Math.max(this.MINIMUM_FARE, Math.ceil(calculatedFare));
+  }
+
+  protected parseGeoJson(geoJson: string): LatLng[] {
+    try {
+      const parsed = JSON.parse(geoJson);
+      if (parsed.type === 'LineString' && parsed.coordinates) {
+        return parsed.coordinates.map((coord: number[]) => ({
+          latitude: coord[1],
+          longitude: coord[0],
+        }));
+      }
+      return [];
+    } catch (error) {
+      console.error('Error parsing GeoJSON:', error);
+      return [];
     }
+  }
 
-    protected parseGeoJson(geoJson: string): LatLng[] {
-        try {
-            const parsed = JSON.parse(geoJson);
-            if (parsed.type === 'LineString' && parsed.coordinates) {
-                return parsed.coordinates.map((coord: number[]) => ({
-                    latitude: coord[1],
-                    longitude: coord[0]
-                }));
-            }
-            return [];
-        } catch (error) {
-            console.error('Error parsing GeoJSON:', error);
-            return [];
-        }
-    }
-
-    /**
-     * Detects which side of the road each pin is on for all routes
-     * For routes that pass the same location multiple times, picks the best pass
-     * Returns routes with side detection for both start and end points
-     */
-    protected async detectSidesForRoutes(from: LatLng, to: LatLng, maxDistance: number = 100): Promise<SideDetectionResult[]> {
-        const sideDetectionQuery = `
+  /**
+   * Detects which side of the road each pin is on for all routes
+   * For routes that pass the same location multiple times, picks the best pass
+   * Returns routes with side detection for both start and end points
+   */
+  protected async detectSidesForRoutes(
+    from: LatLng,
+    to: LatLng,
+    maxDistance: number = 100,
+  ): Promise<SideDetectionResult[]> {
+    const sideDetectionQuery = `
             WITH route_check AS (
                 SELECT 
                     r.id,
@@ -158,35 +162,42 @@ export abstract class BaseRouteHandler {
                 END as end_side
             FROM route_check;
         `;
-        
-        const results = await query(sideDetectionQuery, [
-            from.longitude, from.latitude,
-            to.longitude, to.latitude,
-            maxDistance
-        ]);
-        
-        return results.map(r => ({
-            routeId: r.route_id,
-            routeCode: r.route_code,
-            startPos: r.start_pos,
-            endPos: r.end_pos,
-            startDist: r.start_dist,
-            endDist: r.end_dist,
-            startSide: r.start_side,
-            endSide: r.end_side
-        }));
-    }
 
-    /**
-     * Detects if a route passes near a location multiple times
-     * Returns all passes with their positions and distances
-     */
-    protected async detectMultiplePasses(point: LatLng, routeId: string): Promise<Array<{
-        position: number;
-        distance: number;
-        passNumber: number;
-    }>> {
-        const sqlQuery = `
+    const results = await query(sideDetectionQuery, [
+      from.longitude,
+      from.latitude,
+      to.longitude,
+      to.latitude,
+      maxDistance,
+    ]);
+
+    return results.map((r) => ({
+      routeId: r.route_id,
+      routeCode: r.route_code,
+      startPos: r.start_pos,
+      endPos: r.end_pos,
+      startDist: r.start_dist,
+      endDist: r.end_dist,
+      startSide: r.start_side,
+      endSide: r.end_side,
+    }));
+  }
+
+  /**
+   * Detects if a route passes near a location multiple times
+   * Returns all passes with their positions and distances
+   */
+  protected async detectMultiplePasses(
+    point: LatLng,
+    routeId: string,
+  ): Promise<
+    Array<{
+      position: number;
+      distance: number;
+      passNumber: number;
+    }>
+  > {
+    const sqlQuery = `
             WITH route_samples AS (
                 SELECT 
                     generate_series(0.0, 1.0, 0.01) as position,
@@ -225,13 +236,13 @@ export abstract class BaseRouteHandler {
             GROUP BY pass_number
             ORDER BY distance;
         `;
-        
-        const results = await query(sqlQuery, [routeId, point.longitude, point.latitude]);
-        return results;
-    }
 
-    protected async findNearestRoutes(point: LatLng, maxDistance: number = 50) {
-        const routesQuery = `
+    const results = await query(sqlQuery, [routeId, point.longitude, point.latitude]);
+    return results;
+  }
+
+  protected async findNearestRoutes(point: LatLng, maxDistance: number = 50) {
+    const routesQuery = `
             SELECT 
                 r.id,
                 r.route_code,
@@ -247,7 +258,7 @@ export abstract class BaseRouteHandler {
             )
             ORDER BY distance_to_route;
         `;
-        
-        return await query(routesQuery, [point.longitude, point.latitude, maxDistance]);
-    }
+
+    return await query(routesQuery, [point.longitude, point.latitude, maxDistance]);
+  }
 }

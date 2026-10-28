@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { X } from "lucide-react";
-import Button from "@/components/ui/Button";
+import { useState, useEffect } from 'react';
+import { X } from 'lucide-react';
+import Button from '@/components/ui/Button';
 
 interface User {
   id: string;
@@ -29,19 +29,14 @@ interface EditUserModalProps {
   onSave: (userData: Partial<User>) => Promise<void>;
 }
 
-export default function EditUserModal({
-  user,
-  isCreating,
-  onClose,
-  onSave,
-}: EditUserModalProps) {
+export default function EditUserModal({ user, isCreating, onClose, onSave }: EditUserModalProps) {
   const [formData, setFormData] = useState<Partial<User>>({
-    email: "",
-    full_name: "",
-    phone_number: "",
+    email: '',
+    full_name: '',
+    phone_number: '',
     is_admin: false,
-    commuter: "",
-    avatar_url: "",
+    commuter: '',
+    avatar_url: '',
   });
   const [loading, setLoading] = useState(false);
 
@@ -49,20 +44,20 @@ export default function EditUserModal({
     if (user) {
       setFormData({
         email: user.email,
-        full_name: user.full_name || "",
-        phone_number: user.phone_number || "",
+        full_name: user.full_name || '',
+        phone_number: user.phone_number || '',
         is_admin: user.is_admin || false,
-        commuter: user.commuter || "",
-        avatar_url: user.avatar_url || "",
+        commuter: user.commuter || '',
+        avatar_url: user.avatar_url || '',
       });
     } else {
       setFormData({
-        email: "",
-        full_name: "",
-        phone_number: "",
+        email: '',
+        full_name: '',
+        phone_number: '',
         is_admin: false,
-        commuter: "",
-        avatar_url: "",
+        commuter: '',
+        avatar_url: '',
       });
     }
   }, [user]);
@@ -73,7 +68,7 @@ export default function EditUserModal({
     try {
       await onSave(formData);
     } catch (error) {
-      console.error("Error saving user:", error);
+      console.error('Error saving user:', error);
     } finally {
       setLoading(false);
     }
@@ -84,7 +79,7 @@ export default function EditUserModal({
       <div className="bg-[#3A3A3A] rounded-xl shadow-2xl w-full max-w-md p-6 border border-[#404040]">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-white">
-            {isCreating ? "Create New User" : "Edit User"}
+            {isCreating ? 'Create New User' : 'Edit User'}
           </h2>
           <button
             onClick={onClose}
@@ -96,58 +91,42 @@ export default function EditUserModal({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
-              Email *
-            </label>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Email *</label>
             <input
               type="email"
               required
-              value={formData.email || ""}
-              onChange={(e) =>
-                setFormData({ ...formData, email: e.target.value })
-              }
+              value={formData.email || ''}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               className="w-full px-3 py-2 bg-[#2D2D2D] border border-[#4C4C4C] text-white rounded-lg focus:ring-2 focus:ring-[#FFCC66] focus:border-[#FFCC66] disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={!isCreating}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
-              Full Name
-            </label>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Full Name</label>
             <input
               type="text"
-              value={formData.full_name || ""}
-              onChange={(e) =>
-                setFormData({ ...formData, full_name: e.target.value })
-              }
+              value={formData.full_name || ''}
+              onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
               className="w-full px-3 py-2 bg-[#2D2D2D] border border-[#4C4C4C] text-white rounded-lg focus:ring-2 focus:ring-[#FFCC66] focus:border-[#FFCC66] disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
-              Phone Number
-            </label>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Phone Number</label>
             <input
               type="tel"
-              value={formData.phone_number || ""}
-              onChange={(e) =>
-                setFormData({ ...formData, phone_number: e.target.value })
-              }
+              value={formData.phone_number || ''}
+              onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })}
               className="w-full px-3 py-2 bg-[#2D2D2D] border border-[#4C4C4C] text-white rounded-lg focus:ring-2 focus:ring-[#FFCC66] focus:border-[#FFCC66] disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
-              Commuter Type
-            </label>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Commuter Type</label>
             <select
-              value={formData.commuter || ""}
-              onChange={(e) =>
-                setFormData({ ...formData, commuter: e.target.value })
-              }
+              value={formData.commuter || ''}
+              onChange={(e) => setFormData({ ...formData, commuter: e.target.value })}
               className="w-full px-3 py-2 bg-[#2D2D2D] border border-[#4C4C4C] text-white rounded-lg focus:ring-2 focus:ring-[#FFCC66] focus:border-[#FFCC66] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <option value="">None</option>
@@ -160,15 +139,11 @@ export default function EditUserModal({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
-              Avatar URL
-            </label>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Avatar URL</label>
             <input
               type="url"
-              value={formData.avatar_url || ""}
-              onChange={(e) =>
-                setFormData({ ...formData, avatar_url: e.target.value })
-              }
+              value={formData.avatar_url || ''}
+              onChange={(e) => setFormData({ ...formData, avatar_url: e.target.value })}
               className="w-full px-3 py-2 bg-[#2D2D2D] border border-[#4C4C4C] text-white rounded-lg focus:ring-2 focus:ring-[#FFCC66] focus:border-[#FFCC66] disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
@@ -178,15 +153,10 @@ export default function EditUserModal({
               type="checkbox"
               id="is_admin"
               checked={formData.is_admin || false}
-              onChange={(e) =>
-                setFormData({ ...formData, is_admin: e.target.checked })
-              }
+              onChange={(e) => setFormData({ ...formData, is_admin: e.target.checked })}
               className="h-4 w-4 text-[#FFCC66] focus:ring-[#FFCC66] border-[#4C4C4C] rounded accent-[#FFCC66]"
             />
-            <label
-              htmlFor="is_admin"
-              className="ml-2 block text-sm text-gray-300"
-            >
+            <label htmlFor="is_admin" className="ml-2 block text-sm text-gray-300">
               Administrator
             </label>
           </div>
@@ -204,7 +174,7 @@ export default function EditUserModal({
               Cancel
             </Button>
             <Button type="submit" variant="primary" loading={loading}>
-              {loading ? "Saving..." : "Save"}
+              {loading ? 'Saving...' : 'Save'}
             </Button>
           </div>
         </form>

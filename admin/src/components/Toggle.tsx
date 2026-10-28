@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 
 // Import types from dashboard page
 interface UserData {
@@ -67,12 +67,7 @@ interface ToggleProps {
   jeepR: JeepneyRoutesData[];
 }
 
-type ActiveTableId =
-  | "users"
-  | "tripHistory"
-  | "savedRoutes"
-  | "newJeepneyRoutes"
-  | "jeepneyRoutes";
+type ActiveTableId = 'users' | 'tripHistory' | 'savedRoutes' | 'newJeepneyRoutes' | 'jeepneyRoutes';
 
 export default function Toggle({
   userTable,
@@ -93,83 +88,75 @@ export default function Toggle({
   //   useState(false);
   // const [showJeepneyRoutesTable, setShowJeepneyRoutesTable] = useState(false);
 
-  const [activeTable, setActiveTable] = useState<ActiveTableId>("users");
+  const [activeTable, setActiveTable] = useState<ActiveTableId>('users');
 
   // Helper function to generate class names
   const getButtonClasses = (id: ActiveTableId) => `
     flex items-center rounded-[20px] bg-[#404040] transition-all duration-200 
     hover:bg-[#4c4c4c] 
     h-[40px] w-[210px] justify-center m-5 p-5 text-[13px]
-    ${
-      activeTable === id
-        ? "bg-[#FFCC66] text-black hover:bg-[#FFCC66]"
-        : "shadow-none"
-    } 
+    ${activeTable === id ? 'bg-[#FFCC66] text-black hover:bg-[#FFCC66]' : 'shadow-none'} 
     active:scale-95 
   `;
 
   // Helper to determine the message and array for the active table
   const getActiveDataAndMessage = () => {
     switch (activeTable) {
-      case "users":
-        return { data: users, message: "No users found." };
-      case "tripHistory":
-        return { data: trips, message: "No trip history found." };
-      case "savedRoutes":
-        return { data: saved, message: "No saved routes found." };
-      case "newJeepneyRoutes":
-        return { data: newJ, message: "No new jeepney routes found." };
-      case "jeepneyRoutes":
-        return { data: jeepR, message: "No jeepney routes found." };
+      case 'users':
+        return { data: users, message: 'No users found.' };
+      case 'tripHistory':
+        return { data: trips, message: 'No trip history found.' };
+      case 'savedRoutes':
+        return { data: saved, message: 'No saved routes found.' };
+      case 'newJeepneyRoutes':
+        return { data: newJ, message: 'No new jeepney routes found.' };
+      case 'jeepneyRoutes':
+        return { data: jeepR, message: 'No jeepney routes found.' };
       default:
-        return { data: [], message: "Select a category." };
+        return { data: [], message: 'Select a category.' };
     }
   };
 
-  const { data: activeData, message: noDataMessage } =
-    getActiveDataAndMessage();
+  const { data: activeData, message: noDataMessage } = getActiveDataAndMessage();
 
   return (
     <div>
       <div className="flex w-full items-center justify-center">
-        <button
-          onClick={() => setActiveTable("users")}
-          className={getButtonClasses("users")}
-        >
-          {"User Management"}
+        <button onClick={() => setActiveTable('users')} className={getButtonClasses('users')}>
+          {'User Management'}
         </button>
         <button
-          onClick={() => setActiveTable("tripHistory")}
-          className={getButtonClasses("tripHistory")}
+          onClick={() => setActiveTable('tripHistory')}
+          className={getButtonClasses('tripHistory')}
         >
-          {"Trip History"}
+          {'Trip History'}
         </button>
         <button
-          onClick={() => setActiveTable("savedRoutes")}
-          className={getButtonClasses("savedRoutes")}
+          onClick={() => setActiveTable('savedRoutes')}
+          className={getButtonClasses('savedRoutes')}
         >
-          {"Saved Routes"}
+          {'Saved Routes'}
         </button>
         <button
-          onClick={() => setActiveTable("newJeepneyRoutes")}
-          className={getButtonClasses("newJeepneyRoutes")}
+          onClick={() => setActiveTable('newJeepneyRoutes')}
+          className={getButtonClasses('newJeepneyRoutes')}
         >
-          {"New Jeepney Routes"}
+          {'New Jeepney Routes'}
         </button>
         <button
-          onClick={() => setActiveTable("jeepneyRoutes")}
-          className={getButtonClasses("jeepneyRoutes")}
+          onClick={() => setActiveTable('jeepneyRoutes')}
+          className={getButtonClasses('jeepneyRoutes')}
         >
-          {"Jeepney Routes"}
+          {'Jeepney Routes'}
         </button>
       </div>
 
       {/* Conditional Table Display */}
-      {activeTable === "users" && <div>{userTable}</div>}
-      {activeTable === "tripHistory" && <div>{tripHistoryTable}</div>}
-      {activeTable === "savedRoutes" && <div>{savedRoutesTable}</div>}
-      {activeTable === "newJeepneyRoutes" && <div>{newJeepneyRoutesTable}</div>}
-      {activeTable === "jeepneyRoutes" && <div>{jeepneyRoutesTable}</div>}
+      {activeTable === 'users' && <div>{userTable}</div>}
+      {activeTable === 'tripHistory' && <div>{tripHistoryTable}</div>}
+      {activeTable === 'savedRoutes' && <div>{savedRoutesTable}</div>}
+      {activeTable === 'newJeepneyRoutes' && <div>{newJeepneyRoutesTable}</div>}
+      {activeTable === 'jeepneyRoutes' && <div>{jeepneyRoutesTable}</div>}
 
       {/* {showTable && <div>{userTable}</div>}
       {showTripHistoryTable && <div>{tripHistoryTable}</div>}
@@ -179,9 +166,7 @@ export default function Toggle({
 
       {/* 🚀 CONDITIONAL NO-DATA MESSAGE */}
       {activeData.length === 0 && (
-        <p className="flex items-center justify-center mt-4 text-gray-400">
-          {noDataMessage}
-        </p>
+        <p className="flex items-center justify-center mt-4 text-gray-400">{noDataMessage}</p>
       )}
     </div>
   );

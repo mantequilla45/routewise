@@ -5,25 +5,25 @@ the app goes through here; the app itself holds no Supabase or Google credential
 
 ## Endpoints
 
-| Method | Path | Auth | Purpose |
-|---|---|---|---|
-| GET | `/health` | – | Liveness check |
-| POST | `/auth/signup` | – | `{ email, password }` → session, or `202` if email confirmation is on |
-| POST | `/auth/login` | – | `{ email, password }` → session |
-| POST | `/auth/refresh` | – | `{ refresh_token }` → new session |
-| POST | `/auth/logout` | Bearer | Revokes the session |
-| GET | `/auth/google/authorize?redirect_uri=routewise://&state=…` | – | Opens Google sign-in |
-| GET | `/auth/google/callback` | – | Google redirects here; deep-links back to the app with tokens |
-| GET | `/me` | Bearer | Current user profile |
-| PATCH | `/me` | Bearer | `{ name?, commuter? }` |
-| GET | `/saved-routes` | Bearer | List the caller's saved routes |
-| POST | `/saved-routes` | Bearer | Save a route |
-| DELETE | `/saved-routes/:id` | Bearer | Delete one of the caller's saved routes |
-| GET | `/routes` | – | All jeepney routes (summary) |
-| GET | `/routes/:id` | – | One route with polyline coordinates |
-| POST | `/routes/nearest-point` | – | `{ latitude, longitude, maxDistance? }` |
-| POST | `/routes/calculate` | – | `{ from, to }` → single and transfer route options |
-| POST | `/routes/calculate-multi` | – | `{ from, to }` → two-jeep combinations |
+| Method | Path                                                       | Auth   | Purpose                                                               |
+| ------ | ---------------------------------------------------------- | ------ | --------------------------------------------------------------------- |
+| GET    | `/health`                                                  | –      | Liveness check                                                        |
+| POST   | `/auth/signup`                                             | –      | `{ email, password }` → session, or `202` if email confirmation is on |
+| POST   | `/auth/login`                                              | –      | `{ email, password }` → session                                       |
+| POST   | `/auth/refresh`                                            | –      | `{ refresh_token }` → new session                                     |
+| POST   | `/auth/logout`                                             | Bearer | Revokes the session                                                   |
+| GET    | `/auth/google/authorize?redirect_uri=routewise://&state=…` | –      | Opens Google sign-in                                                  |
+| GET    | `/auth/google/callback`                                    | –      | Google redirects here; deep-links back to the app with tokens         |
+| GET    | `/me`                                                      | Bearer | Current user profile                                                  |
+| PATCH  | `/me`                                                      | Bearer | `{ name?, commuter? }`                                                |
+| GET    | `/saved-routes`                                            | Bearer | List the caller's saved routes                                        |
+| POST   | `/saved-routes`                                            | Bearer | Save a route                                                          |
+| DELETE | `/saved-routes/:id`                                        | Bearer | Delete one of the caller's saved routes                               |
+| GET    | `/routes`                                                  | –      | All jeepney routes (summary)                                          |
+| GET    | `/routes/:id`                                              | –      | One route with polyline coordinates                                   |
+| POST   | `/routes/nearest-point`                                    | –      | `{ latitude, longitude, maxDistance? }`                               |
+| POST   | `/routes/calculate`                                        | –      | `{ from, to }` → single and transfer route options                    |
+| POST   | `/routes/calculate-multi`                                  | –      | `{ from, to }` → two-jeep combinations                                |
 
 A session looks like `{ access_token, refresh_token, expires_in, expires_at, user }`. Send
 `Authorization: Bearer <access_token>` on protected routes; `401` means refresh and retry.
@@ -42,12 +42,14 @@ For a phone or emulator, the API must be reachable from the device: use your Mac
 ## One-time setup
 
 **Supabase**
+
 1. Project Settings → API: copy the URL, anon key and service role key into `.env`.
-2. Project Settings → Database → Connection string → *Transaction pooler* (port 6543) → `DATABASE_URL`.
+2. Project Settings → Database → Connection string → _Transaction pooler_ (port 6543) → `DATABASE_URL`.
 3. Authentication → Providers → Google: enable it and paste the Google client ID (and secret).
    This is what lets the backend turn a Google login into a Supabase session.
 
-**Google Cloud Console** → Credentials → your *Web* OAuth client → Authorized redirect URIs, add:
+**Google Cloud Console** → Credentials → your _Web_ OAuth client → Authorized redirect URIs, add:
+
 - `http://localhost:3000/auth/google/callback` (local)
 - `https://<your-vercel-domain>/auth/google/callback` (production)
 

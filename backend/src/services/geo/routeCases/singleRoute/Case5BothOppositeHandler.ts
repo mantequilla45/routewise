@@ -10,15 +10,15 @@ import { RouteQueryResult } from '../types';
  * - Solution: Use closest points on route that allow forward travel
  */
 export class Case5BothOppositeHandler extends BaseRouteHandler {
-    getCaseName(): string {
-        return 'CASE_5_BOTH_OPPOSITE';
-    }
+  getCaseName(): string {
+    return 'CASE_5_BOTH_OPPOSITE';
+  }
 
-    async canHandle(from: LatLng, to: LatLng): Promise<boolean> {
-        console.log('🔍 Case 5: Checking if Both Opposite can handle this route...');
-        
-        // Check for routes where at least one pin is far enough (opposite side)
-        const checkQuery = `
+  async canHandle(from: LatLng, to: LatLng): Promise<boolean> {
+    console.log('🔍 Case 5: Checking if Both Opposite can handle this route...');
+
+    // Check for routes where at least one pin is far enough (opposite side)
+    const checkQuery = `
             SELECT 
                 r.id,
                 r.route_code,
@@ -35,23 +35,25 @@ export class Case5BothOppositeHandler extends BaseRouteHandler {
                 )
             LIMIT 1;
         `;
-        
-        const results = await query(checkQuery, [
-            from.longitude, from.latitude,
-            to.longitude, to.latitude
-        ]);
-        
-        const canHandle = results.length > 0;
-        console.log(`🔍 Case 5: ${canHandle ? '✅ Can handle' : '❌ Cannot handle'}`);
-        
-        return canHandle;
-    }
 
-    async calculate(from: LatLng, to: LatLng): Promise<RouteCalculationResult | null> {
-        console.log('🚗 Case 5: Calculating Both Opposite route...');
-        
-        // Simpler approach: Find all points within range of start/end, pick best forward path
-        const routeQuery = `
+    const results = await query(checkQuery, [
+      from.longitude,
+      from.latitude,
+      to.longitude,
+      to.latitude,
+    ]);
+
+    const canHandle = results.length > 0;
+    console.log(`🔍 Case 5: ${canHandle ? '✅ Can handle' : '❌ Cannot handle'}`);
+
+    return canHandle;
+  }
+
+  async calculate(from: LatLng, to: LatLng): Promise<RouteCalculationResult | null> {
+    console.log('🚗 Case 5: Calculating Both Opposite route...');
+
+    // Simpler approach: Find all points within range of start/end, pick best forward path
+    const routeQuery = `
             WITH route_analysis AS (
                 SELECT 
                     r.id,
@@ -149,49 +151,51 @@ export class Case5BothOppositeHandler extends BaseRouteHandler {
             ORDER BY route_distance;
         `;
 
-        const results = await query(routeQuery, [
-            from.longitude, from.latitude,
-            to.longitude, to.latitude
-        ]);
+    const results = await query(routeQuery, [
+      from.longitude,
+      from.latitude,
+      to.longitude,
+      to.latitude,
+    ]);
 
-        if (results.length === 0) {
-            console.log('🚗 Case 5: No valid both opposite routes found');
-            return null;
-        }
-
-        console.log(`🚗 Case 5: Found ${results.length} both opposite route(s)`);
-        
-        const segments: RouteSegment[] = results.map((route: RouteQueryResult) => {
-            const coordinates = this.parseGeoJson(route.segment_geojson);
-            const fare = this.calculateFare(route.route_distance);
-            
-            // Reduced logging
-            
-            return {
-                routeId: route.id,
-                routeCode: route.route_code,
-                routeName: route.route_name,
-                coordinates,
-                distance: route.route_distance,
-                fare,
-                startPosition: route.start_pos,
-                endPosition: route.end_pos,
-                walkingToStart: route.walking_to_start,
-                walkingFromEnd: route.walking_from_end,
-                optimized: true
-            };
-        });
-        
-        return {
-            caseName: this.getCaseName(),
-            segments,
-            totalDistance: segments[0]?.distance || 0,
-            totalFare: segments[0]?.fare || 13,
-            confidence: 0.75,
-            debugInfo: {
-                bothOpposite: true,
-                routeCount: segments.length
-            }
-        };
+    if (results.length === 0) {
+      console.log('🚗 Case 5: No valid both opposite routes found');
+      return null;
     }
+
+    console.log(`🚗 Case 5: Found ${results.length} both opposite route(s)`);
+
+    const segments: RouteSegment[] = results.map((route: RouteQueryResult) => {
+      const coordinates = this.parseGeoJson(route.segment_geojson);
+      const fare = this.calculateFare(route.route_distance);
+
+      // Reduced logging
+
+      return {
+        routeId: route.id,
+        routeCode: route.route_code,
+        routeName: route.route_name,
+        coordinates,
+        distance: route.route_distance,
+        fare,
+        startPosition: route.start_pos,
+        endPosition: route.end_pos,
+        walkingToStart: route.walking_to_start,
+        walkingFromEnd: route.walking_from_end,
+        optimized: true,
+      };
+    });
+
+    return {
+      caseName: this.getCaseName(),
+      segments,
+      totalDistance: segments[0]?.distance || 0,
+      totalFare: segments[0]?.fare || 13,
+      confidence: 0.75,
+      debugInfo: {
+        bothOpposite: true,
+        routeCount: segments.length,
+      },
+    };
+  }
 }

@@ -8,19 +8,19 @@ import { RouteQueryResult } from '../types';
  * - Start: Correct side (<20m away)
  * - End: Opposite side (>20m away)
  * - Solution: Travel to nearest point on route near destination
- * 
+ *
  * Example: Destination is on opposite side, passenger gets off at nearest point
  */
 export class Case4OppositeEndHandler extends BaseRouteHandler {
-    getCaseName(): string {
-        return 'CASE_4_OPPOSITE_END';
-    }
+  getCaseName(): string {
+    return 'CASE_4_OPPOSITE_END';
+  }
 
-    async canHandle(from: LatLng, to: LatLng): Promise<boolean> {
-        console.log('🔍 Case 4: Checking if Opposite End can handle this route...');
-        
-        // Check for routes where start is close (correct side) but end is far (opposite side)
-        const checkQuery = `
+  async canHandle(from: LatLng, to: LatLng): Promise<boolean> {
+    console.log('🔍 Case 4: Checking if Opposite End can handle this route...');
+
+    // Check for routes where start is close (correct side) but end is far (opposite side)
+    const checkQuery = `
             WITH route_check AS (
                 SELECT 
                     r.id,
@@ -52,29 +52,35 @@ export class Case4OppositeEndHandler extends BaseRouteHandler {
             ORDER BY start_dist + end_dist
             LIMIT 1;
         `;
-        
-        const results = await query(checkQuery, [
-            from.longitude, from.latitude,
-            to.longitude, to.latitude
-        ]);
-        
-        const canHandle = results.length > 0;
-        console.log(`🔍 Case 4: ${canHandle ? '✅ Can handle' : '❌ Cannot handle'}`);
-        
-        if (canHandle && results[0]) {
-            const r = results[0];
-            console.log(`  Route ${r.route_code}: Start ${r.start_dist.toFixed(1)}m (correct), End ${r.end_dist.toFixed(1)}m (opposite)`);
-            console.log(`    Start pos: ${(r.start_pos * 100).toFixed(1)}%, End pos: ${(r.end_pos * 100).toFixed(1)}%`);
-        }
-        
-        return canHandle;
+
+    const results = await query(checkQuery, [
+      from.longitude,
+      from.latitude,
+      to.longitude,
+      to.latitude,
+    ]);
+
+    const canHandle = results.length > 0;
+    console.log(`🔍 Case 4: ${canHandle ? '✅ Can handle' : '❌ Cannot handle'}`);
+
+    if (canHandle && results[0]) {
+      const r = results[0];
+      console.log(
+        `  Route ${r.route_code}: Start ${r.start_dist.toFixed(1)}m (correct), End ${r.end_dist.toFixed(1)}m (opposite)`,
+      );
+      console.log(
+        `    Start pos: ${(r.start_pos * 100).toFixed(1)}%, End pos: ${(r.end_pos * 100).toFixed(1)}%`,
+      );
     }
 
-    async calculate(from: LatLng, to: LatLng): Promise<RouteCalculationResult | null> {
-        console.log('🚗 Case 4: Calculating Opposite End route...');
-        
-        // Query to find routes and calculate to nearest alighting point
-        const routeQuery = `
+    return canHandle;
+  }
+
+  async calculate(from: LatLng, to: LatLng): Promise<RouteCalculationResult | null> {
+    console.log('🚗 Case 4: Calculating Opposite End route...');
+
+    // Query to find routes and calculate to nearest alighting point
+    const routeQuery = `
             WITH route_analysis AS (
                 SELECT 
                     r.id,
@@ -153,61 +159,69 @@ export class Case4OppositeEndHandler extends BaseRouteHandler {
             ORDER BY distance_meters;
         `;
 
-        const results = await query(routeQuery, [
-            from.longitude, from.latitude,
-            to.longitude, to.latitude
-        ]);
+    const results = await query(routeQuery, [
+      from.longitude,
+      from.latitude,
+      to.longitude,
+      to.latitude,
+    ]);
 
-        if (results.length === 0) {
-            console.log('🚗 Case 4: No valid opposite end routes found');
-            return null;
-        }
-
-        console.log(`🚗 Case 4: Found ${results.length} opposite end route(s)`);
-        
-        // Process all matching routes
-        const segments: RouteSegment[] = results.map((route: RouteQueryResult) => {
-            const coordinates = this.parseGeoJson(route.segment_geojson);
-            const distance = route.distance_meters || route.route_distance || 0;
-            const fare = this.calculateFare(distance);
-            
-            console.log(`  Route ${route.route_code}: ${(distance / 1000).toFixed(2)}km, ₱${fare}`);
-            console.log(`    End correction: Walk ${(route.walking_distance ?? 0).toFixed(0)}m from alighting point`);
-            console.log(`    Travel: ${(route.start_pos * 100).toFixed(1)}% → ${(route.end_pos * 100).toFixed(1)}%`);
-            console.log(`    Original end would have been: ${((route.original_end_pos ?? route.end_pos) * 100).toFixed(1)}%`);
-            console.log(`    Coordinates: ${coordinates.length} points`);
-            
-            return {
-                routeId: route.id,
-                routeCode: route.route_code,
-                routeName: route.route_name,
-                coordinates,
-                distance: distance,
-                fare,
-                startPosition: route.start_pos,
-                endPosition: route.end_pos,
-                walkingDistance: route.walking_distance
-            };
-        });
-
-        // Use the first route for overall stats
-        const firstRoute = results[0];
-        
-        return {
-            caseName: this.getCaseName(),
-            segments,
-            totalDistance: firstRoute.distance_meters,
-            totalFare: this.calculateFare(firstRoute.distance_meters),
-            confidence: 0.9,  // Slightly lower confidence due to end correction
-            debugInfo: {
-                endCorrected: true,
-                walkingDistance: firstRoute.walking_distance,
-                originalEndPosition: firstRoute.original_end_pos,
-                correctedEndPosition: firstRoute.end_pos,
-                startDistance: firstRoute.start_dist,
-                endDistance: firstRoute.end_dist,
-                routeCount: results.length
-            }
-        };
+    if (results.length === 0) {
+      console.log('🚗 Case 4: No valid opposite end routes found');
+      return null;
     }
+
+    console.log(`🚗 Case 4: Found ${results.length} opposite end route(s)`);
+
+    // Process all matching routes
+    const segments: RouteSegment[] = results.map((route: RouteQueryResult) => {
+      const coordinates = this.parseGeoJson(route.segment_geojson);
+      const distance = route.distance_meters || route.route_distance || 0;
+      const fare = this.calculateFare(distance);
+
+      console.log(`  Route ${route.route_code}: ${(distance / 1000).toFixed(2)}km, ₱${fare}`);
+      console.log(
+        `    End correction: Walk ${(route.walking_distance ?? 0).toFixed(0)}m from alighting point`,
+      );
+      console.log(
+        `    Travel: ${(route.start_pos * 100).toFixed(1)}% → ${(route.end_pos * 100).toFixed(1)}%`,
+      );
+      console.log(
+        `    Original end would have been: ${((route.original_end_pos ?? route.end_pos) * 100).toFixed(1)}%`,
+      );
+      console.log(`    Coordinates: ${coordinates.length} points`);
+
+      return {
+        routeId: route.id,
+        routeCode: route.route_code,
+        routeName: route.route_name,
+        coordinates,
+        distance: distance,
+        fare,
+        startPosition: route.start_pos,
+        endPosition: route.end_pos,
+        walkingDistance: route.walking_distance,
+      };
+    });
+
+    // Use the first route for overall stats
+    const firstRoute = results[0];
+
+    return {
+      caseName: this.getCaseName(),
+      segments,
+      totalDistance: firstRoute.distance_meters,
+      totalFare: this.calculateFare(firstRoute.distance_meters),
+      confidence: 0.9, // Slightly lower confidence due to end correction
+      debugInfo: {
+        endCorrected: true,
+        walkingDistance: firstRoute.walking_distance,
+        originalEndPosition: firstRoute.original_end_pos,
+        correctedEndPosition: firstRoute.end_pos,
+        startDistance: firstRoute.start_dist,
+        endDistance: firstRoute.end_dist,
+        routeCount: results.length,
+      },
+    };
+  }
 }

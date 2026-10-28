@@ -23,9 +23,9 @@ app.route('/routes', routes);
 app.notFound((c) => c.json({ error: 'Not found' }, 404));
 
 app.onError((err, c) => {
-    if (err instanceof HttpError) {
-        return c.json(err.body, err.status as 400);
-    }
-    console.error('Unhandled error:', err);
-    return c.json({ error: 'Internal server error' }, 500);
+  if (err instanceof HttpError) {
+    return c.json(err.body, err.status as 400);
+  }
+  console.error('Unhandled error:', err);
+  return c.json({ error: 'Internal server error' }, 500);
 });

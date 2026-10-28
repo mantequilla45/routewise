@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { Plus, Edit, Trash2, Search } from "lucide-react";
-import EditUserModal from "@/components/users/EditUserModal";
+import { useState, useEffect } from 'react';
+import { Plus, Edit, Trash2, Search } from 'lucide-react';
+import EditUserModal from '@/components/users/EditUserModal';
 
 interface User {
   id: string;
@@ -25,7 +25,7 @@ interface User {
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState('');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -36,31 +36,31 @@ export default function UsersPage() {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch("/api/users");
-      if (!response.ok) throw new Error("Failed to fetch users");
+      const response = await fetch('/api/users');
+      if (!response.ok) throw new Error('Failed to fetch users');
       const data = await response.json();
       setUsers(data);
     } catch (error) {
-      console.error("Error fetching users:", error);
+      console.error('Error fetching users:', error);
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this user?")) return;
+    if (!confirm('Are you sure you want to delete this user?')) return;
 
     try {
       const response = await fetch(`/api/users/${id}`, {
-        method: "DELETE",
+        method: 'DELETE',
       });
 
-      if (!response.ok) throw new Error("Failed to delete user");
-      
-      setUsers(users.filter(user => user.id !== id));
+      if (!response.ok) throw new Error('Failed to delete user');
+
+      setUsers(users.filter((user) => user.id !== id));
     } catch (error) {
-      console.error("Error deleting user:", error);
-      alert("Failed to delete user");
+      console.error('Error deleting user:', error);
+      alert('Failed to delete user');
     }
   };
 
@@ -78,47 +78,48 @@ export default function UsersPage() {
 
   const handleSaveUser = async (userData: Partial<User>) => {
     try {
-      const url = isCreating ? "/api/users" : `/api/users/${selectedUser?.id}`;
-      const method = isCreating ? "POST" : "PUT";
-      
+      const url = isCreating ? '/api/users' : `/api/users/${selectedUser?.id}`;
+      const method = isCreating ? 'POST' : 'PUT';
+
       const response = await fetch(url, {
         method,
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify(userData),
       });
 
-      if (!response.ok) throw new Error("Failed to save user");
-      
+      if (!response.ok) throw new Error('Failed to save user');
+
       const savedUser = await response.json();
-      
+
       if (isCreating) {
         setUsers([...users, savedUser]);
       } else {
-        setUsers(users.map(u => u.id === savedUser.id ? savedUser : u));
+        setUsers(users.map((u) => (u.id === savedUser.id ? savedUser : u)));
       }
-      
+
       setIsModalOpen(false);
     } catch (error) {
-      console.error("Error saving user:", error);
-      alert("Failed to save user");
+      console.error('Error saving user:', error);
+      alert('Failed to save user');
     }
   };
 
-  const filteredUsers = users.filter(user =>
-    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.full_name?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredUsers = users.filter(
+    (user) =>
+      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.full_name?.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   const formatDate = (dateString: string) => {
-    if (!dateString) return "Never";
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
+    if (!dateString) return 'Never';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     });
   };
 
@@ -200,38 +201,36 @@ export default function UsersPage() {
                         )}
                         <div>
                           <div className="text-sm font-medium text-white">
-                            {user.full_name || "No name"}
+                            {user.full_name || 'No name'}
                           </div>
                           <div className="text-sm text-gray-400">{user.email}</div>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-300">
-                        {user.phone_number || "-"}
-                      </div>
+                      <div className="text-sm text-gray-300">{user.phone_number || '-'}</div>
                       {user.commuter && (
-                        <div className="text-sm text-gray-400">
-                          Commuter: {user.commuter}
-                        </div>
+                        <div className="text-sm text-gray-400">Commuter: {user.commuter}</div>
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                        user.is_admin
-                          ? "bg-[#FFCC66] text-black"
-                          : "bg-[#4C4C4C] text-gray-300"
-                      }`}>
-                        {user.is_admin ? "Admin" : "User"}
+                      <span
+                        className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                          user.is_admin ? 'bg-[#FFCC66] text-black' : 'bg-[#4C4C4C] text-gray-300'
+                        }`}
+                      >
+                        {user.is_admin ? 'Admin' : 'User'}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                        user.auth_provider === "google"
-                          ? "bg-[#CC9933] text-white"
-                          : "bg-[#4C4C4C] text-gray-300"
-                      }`}>
-                        {user.auth_provider || "Email"}
+                      <span
+                        className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                          user.auth_provider === 'google'
+                            ? 'bg-[#CC9933] text-white'
+                            : 'bg-[#4C4C4C] text-gray-300'
+                        }`}
+                      >
+                        {user.auth_provider || 'Email'}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">

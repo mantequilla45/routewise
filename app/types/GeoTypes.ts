@@ -1,6 +1,6 @@
 export interface LatLng {
-    latitude: number;
-    longitude: number;
+  latitude: number;
+  longitude: number;
 }
 
 export interface RouteSegmentInfo {
@@ -26,7 +26,7 @@ export interface MappedGeoRouteResult {
   endPoint?: string;
   shouldCrossRoad?: boolean;
   message?: string;
-  
+
   // Route calculation properties
   routeCode?: string;
   routeName?: string;

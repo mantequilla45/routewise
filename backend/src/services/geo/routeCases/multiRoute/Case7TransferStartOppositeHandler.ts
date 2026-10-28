@@ -10,15 +10,15 @@ import { TransferRouteResult } from '../types';
  * - End: Correct side on Route B
  */
 export class Case7TransferStartOppositeHandler extends BaseRouteHandler {
-    getCaseName(): string {
-        return 'CASE_7_TRANSFER_START_OPPOSITE';
-    }
+  getCaseName(): string {
+    return 'CASE_7_TRANSFER_START_OPPOSITE';
+  }
 
-    async canHandle(from: LatLng, to: LatLng): Promise<boolean> {
-        console.log('🔍 Case 7: Checking if Transfer with Start Opposite can handle this route...');
-        
-        // Check if there are routes near start that are on opposite side but can transfer
-        const checkQuery = `
+  async canHandle(from: LatLng, to: LatLng): Promise<boolean> {
+    console.log('🔍 Case 7: Checking if Transfer with Start Opposite can handle this route...');
+
+    // Check if there are routes near start that are on opposite side but can transfer
+    const checkQuery = `
             WITH start_routes AS (
                 -- Routes near start but potentially on opposite side
                 SELECT DISTINCT r.id, r.route_code, r.geom_forward,
@@ -41,23 +41,25 @@ export class Case7TransferStartOppositeHandler extends BaseRouteHandler {
                 AND ST_Intersects(s.geom_forward, e.geom_forward)
             LIMIT 1;
         `;
-        
-        const results = await query(checkQuery, [
-            from.longitude, from.latitude,
-            to.longitude, to.latitude
-        ]);
-        
-        const canHandle = results.length > 0;
-        console.log(`🔍 Case 7: ${canHandle ? '✅ Can handle' : '❌ Cannot handle'}`);
-        
-        return canHandle;
-    }
 
-    async calculate(from: LatLng, to: LatLng): Promise<RouteCalculationResult | null> {
-        console.log('🚗 Case 7: Calculating Transfer with Start Opposite route...');
-        
-        // First check which routes need adjustment
-        const checkQuery = `
+    const results = await query(checkQuery, [
+      from.longitude,
+      from.latitude,
+      to.longitude,
+      to.latitude,
+    ]);
+
+    const canHandle = results.length > 0;
+    console.log(`🔍 Case 7: ${canHandle ? '✅ Can handle' : '❌ Cannot handle'}`);
+
+    return canHandle;
+  }
+
+  async calculate(from: LatLng, to: LatLng): Promise<RouteCalculationResult | null> {
+    console.log('🚗 Case 7: Calculating Transfer with Start Opposite route...');
+
+    // First check which routes need adjustment
+    const checkQuery = `
             WITH routes_check AS (
                 SELECT 
                     r.route_code,
@@ -90,12 +92,14 @@ export class Case7TransferStartOppositeHandler extends BaseRouteHandler {
             GROUP BY route_code, original_pos
             ORDER BY route_code;
         `;
-        
-        const checkResults = await query(checkQuery, [from.longitude, from.latitude]);
-        const needingAdjustment = checkResults.filter((r: Record<string, unknown>) => r.status === 'needs_adjustment').length;
-        console.log(`  ${needingAdjustment} routes need start point adjustment`);
-        
-        const routeQuery = `
+
+    const checkResults = await query(checkQuery, [from.longitude, from.latitude]);
+    const needingAdjustment = checkResults.filter(
+      (r: Record<string, unknown>) => r.status === 'needs_adjustment',
+    ).length;
+    console.log(`  ${needingAdjustment} routes need start point adjustment`);
+
+    const routeQuery = `
             WITH start_routes_base AS (
                 -- All routes within 200m of start
                 SELECT 
@@ -306,73 +310,75 @@ export class Case7TransferStartOppositeHandler extends BaseRouteHandler {
             FROM best_transfers;
         `;
 
-        const results = await query(routeQuery, [
-            from.longitude, from.latitude,
-            to.longitude, to.latitude
-        ]);
+    const results = await query(routeQuery, [
+      from.longitude,
+      from.latitude,
+      to.longitude,
+      to.latitude,
+    ]);
 
-        if (results.length === 0) {
-            console.log('🚗 Case 7: No valid transfer routes with opposite start found');
-            return null;
-        }
-
-        console.log(`🚗 Case 7: Found ${results.length} transfer route(s) with opposite start`);
-        
-        const segments: RouteSegment[] = results.map((route: TransferRouteResult) => {
-            const coords_a = this.parseGeoJson(route.segment_a_geojson);
-            const coords_b = this.parseGeoJson(route.segment_b_geojson);
-            const fare_a = this.calculateFare(route.route_a_distance);
-            const fare_b = this.calculateFare(route.route_b_distance);
-            
-            // Reduced logging
-            
-            return {
-                isTransfer: true,
-                routeId: `${route.route_a_id}-${route.route_b_id}`,
-                routeCode: `${route.route_a_code} → ${route.route_b_code}`,
-                routeName: `Transfer (Start Opposite): ${route.route_a_name} to ${route.route_b_name}`,
-                distance: route.total_distance,
-                fare: fare_a + fare_b,
-                firstRoute: {
-                    routeId: route.route_a_id,
-                    routeCode: route.route_a_code,
-                    routeName: route.route_a_name,
-                    coordinates: coords_a,
-                    distance: route.route_a_distance,
-                    fare: fare_a,
-                    startPosition: route.boarding_pos,
-                    endPosition: route.transfer_pos_a
-                },
-                secondRoute: {
-                    routeId: route.route_b_id,
-                    routeCode: route.route_b_code,
-                    routeName: route.route_b_name,
-                    coordinates: coords_b,
-                    distance: route.route_b_distance,
-                    fare: fare_b,
-                    startPosition: route.transfer_pos_b,
-                    endPosition: route.alighting_pos
-                },
-                totalDistance: route.total_distance,
-                totalFare: fare_a + fare_b,
-                boardingWalk: route.boarding_distance,
-                alightingWalk: route.alighting_distance,
-                coordinates: [...coords_a, ...coords_b],
-                startOpposite: true  // Mark this as opposite side start
-            };
-        });
-        
-        return {
-            caseName: this.getCaseName(),
-            segments,
-            totalDistance: segments[0]?.totalDistance || 0,
-            totalFare: segments[0]?.totalFare || 26,
-            confidence: 0.65,
-            debugInfo: {
-                isTransfer: true,
-                startOpposite: true,
-                routeCount: segments.length
-            }
-        };
+    if (results.length === 0) {
+      console.log('🚗 Case 7: No valid transfer routes with opposite start found');
+      return null;
     }
+
+    console.log(`🚗 Case 7: Found ${results.length} transfer route(s) with opposite start`);
+
+    const segments: RouteSegment[] = results.map((route: TransferRouteResult) => {
+      const coords_a = this.parseGeoJson(route.segment_a_geojson);
+      const coords_b = this.parseGeoJson(route.segment_b_geojson);
+      const fare_a = this.calculateFare(route.route_a_distance);
+      const fare_b = this.calculateFare(route.route_b_distance);
+
+      // Reduced logging
+
+      return {
+        isTransfer: true,
+        routeId: `${route.route_a_id}-${route.route_b_id}`,
+        routeCode: `${route.route_a_code} → ${route.route_b_code}`,
+        routeName: `Transfer (Start Opposite): ${route.route_a_name} to ${route.route_b_name}`,
+        distance: route.total_distance,
+        fare: fare_a + fare_b,
+        firstRoute: {
+          routeId: route.route_a_id,
+          routeCode: route.route_a_code,
+          routeName: route.route_a_name,
+          coordinates: coords_a,
+          distance: route.route_a_distance,
+          fare: fare_a,
+          startPosition: route.boarding_pos,
+          endPosition: route.transfer_pos_a,
+        },
+        secondRoute: {
+          routeId: route.route_b_id,
+          routeCode: route.route_b_code,
+          routeName: route.route_b_name,
+          coordinates: coords_b,
+          distance: route.route_b_distance,
+          fare: fare_b,
+          startPosition: route.transfer_pos_b,
+          endPosition: route.alighting_pos,
+        },
+        totalDistance: route.total_distance,
+        totalFare: fare_a + fare_b,
+        boardingWalk: route.boarding_distance,
+        alightingWalk: route.alighting_distance,
+        coordinates: [...coords_a, ...coords_b],
+        startOpposite: true, // Mark this as opposite side start
+      };
+    });
+
+    return {
+      caseName: this.getCaseName(),
+      segments,
+      totalDistance: segments[0]?.totalDistance || 0,
+      totalFare: segments[0]?.totalFare || 26,
+      confidence: 0.65,
+      debugInfo: {
+        isTransfer: true,
+        startOpposite: true,
+        routeCount: segments.length,
+      },
+    };
+  }
 }

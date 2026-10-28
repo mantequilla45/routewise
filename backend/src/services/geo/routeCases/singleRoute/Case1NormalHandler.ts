@@ -10,19 +10,19 @@ import { RouteQueryResult } from '../types';
  * - Works for any distance from the route
  */
 export class Case1NormalHandler extends BaseRouteHandler {
-    getCaseName(): string {
-        return 'CASE_1_NORMAL';
-    }
+  getCaseName(): string {
+    return 'CASE_1_NORMAL';
+  }
 
-    async canHandle(): Promise<boolean> {
-        return true;
-    }
+  async canHandle(): Promise<boolean> {
+    return true;
+  }
 
-    async calculate(from: LatLng, to: LatLng): Promise<RouteCalculationResult | null> {
-        console.log('🚗 Case 1 Normal: Finding routes with close starting points...');
-        
-        // Simple approach - just use the pinned locations
-        const routeQuery = `
+  async calculate(from: LatLng, to: LatLng): Promise<RouteCalculationResult | null> {
+    console.log('🚗 Case 1 Normal: Finding routes with close starting points...');
+
+    // Simple approach - just use the pinned locations
+    const routeQuery = `
             WITH routes_analysis AS (
                 SELECT 
                     r.id,
@@ -60,48 +60,50 @@ export class Case1NormalHandler extends BaseRouteHandler {
             ORDER BY route_distance;
         `;
 
-        const results = await query(routeQuery, [
-            from.longitude, from.latitude,
-            to.longitude, to.latitude
-        ]);
+    const results = await query(routeQuery, [
+      from.longitude,
+      from.latitude,
+      to.longitude,
+      to.latitude,
+    ]);
 
-        if (results.length === 0) {
-            console.log('🚗 Case 1 Normal: No routes found');
-            return null;
-        }
-
-        console.log(`🚗 Case 1 Normal: Found ${results.length} route(s)`);
-        
-        // Process all matching routes
-        const segments: RouteSegment[] = results.map((route: RouteQueryResult) => {
-            const coordinates = this.parseGeoJson(route.segment_geojson);
-            const fare = this.calculateFare(route.route_distance);
-            
-            // Reduced logging
-            
-            return {
-                routeId: route.id,
-                routeCode: route.route_code,
-                routeName: route.route_name,
-                coordinates,
-                distance: route.route_distance,
-                fare,
-                startPosition: route.start_pos,
-                endPosition: route.end_pos,
-                walkingDistance: route.walking_distance,
-                optimized: (route.walking_distance ?? 0) > 20
-            };
-        });
-        
-        return {
-            caseName: this.getCaseName(),
-            segments,
-            totalDistance: segments[0]?.distance || 0,
-            totalFare: segments[0]?.fare || 13,
-            confidence: 0.95,
-            debugInfo: {
-                routeCount: segments.length
-            }
-        };
+    if (results.length === 0) {
+      console.log('🚗 Case 1 Normal: No routes found');
+      return null;
     }
+
+    console.log(`🚗 Case 1 Normal: Found ${results.length} route(s)`);
+
+    // Process all matching routes
+    const segments: RouteSegment[] = results.map((route: RouteQueryResult) => {
+      const coordinates = this.parseGeoJson(route.segment_geojson);
+      const fare = this.calculateFare(route.route_distance);
+
+      // Reduced logging
+
+      return {
+        routeId: route.id,
+        routeCode: route.route_code,
+        routeName: route.route_name,
+        coordinates,
+        distance: route.route_distance,
+        fare,
+        startPosition: route.start_pos,
+        endPosition: route.end_pos,
+        walkingDistance: route.walking_distance,
+        optimized: (route.walking_distance ?? 0) > 20,
+      };
+    });
+
+    return {
+      caseName: this.getCaseName(),
+      segments,
+      totalDistance: segments[0]?.distance || 0,
+      totalFare: segments[0]?.fare || 13,
+      confidence: 0.95,
+      debugInfo: {
+        routeCount: segments.length,
+      },
+    };
+  }
 }

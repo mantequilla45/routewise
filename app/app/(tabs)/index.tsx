@@ -4,11 +4,10 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MapScreen from '../(screens)/MapScreen';
 
 export default function Index() {
-
   return (
     <View style={styles.container}>
       <MapScreen />
-    </View >
+    </View>
   );
 }
 
@@ -29,7 +28,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8
+    gap: 8,
   },
   fabText: {
     color: '#000',

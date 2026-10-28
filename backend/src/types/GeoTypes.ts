@@ -14,7 +14,7 @@ export interface RouteSnap {
   snapped_forward_lat: number;
   snapped_reverse_lon: number;
   snapped_reverse_lat: number;
-};
+}
 
 export interface CalculatedRoutes {
   routeId: string;
@@ -32,5 +32,3 @@ export interface MappedGeoRouteResult {
   shouldCrossRoad?: boolean;
   message?: string;
 }
-
-

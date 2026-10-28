@@ -10,12 +10,12 @@ import {
   Lexend_600SemiBold,
   Lexend_700Bold,
   Lexend_800ExtraBold,
-  Lexend_900Black
+  Lexend_900Black,
 } from '@expo-google-fonts/lexend';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { AuthProvider } from "@/context/auth";
-import { MapPointsProvider } from "@/context/map-context";
+import { AuthProvider } from '@/context/auth';
+import { MapPointsProvider } from '@/context/map-context';
 
 // Prevent splash screen from hiding automatically
 SplashScreen.preventAutoHideAsync();

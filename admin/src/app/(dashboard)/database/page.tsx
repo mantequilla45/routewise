@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect } from 'react';
 
 interface ColumnInfo {
   column_name: string;
@@ -25,9 +25,9 @@ interface DatabaseInfo {
 export default function DatabasePage() {
   const [databaseInfo, setDatabaseInfo] = useState<DatabaseInfo | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedTable, setSelectedTable] = useState<string>("");
-  const [viewMode, setViewMode] = useState<"table" | "raw" | "schema">("table");
-  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedTable, setSelectedTable] = useState<string>('');
+  const [viewMode, setViewMode] = useState<'table' | 'raw' | 'schema'>('table');
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     fetchDatabaseInfo();
@@ -35,7 +35,7 @@ export default function DatabasePage() {
 
   const fetchDatabaseInfo = async () => {
     try {
-      const response = await fetch("/api/database/tables");
+      const response = await fetch('/api/database/tables');
       const data = await response.json();
 
       if (data.success) {
@@ -45,7 +45,7 @@ export default function DatabasePage() {
         }
       }
     } catch (error) {
-      console.error("Failed to fetch database info:", error);
+      console.error('Failed to fetch database info:', error);
     } finally {
       setLoading(false);
     }
@@ -56,16 +56,15 @@ export default function DatabasePage() {
 
     const tableData = databaseInfo.tableData[tableName];
     const dataStr = JSON.stringify(tableData.data, null, 2);
-    const dataUri =
-      "data:application/json;charset=utf-8," + encodeURIComponent(dataStr);
+    const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
 
     const exportFileDefaultName = `${tableName}_backup_${
-      new Date().toISOString().split("T")[0]
+      new Date().toISOString().split('T')[0]
     }.json`;
 
-    const linkElement = document.createElement("a");
-    linkElement.setAttribute("href", dataUri);
-    linkElement.setAttribute("download", exportFileDefaultName);
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
     linkElement.click();
   };
 
@@ -78,16 +77,13 @@ export default function DatabasePage() {
     }
 
     const dataStr = JSON.stringify(allData, null, 2);
-    const dataUri =
-      "data:application/json;charset=utf-8," + encodeURIComponent(dataStr);
+    const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
 
-    const exportFileDefaultName = `database_backup_${
-      new Date().toISOString().split("T")[0]
-    }.json`;
+    const exportFileDefaultName = `database_backup_${new Date().toISOString().split('T')[0]}.json`;
 
-    const linkElement = document.createElement("a");
-    linkElement.setAttribute("href", dataUri);
-    linkElement.setAttribute("download", exportFileDefaultName);
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
     linkElement.click();
   };
 
@@ -110,23 +106,21 @@ export default function DatabasePage() {
     );
   }
 
-  const currentTableData = selectedTable
-    ? databaseInfo.tableData[selectedTable]
-    : null;
+  const currentTableData = selectedTable ? databaseInfo.tableData[selectedTable] : null;
   const filteredData =
     currentTableData?.data.filter((row) =>
-      JSON.stringify(row).toLowerCase().includes(searchTerm.toLowerCase())
+      JSON.stringify(row).toLowerCase().includes(searchTerm.toLowerCase()),
     ) || [];
 
   // Calculate total stats
   const totalTables = databaseInfo.tables.length;
   const totalRows = Object.values(databaseInfo.tableData).reduce(
     (sum, table) => sum + table.rowCount,
-    0
+    0,
   );
   const totalColumns = Object.values(databaseInfo.tableData).reduce(
     (sum, table) => sum + table.columnCount,
-    0
+    0,
   );
 
   return (
@@ -135,21 +129,14 @@ export default function DatabasePage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-white">Database Management</h1>
-          <p className="text-gray-400 mt-1">
-            Complete database overview and management
-          </p>
+          <p className="text-gray-400 mt-1">Complete database overview and management</p>
         </div>
         <div className="flex space-x-3">
           <button
             onClick={exportAllData}
             className="px-4 py-2 bg-[#FFCC66] text-black font-semibold rounded-xl hover:bg-[#CC9933] transition-colors flex items-center space-x-2"
           >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -163,12 +150,7 @@ export default function DatabasePage() {
             onClick={fetchDatabaseInfo}
             className="px-4 py-2 bg-[#4C4C4C] text-white border border-[#404040] rounded-xl hover:bg-[#404040] transition-colors flex items-center space-x-2"
           >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -187,9 +169,7 @@ export default function DatabasePage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-400">Total Tables</p>
-              <p className="text-2xl font-bold text-white mt-1">
-                {totalTables}
-              </p>
+              <p className="text-2xl font-bold text-white mt-1">{totalTables}</p>
             </div>
             <div className="p-3 bg-[#FFCC66] rounded-lg">
               <svg
@@ -213,9 +193,7 @@ export default function DatabasePage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-400">Total Rows</p>
-              <p className="text-2xl font-bold text-white mt-1">
-                {totalRows.toLocaleString()}
-              </p>
+              <p className="text-2xl font-bold text-white mt-1">{totalRows.toLocaleString()}</p>
             </div>
             <div className="p-3 bg-[#FFCC66] rounded-lg">
               <svg
@@ -239,9 +217,7 @@ export default function DatabasePage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-400">Total Columns</p>
-              <p className="text-2xl font-bold text-white mt-1">
-                {totalColumns}
-              </p>
+              <p className="text-2xl font-bold text-white mt-1">{totalColumns}</p>
             </div>
             <div className="p-3 bg-[#FFCC66] rounded-lg">
               <svg
@@ -265,9 +241,7 @@ export default function DatabasePage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-400">Database</p>
-              <p className="text-sm font-semibold text-[#FFCC66] mt-1">
-                PostgreSQL + PostGIS
-              </p>
+              <p className="text-sm font-semibold text-[#FFCC66] mt-1">PostgreSQL + PostGIS</p>
             </div>
             <div className="p-3 bg-[#FFCC66] rounded-lg">
               <svg
@@ -306,22 +280,21 @@ export default function DatabasePage() {
                     onClick={() => setSelectedTable(table)}
                     className={`w-full text-left px-4 py-3 transition-all hover:bg-[#3A3A3A] ${
                       isSelected
-                        ? "bg-[#3A3A3A] border-l-4 border-l-[#CC9933] rounded-md"
-                        : "border-b-2 border-[#3A3A3A] rounded-md"
+                        ? 'bg-[#3A3A3A] border-l-4 border-l-[#CC9933] rounded-md'
+                        : 'border-b-2 border-[#3A3A3A] rounded-md'
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <div>
                         <p
                           className={`text-sm font-medium ${
-                            isSelected ? "text-white" : "text-gray-400"
+                            isSelected ? 'text-white' : 'text-gray-400'
                           }`}
                         >
                           {table}
                         </p>
                         <p className="text-xs text-gray-400 mt-1">
-                          {tableData.rowCount} rows • {tableData.columnCount}{" "}
-                          cols
+                          {tableData.rowCount} rows • {tableData.columnCount} cols
                         </p>
                       </div>
                       {isSelected && (
@@ -340,9 +313,7 @@ export default function DatabasePage() {
                         </svg>
                       )}
                     </div>
-                    {tableData.error && (
-                      <p className="text-xs text-red-500 mt-1">Error loading</p>
-                    )}
+                    {tableData.error && <p className="text-xs text-red-500 mt-1">Error loading</p>}
                   </button>
                 );
               })}
@@ -359,31 +330,31 @@ export default function DatabasePage() {
                 <h3 className="font-semibold text-[#FFCC66]">{selectedTable}</h3>
                 <div className="flex space-x-2">
                   <button
-                    onClick={() => setViewMode("table")}
+                    onClick={() => setViewMode('table')}
                     className={`px-3 py-1.5 rounded-lg transition-colors ${
-                      viewMode === "table"
-                        ? "bg-[#3A3A3A] text-white"
-                        : "text-gray-400 hover:bg-[#3A3A3A] hover:text-white"
+                      viewMode === 'table'
+                        ? 'bg-[#3A3A3A] text-white'
+                        : 'text-gray-400 hover:bg-[#3A3A3A] hover:text-white'
                     }`}
                   >
                     Table
                   </button>
                   <button
-                    onClick={() => setViewMode("schema")}
+                    onClick={() => setViewMode('schema')}
                     className={`px-3 py-1.5 rounded-lg transition-colors ${
-                      viewMode === "schema"
-                        ? "bg-[#3A3A3A] text-white"
-                        : "text-gray-400 hover:bg-[#3A3A3A] hover:text-white"
+                      viewMode === 'schema'
+                        ? 'bg-[#3A3A3A] text-white'
+                        : 'text-gray-400 hover:bg-[#3A3A3A] hover:text-white'
                     }`}
                   >
                     Schema
                   </button>
                   <button
-                    onClick={() => setViewMode("raw")}
+                    onClick={() => setViewMode('raw')}
                     className={`px-3 py-1.5 rounded-lg transition-colors ${
-                      viewMode === "raw"
-                        ? "bg-[#3A3A3A] text-white"
-                        : "text-gray-400 hover:bg-[#3A3A3A] hover:text-white"
+                      viewMode === 'raw'
+                        ? 'bg-[#3A3A3A] text-white'
+                        : 'text-gray-400 hover:bg-[#3A3A3A] hover:text-white'
                     }`}
                   >
                     JSON
@@ -404,12 +375,7 @@ export default function DatabasePage() {
                   className="px-3 py-2 bg-[#4C4C4C] hover:bg-[#404040] text-white rounded-lg transition-colors cursor-pointer"
                   title="Export this table"
                 >
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -429,7 +395,7 @@ export default function DatabasePage() {
                 <div className="p-6 text-center text-red-400">
                   Error loading table: {currentTableData.error}
                 </div>
-              ) : viewMode === "schema" ? (
+              ) : viewMode === 'schema' ? (
                 <div className="p-6 overflow-auto max-h-[600px]">
                   <table className="divide-y divide-gray-200">
                     <thead className="bg-[#2D2D2D] sticky top-0">
@@ -463,7 +429,7 @@ export default function DatabasePage() {
                             </code>
                           </td>
                           <td className="px-6 py-4 text-sm text-gray-300">
-                            {column.is_nullable === "YES" ? (
+                            {column.is_nullable === 'YES' ? (
                               <span className="text-green-400">✓ Yes</span>
                             ) : (
                               <span className="text-red-400">✗ No</span>
@@ -483,7 +449,7 @@ export default function DatabasePage() {
                     </tbody>
                   </table>
                 </div>
-              ) : viewMode === "raw" ? (
+              ) : viewMode === 'raw' ? (
                 <div className="bg-[#2D2D2D] border border-[#4C4C4C] p-6 overflow-x-auto max-h-[600px] rounded-lg">
                   <pre className="text-[#FFCC66] text-xs font-mono">
                     {JSON.stringify(filteredData, null, 2)}
@@ -514,12 +480,9 @@ export default function DatabasePage() {
                                 className="px-6 py-4 whitespace-nowrap text-sm text-gray-300"
                               >
                                 {row[column.column_name] !== null ? (
-                                  typeof row[column.column_name] ===
-                                  "object" ? (
+                                  typeof row[column.column_name] === 'object' ? (
                                     <code className="bg-[#2D2D2D] border border-[#4C4C4C] px-2 py-1 rounded text-xs text-[#FFCC66]">
-                                      {JSON.stringify(
-                                        row[column.column_name]
-                                      ).slice(0, 50)}
+                                      {JSON.stringify(row[column.column_name]).slice(0, 50)}
                                       ...
                                     </code>
                                   ) : (
@@ -531,9 +494,7 @@ export default function DatabasePage() {
                                     </span>
                                   )
                                 ) : (
-                                  <span className="text-gray-400 italic">
-                                    null
-                                  </span>
+                                  <span className="text-gray-400 italic">null</span>
                                 )}
                               </td>
                             ))}
@@ -544,9 +505,7 @@ export default function DatabasePage() {
                   ) : (
                     <div className="text-center py-12">
                       <p className="text-gray-400">
-                        {searchTerm
-                          ? "No matching data found"
-                          : "No data in this table"}
+                        {searchTerm ? 'No matching data found' : 'No data in this table'}
                       </p>
                     </div>
                   )}

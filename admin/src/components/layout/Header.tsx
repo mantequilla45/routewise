@@ -1,13 +1,11 @@
-"use client";
+'use client';
 
 export default function Header() {
-
   return (
     <header className="bg-[#111111] px-6 pt-4 sticky top-0 left-0 flex flex-col z-50">
       <div className="flex items-center justify-between">
         {/* Search Bar */}
         <div className="flex-1 max-w-3xl text-[#FFCC66] text-xl">
-
           {/* <div className="relative">
             <svg
               className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
@@ -126,12 +124,7 @@ export default function Header() {
             href="/routes"
             className="flex items-center space-x-2 bg-gradient-to-b from-[#FFCC66] to-[#CC9933] text-black px-4 py-2.5 rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-200"
           >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"

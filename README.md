@@ -5,6 +5,7 @@ A comprehensive jeepney navigation companion for commuters in Cebu Province. Rou
 ## Features
 
 ### 🚐 Smart Route Identification
+
 - Identifies which jeepney routes serve your origin and destination
 - Shows specific jeepney route codes and names
 - Provides direct routes when available
@@ -12,6 +13,7 @@ A comprehensive jeepney navigation companion for commuters in Cebu Province. Rou
 - Displays multiple route alternatives for flexibility
 
 ### 💰 Comprehensive Fare Calculator
+
 - Calculates complete fare for entire journey
 - Shows individual costs for each jeepney segment
 - Real-time pricing based on current fare rates
@@ -19,6 +21,7 @@ A comprehensive jeepney navigation companion for commuters in Cebu Province. Rou
 - Compares costs across different route options
 
 ### 🔔 Real-Time Notifications
+
 - Alerts when approaching transfer stops
 - Reminds which jeepney to board next
 - Notifies when to get off at destinations
@@ -26,6 +29,7 @@ A comprehensive jeepney navigation companion for commuters in Cebu Province. Rou
 - GPS-triggered location-based alerts
 
 ### 🗺️ Journey Management
+
 - Complete trip planning from origin to destination
 - Real-time location tracking and progress monitoring
 - Clear transfer point identification
@@ -35,6 +39,7 @@ A comprehensive jeepney navigation companion for commuters in Cebu Province. Rou
 ## Getting Started
 
 ### Prerequisites
+
 - Node.js (v18 or higher)
 - npm or yarn
 - React Native development environment
@@ -44,12 +49,14 @@ A comprehensive jeepney navigation companion for commuters in Cebu Province. Rou
 ### Installation
 
 1. Clone the repository
+
 ```bash
 git clone https://github.com/yourusername/routewise-mobile.git
 cd routewise-mobile
 ```
 
 2. Install dependencies
+
 ```bash
 npm install
 # or
@@ -57,6 +64,7 @@ yarn install
 ```
 
 3. Install iOS dependencies (Mac only)
+
 ```bash
 cd ios && pod install
 cd ..
@@ -65,6 +73,7 @@ cd ..
 ### Running the App
 
 #### Android
+
 ```bash
 npm run android
 # or
@@ -72,6 +81,7 @@ yarn android
 ```
 
 #### iOS
+
 ```bash
 npm run ios
 # or
@@ -79,6 +89,7 @@ yarn ios
 ```
 
 #### Start Metro bundler
+
 ```bash
 npm start
 # or
@@ -117,12 +128,14 @@ mobile/
 ## Development
 
 ### Code Style
+
 - Follow TypeScript best practices
 - Use functional components with hooks
 - Maintain consistent naming conventions
 - Write self-documenting code
 
 ### Testing
+
 ```bash
 npm test
 # or
@@ -130,6 +143,7 @@ yarn test
 ```
 
 ### Linting
+
 ```bash
 npm run lint
 # or
@@ -139,12 +153,14 @@ yarn lint
 ### Building for Production
 
 #### Android
+
 ```bash
 cd android
 ./gradlew assembleRelease
 ```
 
 #### iOS
+
 ```bash
 cd ios
 xcodebuild -workspace RouteWise.xcworkspace -scheme RouteWise -configuration Release

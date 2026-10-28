@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import dynamic from "next/dynamic";
+import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 
-const RouteDetailsModal = dynamic(() => import("./RouteDetailsModal"), {
+const RouteDetailsModal = dynamic(() => import('./RouteDetailsModal'), {
   ssr: false,
 });
-const EditRouteModal = dynamic(() => import("./EditRouteModal"), {
+const EditRouteModal = dynamic(() => import('./EditRouteModal'), {
   ssr: false,
 });
 
@@ -20,23 +20,19 @@ interface Route {
   created_at?: string;
 }
 
-type SortField = "route_code" | "modified_at";
-type SortDirection = "asc" | "desc";
+type SortField = 'route_code' | 'modified_at';
+type SortDirection = 'asc' | 'desc';
 
 const ITEMS_PER_PAGE = 10;
 
-export default function RoutesList({
-  onRouteSelect,
-}: {
-  onRouteSelect?: (route: Route) => void;
-}) {
+export default function RoutesList({ onRouteSelect }: { onRouteSelect?: (route: Route) => void }) {
   const [routes, setRoutes] = useState<Route[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState('');
   const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
   const [editingRouteId, setEditingRouteId] = useState<string | null>(null);
-  const [sortField, setSortField] = useState<SortField>("modified_at");
-  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const [sortField, setSortField] = useState<SortField>('modified_at');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
@@ -50,39 +46,39 @@ export default function RoutesList({
 
   const fetchRoutes = async () => {
     try {
-      const response = await fetch("/api/routes/add");
+      const response = await fetch('/api/routes/add');
       const data = await response.json();
       if (data.success) {
         setRoutes(data.routes);
       }
     } catch (error) {
-      console.error("Failed to fetch routes:", error);
+      console.error('Failed to fetch routes:', error);
     } finally {
       setLoading(false);
     }
   };
 
   const deleteRoute = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this route?")) return;
+    if (!confirm('Are you sure you want to delete this route?')) return;
 
     try {
       const response = await fetch(`/api/routes/${id}`, {
-        method: "DELETE",
+        method: 'DELETE',
       });
       if (response.ok) {
         setRoutes(routes.filter((r) => r.id !== id));
       }
     } catch (error) {
-      console.error("Failed to delete route:", error);
+      console.error('Failed to delete route:', error);
     }
   };
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
       setSortField(field);
-      setSortDirection(field === "route_code" ? "asc" : "desc");
+      setSortDirection(field === 'route_code' ? 'asc' : 'desc');
     }
   };
 
@@ -104,56 +100,34 @@ export default function RoutesList({
         </svg>
       );
     }
-    return sortDirection === "asc" ? (
-      <svg
-        className="w-4 h-4 text-[#FFCC66]"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M5 15l7-7 7 7"
-        />
+    return sortDirection === 'asc' ? (
+      <svg className="w-4 h-4 text-[#FFCC66]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
       </svg>
     ) : (
-      <svg
-        className="w-4 h-4 text-[#FFCC66]"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M19 9l-7 7-7-7"
-        />
+      <svg className="w-4 h-4 text-[#FFCC66]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
       </svg>
     );
   };
 
   const filteredRoutes = routes
-    .filter((route) =>
-      route.route_code.toLowerCase().includes(searchTerm.toLowerCase())
-    )
+    .filter((route) => route.route_code.toLowerCase().includes(searchTerm.toLowerCase()))
     .sort((a, b) => {
       let aValue: string | number;
       let bValue: string | number;
 
-      if (sortField === "route_code") {
+      if (sortField === 'route_code') {
         aValue = a.route_code.toLowerCase();
         bValue = b.route_code.toLowerCase();
       } else {
-        const aDate = a.updated_at || a.created_at || "";
-        const bDate = b.updated_at || b.created_at || "";
+        const aDate = a.updated_at || a.created_at || '';
+        const bDate = b.updated_at || b.created_at || '';
         aValue = new Date(aDate).getTime();
         bValue = new Date(bDate).getTime();
       }
 
-      if (sortDirection === "asc") {
+      if (sortDirection === 'asc') {
         return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
       } else {
         return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
@@ -166,17 +140,17 @@ export default function RoutesList({
   const startIndex = (clampedPage - 1) * ITEMS_PER_PAGE;
   const paginatedRoutes = filteredRoutes.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
-  const getPageRange = (): (number | "...")[] => {
+  const getPageRange = (): (number | '...')[] => {
     if (totalPages <= 7) {
       return Array.from({ length: totalPages }, (_, i) => i + 1);
     }
     if (clampedPage <= 4) {
-      return [1, 2, 3, 4, 5, "...", totalPages];
+      return [1, 2, 3, 4, 5, '...', totalPages];
     }
     if (clampedPage >= totalPages - 3) {
-      return [1, "...", totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+      return [1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
     }
-    return [1, "...", clampedPage - 1, clampedPage, clampedPage + 1, "...", totalPages];
+    return [1, '...', clampedPage - 1, clampedPage, clampedPage + 1, '...', totalPages];
   };
 
   if (loading) {
@@ -197,8 +171,18 @@ export default function RoutesList({
           </span>
         </div>
         <div className="relative">
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          <svg
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
           </svg>
           <input
             type="text"
@@ -216,25 +200,23 @@ export default function RoutesList({
             <tr className="bg-[#1A1A1A] border-b border-[#2A2A2A]">
               <th className="text-left px-4 py-3 text-[#FFCC66] font-semibold w-36">
                 <button
-                  onClick={() => handleSort("route_code")}
+                  onClick={() => handleSort('route_code')}
                   className="flex items-center gap-1 hover:bg-[#2A2A2A] px-2 py-1 rounded -ml-2 transition-colors"
                 >
                   Route Code
-                  {getSortIcon("route_code")}
+                  {getSortIcon('route_code')}
                 </button>
               </th>
               <th className="text-left px-4 py-3 text-[#FFCC66] font-semibold w-40">
                 <button
-                  onClick={() => handleSort("modified_at")}
+                  onClick={() => handleSort('modified_at')}
                   className="flex items-center gap-1 hover:bg-[#2A2A2A] px-2 py-1 rounded -ml-2 transition-colors"
                 >
                   Modified At
-                  {getSortIcon("modified_at")}
+                  {getSortIcon('modified_at')}
                 </button>
               </th>
-              <th className="text-right px-4 py-3 text-[#FFCC66] font-semibold w-36">
-                Actions
-              </th>
+              <th className="text-right px-4 py-3 text-[#FFCC66] font-semibold w-36">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#2A2A2A]">
@@ -252,19 +234,33 @@ export default function RoutesList({
                   {route.updated_at ? (
                     <div>
                       <div className="text-gray-300">
-                        {new Date(route.updated_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
+                        {new Date(route.updated_at).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                        })}
                       </div>
                       <div className="text-xs text-gray-500">
-                        {new Date(route.updated_at).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
+                        {new Date(route.updated_at).toLocaleTimeString('en-US', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
                       </div>
                     </div>
                   ) : route.created_at ? (
                     <div>
                       <div className="text-gray-300">
-                        {new Date(route.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
+                        {new Date(route.created_at).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                        })}
                       </div>
                       <div className="text-xs text-gray-500">
-                        {new Date(route.created_at).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}{" "}
+                        {new Date(route.created_at).toLocaleTimeString('en-US', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}{' '}
                         <span className="text-gray-600">(created)</span>
                       </div>
                     </div>
@@ -304,8 +300,18 @@ export default function RoutesList({
 
         {filteredRoutes.length === 0 && (
           <div className="text-center py-12 text-gray-500">
-            <svg className="w-10 h-10 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+            <svg
+              className="w-10 h-10 mx-auto mb-3 opacity-30"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
+              />
             </svg>
             <p className="font-medium">No routes found</p>
             {searchTerm && <p className="text-sm mt-1">Try a different search term</p>}
@@ -318,15 +324,12 @@ export default function RoutesList({
         <div className="flex items-center justify-between px-2 pt-4">
           {/* Showing X–Y of Z */}
           <p className="text-sm text-gray-400">
-            Showing{" "}
-            <span className="text-white font-medium">{startIndex + 1}</span>
-            {" – "}
+            Showing <span className="text-white font-medium">{startIndex + 1}</span>
+            {' – '}
             <span className="text-white font-medium">
               {Math.min(startIndex + ITEMS_PER_PAGE, filteredRoutes.length)}
-            </span>{" "}
-            of{" "}
-            <span className="text-white font-medium">{filteredRoutes.length}</span>{" "}
-            routes
+            </span>{' '}
+            of <span className="text-white font-medium">{filteredRoutes.length}</span> routes
           </p>
 
           {/* Page controls */}
@@ -339,14 +342,22 @@ export default function RoutesList({
               aria-label="Previous page"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
+                />
               </svg>
             </button>
 
             {/* Page numbers */}
             {getPageRange().map((page, i) =>
-              page === "..." ? (
-                <span key={`ellipsis-${i}`} className="w-8 h-8 flex items-center justify-center text-gray-500 text-sm">
+              page === '...' ? (
+                <span
+                  key={`ellipsis-${i}`}
+                  className="w-8 h-8 flex items-center justify-center text-gray-500 text-sm"
+                >
                   …
                 </span>
               ) : (
@@ -355,13 +366,13 @@ export default function RoutesList({
                   onClick={() => setCurrentPage(page as number)}
                   className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-medium transition-all ${
                     clampedPage === page
-                      ? "bg-gradient-to-b from-[#FFCC66] to-[#CC9933] text-black shadow-sm"
-                      : "text-gray-400 hover:bg-[#2A2A2A] hover:text-white"
+                      ? 'bg-gradient-to-b from-[#FFCC66] to-[#CC9933] text-black shadow-sm'
+                      : 'text-gray-400 hover:bg-[#2A2A2A] hover:text-white'
                   }`}
                 >
                   {page}
                 </button>
-              )
+              ),
             )}
 
             {/* Next */}
@@ -372,7 +383,12 @@ export default function RoutesList({
               aria-label="Next page"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
               </svg>
             </button>
           </div>
@@ -380,10 +396,7 @@ export default function RoutesList({
       )}
 
       {/* Route Details Modal */}
-      <RouteDetailsModal
-        routeId={selectedRouteId}
-        onClose={() => setSelectedRouteId(null)}
-      />
+      <RouteDetailsModal routeId={selectedRouteId} onClose={() => setSelectedRouteId(null)} />
 
       {/* Edit Route Modal */}
       {editingRouteId && (

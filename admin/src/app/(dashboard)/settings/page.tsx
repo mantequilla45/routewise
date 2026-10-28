@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState("general");
+  const [activeTab, setActiveTab] = useState('general');
 
   const tabs = [
-    { id: "general", label: "General", icon: "⚙️" },
-    { id: "maps", label: "Maps", icon: "🗺️" },
-    { id: "notifications", label: "Notifications", icon: "🔔" },
+    { id: 'general', label: 'General', icon: '⚙️' },
+    { id: 'maps', label: 'Maps', icon: '🗺️' },
+    { id: 'notifications', label: 'Notifications', icon: '🔔' },
     // { id: "security", label: "Security", icon: "🔒" },
     // { id: "api", label: "API Keys", icon: "🔑" },
   ];
@@ -17,9 +17,7 @@ export default function SettingsPage() {
     <div className="space-y-6 animate-fade-in">
       <div>
         <h1 className="text-3xl font-bold text-white">Settings</h1>
-        <p className="text-white mt-1">
-          Manage your application preferences and configuration
-        </p>
+        <p className="text-white mt-1">Manage your application preferences and configuration</p>
       </div>
 
       <div className="bg-[#3A3A3A] rounded-2xl">
@@ -32,8 +30,8 @@ export default function SettingsPage() {
                 onClick={() => setActiveTab(tab.id)}
                 className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                   activeTab === tab.id
-                    ? "border-[#FFCC66] text-[#FFCC66]"
-                    : "border-transparent text-gray-400 cursor-pointer"
+                    ? 'border-[#FFCC66] text-[#FFCC66]'
+                    : 'border-transparent text-gray-400 cursor-pointer'
                 }`}
               >
                 <span className="mr-2">{tab.icon}</span>
@@ -45,12 +43,10 @@ export default function SettingsPage() {
 
         {/* Tab Content */}
         <div className="p-6">
-          {activeTab === "general" && (
+          {activeTab === 'general' && (
             <div className="space-y-6 animate-fade-in">
               <div>
-                <h3 className="text-lg font-medium text-white mb-4">
-                  General Settings
-                </h3>
+                <h3 className="text-lg font-medium text-white mb-4">General Settings</h3>
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -85,12 +81,10 @@ export default function SettingsPage() {
             </div>
           )}
 
-          {activeTab === "maps" && (
+          {activeTab === 'maps' && (
             <div className="space-y-6 animate-fade-in">
               <div>
-                <h3 className="text-lg font-medium text-white mb-4">
-                  Maps Configuration
-                </h3>
+                <h3 className="text-lg font-medium text-white mb-4">Maps Configuration</h3>
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -115,13 +109,7 @@ export default function SettingsPage() {
                     <label className="block text-sm font-medium text-gray-300 mb-2">
                       Default Zoom Level
                     </label>
-                    <input
-                      type="range"
-                      min="10"
-                      max="20"
-                      defaultValue="13"
-                      className="w-full"
-                    />
+                    <input type="range" min="10" max="20" defaultValue="13" className="w-full" />
                   </div>
                   <div className="flex items-center space-x-3">
                     <input
@@ -139,23 +127,18 @@ export default function SettingsPage() {
             </div>
           )}
 
-          {activeTab === "notifications" && (
+          {activeTab === 'notifications' && (
             <div className="space-y-6 animate-fade-in">
               <div>
-                <h3 className="text-lg font-medium text-white mb-4">
-                  Notification Preferences
-                </h3>
+                <h3 className="text-lg font-medium text-white mb-4">Notification Preferences</h3>
                 <div className="space-y-4 text-white">
                   {[
-                    "New route additions",
-                    "Driver registrations",
-                    "System alerts",
-                    "Performance reports",
+                    'New route additions',
+                    'Driver registrations',
+                    'System alerts',
+                    'Performance reports',
                   ].map((item) => (
-                    <div
-                      key={item}
-                      className="flex items-center justify-between p-4 rounded-lg "
-                    >
+                    <div key={item} className="flex items-center justify-between p-4 rounded-lg ">
                       <div>
                         <p className="text-sm font-medium text-white">{item}</p>
                         <p className="text-xs text-gray-300">
@@ -163,11 +146,7 @@ export default function SettingsPage() {
                         </p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          defaultChecked
-                          className="sr-only peer"
-                        />
+                        <input type="checkbox" defaultChecked className="sr-only peer" />
                         <div className="w-11 h-6 bg-gray-500 peer-focus:outline-none peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                       </label>
                     </div>
@@ -177,12 +156,10 @@ export default function SettingsPage() {
             </div>
           )}
 
-          {activeTab === "security" && (
+          {activeTab === 'security' && (
             <div className="space-y-6 animate-fade-in">
               <div>
-                <h3 className="text-lg font-medium text-white mb-4">
-                  Security Settings
-                </h3>
+                <h3 className="text-lg font-medium text-white mb-4">Security Settings</h3>
                 <div className="space-y-4">
                   <div className="p-4 rounded-lg">
                     <div className="flex items-center">
@@ -200,9 +177,7 @@ export default function SettingsPage() {
                         />
                       </svg>
                       <div>
-                        <p className="text-sm font-medium text-white">
-                          Two-Factor Authentication
-                        </p>
+                        <p className="text-sm font-medium text-white">Two-Factor Authentication</p>
                         <p className="text-xs text-white mt-1">
                           Enhance your account security with 2FA
                         </p>
@@ -227,22 +202,16 @@ export default function SettingsPage() {
             </div>
           )}
 
-          {activeTab === "api" && (
+          {activeTab === 'api' && (
             <div className="space-y-6 animate-fade-in">
               <div>
-                <h3 className="text-lg font-medium text-white mb-4">
-                  API Configuration
-                </h3>
+                <h3 className="text-lg font-medium text-white mb-4">API Configuration</h3>
                 <div className="space-y-4">
                   <div className="p-4 rounded-lg border border-[#CC9933] rounded-lg">
                     <div className="flex justify-between items-start">
                       <div>
-                        <p className="text-sm font-medium text-white">
-                          Google Maps API
-                        </p>
-                        <p className="text-xs text-gray-300 mt-1">
-                          Used for map visualization
-                        </p>
+                        <p className="text-sm font-medium text-white">Google Maps API</p>
+                        <p className="text-xs text-gray-300 mt-1">Used for map visualization</p>
                       </div>
                       <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
                         Active

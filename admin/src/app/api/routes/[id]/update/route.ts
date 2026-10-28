@@ -3,38 +3,33 @@ import { query } from '@/lib/db/db';
 import { RouteRecord } from '@/types/database';
 
 interface Params {
-    params: Promise<{
-        id: string;
-    }>;
+  params: Promise<{
+    id: string;
+  }>;
 }
 
 export async function PUT(request: NextRequest, { params }: Params) {
-    try {
-        const { id } = await params;
-        const body = await request.json();
-        
-        const {
-            route_code,
-            start_point_name,
-            end_point_name,
-            coordinates_forward
-        } = body;
+  try {
+    const { id } = await params;
+    const body = await request.json();
 
-        // Validate required fields
-        if (!route_code || !start_point_name || !end_point_name || !coordinates_forward) {
-            return NextResponse.json(
-                { success: false, error: 'Missing required fields' },
-                { status: 400 }
-            );
-        }
+    const { route_code, start_point_name, end_point_name, coordinates_forward } = body;
 
-        // Convert coordinates to LineString for PostGIS
-        const forwardLineString = `LINESTRING(${coordinates_forward
-            .map((coord: number[]) => `${coord[0]} ${coord[1]}`)
-            .join(', ')})`;
+    // Validate required fields
+    if (!route_code || !start_point_name || !end_point_name || !coordinates_forward) {
+      return NextResponse.json(
+        { success: false, error: 'Missing required fields' },
+        { status: 400 },
+      );
+    }
 
-        // Update the route with exact columns from the table
-        const updateQuery = `
+    // Convert coordinates to LineString for PostGIS
+    const forwardLineString = `LINESTRING(${coordinates_forward
+      .map((coord: number[]) => `${coord[0]} ${coord[1]}`)
+      .join(', ')})`;
+
+    // Update the route with exact columns from the table
+    const updateQuery = `
             UPDATE jeepney_routes
             SET 
                 route_code = $1,
@@ -46,36 +41,26 @@ export async function PUT(request: NextRequest, { params }: Params) {
                      ST_AsGeoJSON(geom_forward)::json as forward_geojson
         `;
 
-        const result = await query(
-            updateQuery,
-            [
-                route_code,
-                start_point_name,
-                end_point_name,
-                forwardLineString,
-                id
-            ]
-        ) as RouteRecord[];
+    const result = (await query(updateQuery, [
+      route_code,
+      start_point_name,
+      end_point_name,
+      forwardLineString,
+      id,
+    ])) as RouteRecord[];
 
-        // The query function returns rows directly as an array
-        if (!result || result.length === 0) {
-            return NextResponse.json(
-                { success: false, error: 'Route not found' },
-                { status: 404 }
-            );
-        }
-
-        return NextResponse.json({
-            success: true,
-            route: result[0]
-        });
-
-    } catch (error) {
-        console.error('Error updating route:', error);
-        const errorMessage = error instanceof Error ? error.message : 'Failed to update route';
-        return NextResponse.json(
-            { success: false, error: errorMessage },
-            { status: 500 }
-        );
+    // The query function returns rows directly as an array
+    if (!result || result.length === 0) {
+      return NextResponse.json({ success: false, error: 'Route not found' }, { status: 404 });
     }
+
+    return NextResponse.json({
+      success: true,
+      route: result[0],
+    });
+  } catch (error) {
+    console.error('Error updating route:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Failed to update route';
+    return NextResponse.json({ success: false, error: errorMessage }, { status: 500 });
+  }
 }

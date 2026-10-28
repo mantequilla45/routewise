@@ -1,6 +1,6 @@
 import { MapPointsContext } from '@/context/map-context';
 import { LatLng } from '@/types/GeoTypes';
-import { AppleMaps, Coordinates, GoogleMaps } from 'expo-maps';
+import { AppleMaps, GoogleMaps } from 'expo-maps';
 import { GoogleMapsMarker } from 'expo-maps/build/google/GoogleMaps.types';
 import { forwardRef, useContext, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { Platform, StyleSheet, Text, Vibration } from 'react-native';
@@ -10,10 +10,22 @@ export interface NativeMapRef {
   setLocationAtCenter: () => void;
 }
 
-const NativeMap = forwardRef<NativeMapRef>((props, ref) => {
-  const { pointA, pointB, setPointA, setPointB, isPointAB, isPinPlacementEnabled, setIsPinPlacementEnabled, routes } = useContext(MapPointsContext);
+const NativeMap = forwardRef<NativeMapRef>(function NativeMap(_props, ref) {
+  const {
+    pointA,
+    pointB,
+    setPointA,
+    setPointB,
+    isPointAB,
+    isPinPlacementEnabled,
+    setIsPinPlacementEnabled,
+    routes,
+  } = useContext(MapPointsContext);
   const [lastSelectedPoint, setLastSelectedPoint] = useState<'A' | 'B' | null>(null);
-  const [currentCenter, setCurrentCenter] = useState<LatLng>({ latitude: 10.3157, longitude: 123.8854 });
+  const [currentCenter, setCurrentCenter] = useState<LatLng>({
+    latitude: 10.3157,
+    longitude: 123.8854,
+  });
   const mapRef = useRef<any>(null);
 
   // Provide haptic feedback when a pin is placed
@@ -32,7 +44,7 @@ const NativeMap = forwardRef<NativeMapRef>((props, ref) => {
     if (event.coordinates) {
       setCurrentCenter({
         latitude: event.coordinates.latitude,
-        longitude: event.coordinates.longitude
+        longitude: event.coordinates.longitude,
       });
     }
   };
@@ -60,7 +72,7 @@ const NativeMap = forwardRef<NativeMapRef>((props, ref) => {
 
       // Disable pin placement after selecting a location
       setIsPinPlacementEnabled(false);
-    }
+    },
   }));
 
   const markers: GoogleMapsMarker[] = [];
@@ -69,7 +81,7 @@ const NativeMap = forwardRef<NativeMapRef>((props, ref) => {
     markers.push({
       coordinates: pointA,
       title: 'Starting Point',
-      snippet: 'Your journey begins here'
+      snippet: 'Your journey begins here',
     });
   }
 
@@ -77,7 +89,7 @@ const NativeMap = forwardRef<NativeMapRef>((props, ref) => {
     markers.push({
       coordinates: pointB,
       title: 'Destination',
-      snippet: 'Your journey ends here'
+      snippet: 'Your journey ends here',
     });
   }
 
@@ -108,7 +120,7 @@ const NativeMap = forwardRef<NativeMapRef>((props, ref) => {
         cameraPosition={commonCamera}
         uiSettings={commonUISettings}
         mapOptions={{
-          mapId: process.env.EXPO_PUBLIC_GOOGLE_MAPS_ID
+          mapId: process.env.EXPO_PUBLIC_GOOGLE_MAPS_ID,
         }}
         properties={{
           isMyLocationEnabled: false, // Requires location permissions
@@ -136,7 +148,7 @@ const NativeMap = forwardRef<NativeMapRef>((props, ref) => {
 });
 
 const styles = StyleSheet.create({
-  map: { flex: 1, },
+  map: { flex: 1 },
 });
 
 export default NativeMap;

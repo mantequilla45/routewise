@@ -8,20 +8,20 @@ import { RouteQueryResult } from '../types';
  * - Start: Opposite side of road (>20m away)
  * - End: Correct side (<20m away)
  * - Solution: Find nearest correct boarding point from start, then travel forward to end
- * 
+ *
  * Example: User is on wrong side of divided highway, needs to cross to catch jeepney
  */
 export class Case3OppositeStartHandler extends BaseRouteHandler {
-    getCaseName(): string {
-        return 'CASE_3_OPPOSITE_START';
-    }
+  getCaseName(): string {
+    return 'CASE_3_OPPOSITE_START';
+  }
 
-    async canHandle(from: LatLng, to: LatLng): Promise<boolean> {
-        console.log('🔍 Case 3: Checking if Opposite Start can handle this route...');
-        
-        // Check for routes where start is far enough to be considered opposite side
-        // Find ALL routes that pass near both points
-        const checkQuery = `
+  async canHandle(from: LatLng, to: LatLng): Promise<boolean> {
+    console.log('🔍 Case 3: Checking if Opposite Start can handle this route...');
+
+    // Check for routes where start is far enough to be considered opposite side
+    // Find ALL routes that pass near both points
+    const checkQuery = `
             WITH route_check AS (
                 SELECT 
                     r.id,
@@ -50,34 +50,40 @@ export class Case3OppositeStartHandler extends BaseRouteHandler {
                 -- End can be any distance
             ORDER BY start_dist;
         `;
-        
-        const results = await query(checkQuery, [
-            from.longitude, from.latitude,
-            to.longitude, to.latitude
-        ]);
-        
-        const validRoutes = results.filter(r => {
-            console.log(`  Route ${r.route_code}: Start ${r.start_dist.toFixed(1)}m (opposite), End ${r.end_dist.toFixed(1)}m (correct)`);
-            console.log(`    Start pos: ${(r.start_pos * 100).toFixed(1)}%, End pos: ${(r.end_pos * 100).toFixed(1)}%`);
-            return true;
-        });
 
-        const canHandle = validRoutes.length > 0;
-        console.log(`🔍 Case 3: ${canHandle ? '✅ Can handle' : '❌ Cannot handle'}`);
-        
-        if (canHandle && validRoutes[0]) {
-            const r = validRoutes[0];
-            console.log(`  Will find nearest boarding point for route ${r.route_code}`);
-        }
-        
-        return canHandle;
+    const results = await query(checkQuery, [
+      from.longitude,
+      from.latitude,
+      to.longitude,
+      to.latitude,
+    ]);
+
+    const validRoutes = results.filter((r) => {
+      console.log(
+        `  Route ${r.route_code}: Start ${r.start_dist.toFixed(1)}m (opposite), End ${r.end_dist.toFixed(1)}m (correct)`,
+      );
+      console.log(
+        `    Start pos: ${(r.start_pos * 100).toFixed(1)}%, End pos: ${(r.end_pos * 100).toFixed(1)}%`,
+      );
+      return true;
+    });
+
+    const canHandle = validRoutes.length > 0;
+    console.log(`🔍 Case 3: ${canHandle ? '✅ Can handle' : '❌ Cannot handle'}`);
+
+    if (canHandle && validRoutes[0]) {
+      const r = validRoutes[0];
+      console.log(`  Will find nearest boarding point for route ${r.route_code}`);
     }
 
-    async calculate(from: LatLng, to: LatLng): Promise<RouteCalculationResult | null> {
-        console.log('🚗 Case 3: Calculating Opposite Start route...');
-        
-        // Query to find alternative boarding points for routes with opposite start
-        const routeQuery = `
+    return canHandle;
+  }
+
+  async calculate(from: LatLng, to: LatLng): Promise<RouteCalculationResult | null> {
+    console.log('🚗 Case 3: Calculating Opposite Start route...');
+
+    // Query to find alternative boarding points for routes with opposite start
+    const routeQuery = `
             WITH route_analysis AS (
                 SELECT 
                     r.id,
@@ -171,61 +177,69 @@ export class Case3OppositeStartHandler extends BaseRouteHandler {
             ORDER BY distance_meters;
         `;
 
-        const results = await query(routeQuery, [
-            from.longitude, from.latitude,
-            to.longitude, to.latitude
-        ]);
+    const results = await query(routeQuery, [
+      from.longitude,
+      from.latitude,
+      to.longitude,
+      to.latitude,
+    ]);
 
-        if (results.length === 0) {
-            console.log('🚗 Case 3: No valid opposite start routes found');
-            return null;
-        }
-
-        console.log(`🚗 Case 3: Found ${results.length} opposite start route(s)`);
-        
-        // Process all matching routes
-        const segments: RouteSegment[] = results.map((route: RouteQueryResult) => {
-            const coordinates = this.parseGeoJson(route.segment_geojson);
-            const distance = route.distance_meters || route.route_distance || 0;
-            const fare = this.calculateFare(distance);
-            
-            console.log(`  Route ${route.route_code}: ${(distance / 1000).toFixed(2)}km, ₱${fare}`);
-            console.log(`    Start correction: Walk ${(route.walking_distance ?? 0).toFixed(0)}m to correct side`);
-            console.log(`    Original position: ${((route.original_start_pos ?? 0) * 100).toFixed(1)}%, Corrected: ${((route.corrected_start_pos ?? route.start_pos) * 100).toFixed(1)}%`);
-            console.log(`    Travel: ${((route.corrected_start_pos ?? route.start_pos) * 100).toFixed(1)}% → ${(route.end_pos * 100).toFixed(1)}%`);
-            console.log(`    Coordinates: ${coordinates.length} points`);
-            
-            return {
-                routeId: route.id,
-                routeCode: route.route_code,
-                routeName: route.route_name,
-                coordinates,
-                distance: distance,
-                fare,
-                startPosition: route.corrected_start_pos,
-                endPosition: route.end_pos,
-                walkingDistance: route.walking_distance
-            };
-        });
-
-        // Use the first route for overall stats
-        const firstRoute = results[0];
-        
-        return {
-            caseName: this.getCaseName(),
-            segments,
-            totalDistance: firstRoute?.distance_meters || firstRoute?.route_distance || 0,
-            totalFare: this.calculateFare(firstRoute?.distance_meters || firstRoute?.route_distance || 0),
-            confidence: 0.85,  // Lower confidence due to start correction
-            debugInfo: {
-                startCorrected: true,
-                walkingDistance: firstRoute.walking_distance,
-                originalStartPosition: firstRoute.original_start_pos,
-                correctedStartPosition: firstRoute.corrected_start_pos,
-                startDistance: firstRoute.start_dist,
-                endDistance: firstRoute.end_dist,
-                routeCount: results.length
-            }
-        };
+    if (results.length === 0) {
+      console.log('🚗 Case 3: No valid opposite start routes found');
+      return null;
     }
+
+    console.log(`🚗 Case 3: Found ${results.length} opposite start route(s)`);
+
+    // Process all matching routes
+    const segments: RouteSegment[] = results.map((route: RouteQueryResult) => {
+      const coordinates = this.parseGeoJson(route.segment_geojson);
+      const distance = route.distance_meters || route.route_distance || 0;
+      const fare = this.calculateFare(distance);
+
+      console.log(`  Route ${route.route_code}: ${(distance / 1000).toFixed(2)}km, ₱${fare}`);
+      console.log(
+        `    Start correction: Walk ${(route.walking_distance ?? 0).toFixed(0)}m to correct side`,
+      );
+      console.log(
+        `    Original position: ${((route.original_start_pos ?? 0) * 100).toFixed(1)}%, Corrected: ${((route.corrected_start_pos ?? route.start_pos) * 100).toFixed(1)}%`,
+      );
+      console.log(
+        `    Travel: ${((route.corrected_start_pos ?? route.start_pos) * 100).toFixed(1)}% → ${(route.end_pos * 100).toFixed(1)}%`,
+      );
+      console.log(`    Coordinates: ${coordinates.length} points`);
+
+      return {
+        routeId: route.id,
+        routeCode: route.route_code,
+        routeName: route.route_name,
+        coordinates,
+        distance: distance,
+        fare,
+        startPosition: route.corrected_start_pos,
+        endPosition: route.end_pos,
+        walkingDistance: route.walking_distance,
+      };
+    });
+
+    // Use the first route for overall stats
+    const firstRoute = results[0];
+
+    return {
+      caseName: this.getCaseName(),
+      segments,
+      totalDistance: firstRoute?.distance_meters || firstRoute?.route_distance || 0,
+      totalFare: this.calculateFare(firstRoute?.distance_meters || firstRoute?.route_distance || 0),
+      confidence: 0.85, // Lower confidence due to start correction
+      debugInfo: {
+        startCorrected: true,
+        walkingDistance: firstRoute.walking_distance,
+        originalStartPosition: firstRoute.original_start_pos,
+        correctedStartPosition: firstRoute.corrected_start_pos,
+        startDistance: firstRoute.start_dist,
+        endDistance: firstRoute.end_dist,
+        routeCount: results.length,
+      },
+    };
+  }
 }

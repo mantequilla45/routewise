@@ -1,18 +1,10 @@
-"use client";
+'use client';
 
-import Image from "next/image";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { ReactElement } from "react";
-import {
-  Home,
-  MapPin,
-  Database,
-  BarChart3,
-  Settings,
-  LogOut,
-  Users,
-} from "lucide-react";
+import Image from 'next/image';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { ReactElement } from 'react';
+import { Home, MapPin, Database, BarChart3, Settings, LogOut, Users } from 'lucide-react';
 
 interface NavItem {
   label: string;
@@ -30,43 +22,43 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
   const pathname = usePathname();
 
   const handleLogout = () => {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("authToken");
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('authToken');
     }
-    if (typeof window !== "undefined") {
-      window.location.pathname = "/";
+    if (typeof window !== 'undefined') {
+      window.location.pathname = '/';
     }
   };
 
   const navItems: NavItem[] = [
     {
-      label: "Dashboard",
-      href: "/dashboard",
+      label: 'Dashboard',
+      href: '/dashboard',
       icon: <Home className="w-5 h-5" />,
     },
     {
-      label: "Routes Management",
-      href: "/routes",
+      label: 'Routes Management',
+      href: '/routes',
       icon: <MapPin className="w-5 h-5" />,
     },
     {
-      label: "Users",
-      href: "/users",
+      label: 'Users',
+      href: '/users',
       icon: <Users className="w-5 h-5" />,
     },
     {
-      label: "Database",
-      href: "/database",
+      label: 'Database',
+      href: '/database',
       icon: <Database className="w-5 h-5" />,
     },
     {
-      label: "Analytics",
-      href: "/analytics",
+      label: 'Analytics',
+      href: '/analytics',
       icon: <BarChart3 className="w-5 h-5" />,
     },
     {
-      label: "Settings",
-      href: "/settings",
+      label: 'Settings',
+      href: '/settings',
       icon: <Settings className="w-5 h-5" />,
     },
   ];
@@ -74,26 +66,20 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
   return (
     <aside
       className={`${
-        isCollapsed ? "w-22" : "w-65"
+        isCollapsed ? 'w-22' : 'w-65'
       } transition-all duration-300 bg-[#161616] border-r border-[#222222] h-screen sticky top-0 left-0 flex flex-col z-50`}
     >
       {/* Logo Section */}
       <div className="flex items-center justify-between p-6 h-[72px] border-none border-gray-100">
         <div
           className={`flex items-center space-x-3 mt-1
-                ${isCollapsed ? "justify-start w-full" : ""}`}
+                ${isCollapsed ? 'justify-start w-full' : ''}`}
         >
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
             className="w-10 h-10 min-w-10 min-h-10 flex items-center justify-center border-none transition-all duration-300 cursor-pointer focus:outline-none shadow-none bg-transparent active:scale-100"
           >
-            <Image
-              src="/icon.svg"
-              alt="Routewise Icon"
-              width={40}
-              height={40}
-              priority
-            />
+            <Image src="/icon.svg" alt="Routewise Icon" width={40} height={40} priority />
           </button>
           {!isCollapsed && (
             <div>
@@ -130,31 +116,27 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
         {navItems.map((item) => {
           const isActive =
             pathname === item.href ||
-            (item.href !== "/dashboard" && pathname.startsWith(item.href));
+            (item.href !== '/dashboard' && pathname.startsWith(item.href));
           return (
             <Link
               key={item.href}
               href={item.href}
               className={`flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-300 group relative ${
                 isActive
-                  ? "bg-[#1F1F1F] text-white"
-                  : "hover:bg-[#1A1A1A] text-gray-500 hover:text-[#FFCC66]"
+                  ? 'bg-[#1F1F1F] text-white'
+                  : 'hover:bg-[#1A1A1A] text-gray-500 hover:text-[#FFCC66]'
               }`}
             >
               <div className="flex items-start space-x-3">
                 <span
                   className={`${
-                    isActive
-                      ? "text-[#FFCC66]"
-                      : "text-gray-500 group-hover:text-[#FFCC66]"
+                    isActive ? 'text-[#FFCC66]' : 'text-gray-500 group-hover:text-[#FFCC66]'
                   } transition-colors`}
                 >
                   {item.icon}
                 </span>
                 {!isCollapsed && (
-                  <span className="font-medium text-sm w-[250px]">
-                    {item.label}
-                  </span>
+                  <span className="font-medium text-sm w-[250px]">{item.label}</span>
                 )}
               </div>
               {item.badge && !isCollapsed && (
@@ -174,7 +156,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
       <div className="p-2 border-t border-[#222222]">
         <div
           className={`flex items-center space-x-3 p-3 rounded-xl transition-all group ${
-            isCollapsed ? "justify-start w-full" : ""
+            isCollapsed ? 'justify-start w-full' : ''
           }`}
         >
           <div className="w-10 h-10 min-w-10 min-h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-md">
@@ -183,12 +165,8 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
 
           {!isCollapsed && (
             <div className="flex-1">
-              <p className="text-sm font-medium text-white flex justify-start">
-                Admin
-              </p>
-              <p className="text-xs text-gray-400 flex justify-start">
-                admin@routewise.com
-              </p>
+              <p className="text-sm font-medium text-white flex justify-start">Admin</p>
+              <p className="text-xs text-gray-400 flex justify-start">admin@routewise.com</p>
             </div>
           )}
           <button onClick={handleLogout}>

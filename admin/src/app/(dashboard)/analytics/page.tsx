@@ -1,20 +1,18 @@
-"use client";
+'use client';
 
 export default function AnalyticsPage() {
   const metrics = [
-    { label: "Average Trip Duration", value: "32 min", trend: "+2.5%" },
-    { label: "Peak Hours", value: "7-9 AM", trend: "Consistent" },
-    { label: "Route Efficiency", value: "87%", trend: "+5%" },
-    { label: "Customer Satisfaction", value: "4.6/5", trend: "+0.3" },
+    { label: 'Average Trip Duration', value: '32 min', trend: '+2.5%' },
+    { label: 'Peak Hours', value: '7-9 AM', trend: 'Consistent' },
+    { label: 'Route Efficiency', value: '87%', trend: '+5%' },
+    { label: 'Customer Satisfaction', value: '4.6/5', trend: '+0.3' },
   ];
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
         <h1 className="text-3xl font-bold text-white">Analytics</h1>
-        <p className="text-white mt-1">
-          Track performance metrics and route efficiency
-        </p>
+        <p className="text-white mt-1">Track performance metrics and route efficiency</p>
       </div>
 
       {/* Metrics Cards */}
@@ -24,9 +22,7 @@ export default function AnalyticsPage() {
             key={index}
             className="bg-[#3A3A3A] rounded-xl p-6 transition-all border-2 border-[#CC9933]"
           >
-            <h3 className="text-sm font-medium text-gray-300 mb-2">
-              {metric.label}
-            </h3>
+            <h3 className="text-sm font-medium text-gray-300 mb-2">{metric.label}</h3>
             <p className="text-2xl font-bold text-white">{metric.value}</p>
             <p className="text-sm text-[#FFCC66] mt-2">{metric.trend}</p>
           </div>
@@ -37,16 +33,9 @@ export default function AnalyticsPage() {
       <div className="grid grid-cols-1 gap-6">
         {/* Route Performance Chart */}
         <div className="bg-[#3A3A3A] rounded-xl p-6">
-          <h2 className="text-lg font-semibold text-white mb-4">
-            Route Performance
-          </h2>
+          <h2 className="text-lg font-semibold text-white mb-4">Route Performance</h2>
           <div className="h-64 flex items-center justify-center text-white">
-            <svg
-              className="w-16 h-16"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+            <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
