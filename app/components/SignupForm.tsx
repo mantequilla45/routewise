@@ -1,13 +1,13 @@
-import { useAuth } from "@/context/hybrid-auth";
+import { useAuth } from "@/context/auth";
 import React, { useState } from "react";
 import { View, Text, Button, StyleSheet, TextInput, TouchableOpacity, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons"; // install with expo: expo install @expo/vector-icons
 import { AntDesign } from '@expo/vector-icons';
-import { supabase } from "@/lib/supabase-client";
+import { ApiError } from "@/lib/api";
 import * as SecureStore from 'expo-secure-store';
 export default function SignupForm() {
 
-    const { signIn } = useAuth();
+    const { signIn, signUpWithEmail } = useAuth();
     const [passwordVisible, setPasswordVisible] = useState(false); // toggle password visibility
 
     const [email, setEmail] = useState('');
@@ -43,39 +43,7 @@ export default function SignupForm() {
         try {
             setLoading(true);
 
-            // Sign up with Supabase Auth
-            const { data, error } = await supabase.auth.signUp({ email, password });
-            if (error) {
-                console.error('Sign up error:', error);
-                // Detect rate limiting and provide actionable guidance
-                const msg = (error.message || '').toString();
-                if (error.status === 429 || /rate limit/i.test(msg)) {
-                    Alert.alert(
-                        'Email rate limit exceeded',
-                        'Supabase rejected the confirmation email due to rate limits.\n\nOptions:\n• Wait a few minutes and try again.\n• Configure an SMTP provider in the Supabase Dashboard (Authentication → Settings → Email) so emails are sent from your own provider and not subject to the project demo quota.\n• For testing, create users server-side with a service-role key or temporarily disable email confirmations in your Auth settings.\n\nCheck Supabase logs for more details.'
-                    );
-                } else {
-                    Alert.alert('Sign up failed', error.message || 'An error occurred');
-                }
-                return;
-            }
-
-            // Optionally, insert a user record into `users` table (if your DB table isn't populated by an auth trigger)
-            try {
-                const { error: insertError } = await supabase
-                    .from('users')
-                    .insert({
-                        email,
-                        created_at: new Date().toISOString(),
-                        updated_at: new Date().toISOString(),
-                    });
-
-                if (insertError) {
-                    console.warn('Could not insert user row:', insertError.message);
-                }
-            } catch (e) {
-                console.warn('Insert users table error:', e);
-            }
+            const { requiresConfirmation } = await signUpWithEmail(email, password);
 
             // Remember credentials securely on device if requested
             if (rememberMe) {
@@ -84,10 +52,20 @@ export default function SignupForm() {
                 await SecureStore.deleteItemAsync('saved_credentials');
             }
 
-            
+            if (requiresConfirmation) {
+                Alert.alert('Check your email', 'We sent a confirmation link. Open it, then log in.');
+            }
         } catch (e) {
-            console.error('Unexpected sign up error:', e);
-            Alert.alert('Sign up failed', 'Unexpected error');
+            console.error('Sign up error:', e);
+            // Supabase rate-limits confirmation emails on the free tier
+            if (e instanceof ApiError && (e.status === 429 || /rate limit/i.test(e.message))) {
+                Alert.alert(
+                    'Email rate limit exceeded',
+                    'Too many sign-up emails were sent recently. Wait a few minutes and try again, or configure an SMTP provider in the Supabase dashboard (Authentication → Settings → Email).'
+                );
+            } else {
+                Alert.alert('Sign up failed', e instanceof ApiError ? e.message : 'Unexpected error');
+            }
         } finally {
             setLoading(false);
         }

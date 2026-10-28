@@ -27,7 +27,7 @@ export interface MappedGeoRouteResult {
   shouldCrossRoad?: boolean;
   message?: string;
   
-  // V2 route properties
+  // Route calculation properties
   routeCode?: string;
   routeName?: string;
   caseName?: string;

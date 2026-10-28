@@ -4,9 +4,8 @@ import { Image } from "expo-image";
 import { useState, useEffect, useRef } from "react";
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, ActivityIndicator, TextInput, Modal } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useAuth } from "@/context/hybrid-auth";
-import { supabase } from "@/lib/supabase-client";
-import * as SecureStore from 'expo-secure-store';
+import { useAuth } from "@/context/auth";
+import { api } from "@/lib/api";
 import { LOGO } from "@/constants";
 
 
@@ -106,39 +105,9 @@ export default function Account() {
             if (newName === currentName) return;
             setIsSavingName(true);
 
-            const userId = (user as any)?.id;
-            let query = supabase.from('users').update({ full_name: newName });
-            if (userId) {
-                query = query.eq('id', userId);
-            } else if ((user as any)?.email) {
-                query = query.eq('email', (user as any).email);
-            }
-
-            const { data, error } = await query.select().maybeSingle();
-            if (error) {
-                console.warn('Failed saving name:', error);
-            } else {
-                // Update stored user_data so other app parts that read it later see the change
-                try {
-                    const stored = await SecureStore.getItemAsync('user_data');
-                    if (stored) {
-                        const parsed = JSON.parse(stored);
-                        parsed.name = newName;
-                        await SecureStore.setItemAsync('user_data', JSON.stringify(parsed));
-                    }
-                } catch (e) {
-                    console.warn('Failed updating SecureStore user_data:', e);
-                }
-
-                // Update auth context so app-wide `user` reflects the new name
-                try {
-                    await (updateUser?.({ name: newName }));
-                    // Re-fetch authoritative profile from DB to capture other fields
-                    await refreshProfile?.();
-                } catch (e) {
-                    // ignore
-                }
-            }
+            // The backend returns the full profile; updateUser also refreshes the cached copy.
+            const updated = await api.me.update({ name: newName });
+            await updateUser(updated);
         } catch (e) {
             console.warn('saveName error', e);
         } finally {
@@ -153,38 +122,8 @@ export default function Account() {
             if (newCommuter === current) return;
             setIsSavingCommuter(true);
 
-            const userId = (user as any)?.id;
-            let query = supabase.from('users').update({ commuter: newCommuter });
-            if (userId) {
-                query = query.eq('id', userId);
-            } else if ((user as any)?.email) {
-                query = query.eq('email', (user as any).email);
-            }
-
-            const { data, error } = await query.select().maybeSingle();
-            if (error) {
-                console.warn('Failed saving commuter:', error);
-            } else {
-                try {
-                    const stored = await SecureStore.getItemAsync('user_data');
-                    if (stored) {
-                        const parsed = JSON.parse(stored);
-                        parsed.commuter = newCommuter;
-                        await SecureStore.setItemAsync('user_data', JSON.stringify(parsed));
-                    }
-                } catch (e) {
-                    console.warn('Failed updating SecureStore commuter:', e);
-                }
-
-                // Update auth context so app-wide `user` reflects the new commuter
-                try {
-                    await (updateUser?.({ commuter: newCommuter }));
-                    // Re-fetch authoritative profile from DB to capture other fields
-                    await refreshProfile?.();
-                } catch (e) {
-                    // ignore
-                }
-            }
+            const updated = await api.me.update({ commuter: newCommuter });
+            await updateUser(updated);
         } catch (e) {
             console.warn('saveCommuter error', e);
         } finally {

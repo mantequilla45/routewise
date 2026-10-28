@@ -1,369 +1,204 @@
 import * as React from "react";
 import * as WebBrowser from "expo-web-browser";
-import { BASE_URL, APP_SCHEME } from "@/constants";
 import * as Linking from "expo-linking";
 import * as SecureStore from "expo-secure-store";
-import { saveUserProfile } from "@/lib/supabase";
-
+import { APP_SCHEME } from "@/constants";
+import { api, ApiError, setOnSessionExpired, tokens, type AuthUser } from "@/lib/api";
 
 WebBrowser.maybeCompleteAuthSession();
 
-export type AuthUser = {
-    id: string;
-    email: string;
-    name: string;
-    picture?: string;
-    email_verified?: boolean;
-    provider?: string;
-    exp?: number;
-    cookieExpiration?: number; // Added for web cookie expiration tracking
+export type { AuthUser };
+
+// Last known profile, so the account screen renders instantly on cold start
+// while /me is re-fetched in the background.
+const USER_CACHE_KEY = 'user_data';
+
+type AuthContextValue = {
+    user: AuthUser | null;
+    isLoading: boolean;
+    error: string | null;
+    signIn: () => Promise<void>;                                   // Google
+    signInWithEmail: (email: string, password: string) => Promise<void>;
+    signUpWithEmail: (email: string, password: string) => Promise<{ requiresConfirmation: boolean }>;
+    signOut: () => Promise<void>;
+    updateUser: (updates: Partial<AuthUser>) => Promise<void>;
+    refreshProfile: () => Promise<void>;
 };
 
-const AuthContext = React.createContext({
-    user: null as AuthUser | null,
-    signIn: () => { },
-    signOut: () => { },
-    fetchWithAuth: async (url: string, options?: RequestInit) => Promise.resolve(new Response()),
+const AuthContext = React.createContext<AuthContextValue>({
+    user: null,
     isLoading: false,
-    error: null as string | null,
+    error: null,
+    signIn: async () => { },
+    signInWithEmail: async () => { },
+    signUpWithEmail: async () => ({ requiresConfirmation: false }),
+    signOut: async () => { },
+    updateUser: async () => { },
+    refreshProfile: async () => { },
 });
-
-// Your Google OAuth Client ID from environment or hardcoded
-const GOOGLE_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID || "880953895599-q9qljrddahcj5rhlmqehiq130i8lh9oj.apps.googleusercontent.com";
-
-// Storage keys
-const STORAGE_KEYS = {
-    ACCESS_TOKEN: 'access_token',
-    REFRESH_TOKEN: 'refresh_token',
-    USER_DATA: 'user_data',
-    TOKEN_EXPIRY: 'token_expiry',
-};
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = React.useState<AuthUser | null>(null);
-    const [isLoading, setIsLoading] = React.useState(true); // Start with loading true
+    const [isLoading, setIsLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
-    const [refreshTimer, setRefreshTimer] = React.useState<NodeJS.Timeout | null>(null);
+    // The OAuth redirect can arrive via both the browser result and the URL
+    // listener; this stops it being processed twice.
+    const handledUrlRef = React.useRef<string | null>(null);
 
-    // Load stored tokens on app startup
-    React.useEffect(() => {
-        loadStoredAuth();
+    const applyUser = React.useCallback(async (next: AuthUser | null) => {
+        setUser(next);
+        if (next) {
+            await SecureStore.setItemAsync(USER_CACHE_KEY, JSON.stringify(next));
+        } else {
+            await SecureStore.deleteItemAsync(USER_CACHE_KEY);
+        }
     }, []);
 
-    // Handle the redirect from OAuth
+    // Load the cached profile, then verify the session against the backend.
     React.useEffect(() => {
-        const handleUrl = async (url: string) => {
-            const parsed = Linking.parse(url);
-            
-            // Check for error
-            if (parsed.queryParams?.error) {
-                setError('Authentication failed: ' + parsed.queryParams.error);
-                setIsLoading(false);
-                return;
-            }
-            
-            // Check for access token (tokens already exchanged by backend)
-            if (parsed.queryParams?.access_token) {
-                const accessToken = parsed.queryParams.access_token as string;
-                const refreshToken = (parsed.queryParams.refresh_token as string) || '';
-                const expiresIn = parsed.queryParams.expires_in 
-                    ? parseInt(parsed.queryParams.expires_in as string) 
-                    : 3600;
-                
-                // Store tokens securely
-                await storeTokens(accessToken, refreshToken, expiresIn);
-                
-                // Get user info and store it
-                await getUserInfo(accessToken);
-            }
-        };
-
-        // Listen for incoming links
-        const subscription = Linking.addEventListener('url', (event) => {
-            handleUrl(event.url);
-        });
-
-        // Check if app was opened with a link
-        Linking.getInitialURL().then((url) => {
-            if (url) handleUrl(url);
-        });
-
-        return () => subscription.remove();
-    }, []);
-
-    // Cleanup timer on unmount
-    React.useEffect(() => {
-        return () => {
-            if (refreshTimer) {
-                clearTimeout(refreshTimer);
-            }
-        };
-    }, [refreshTimer]);
-
-    const loadStoredAuth = async () => {
-        try {
-            const [storedToken, storedUserData, tokenExpiry] = await Promise.all([
-                SecureStore.getItemAsync(STORAGE_KEYS.ACCESS_TOKEN),
-                SecureStore.getItemAsync(STORAGE_KEYS.USER_DATA),
-                SecureStore.getItemAsync(STORAGE_KEYS.TOKEN_EXPIRY),
-            ]);
-
-            if (storedToken && storedUserData && tokenExpiry) {
-                const expiryTime = parseInt(tokenExpiry);
-                const now = Date.now();
-                
-                // Check if token is still valid (with 5 minute buffer)
-                if (expiryTime > now + 5 * 60 * 1000) {
-                    // Token is still valid
-                    const userData = JSON.parse(storedUserData);
-                    setUser(userData);
-                    
-                    // Schedule token refresh
-                    scheduleTokenRefresh(expiryTime - now);
-                } else {
-                    // Token expired, clear storage
-                    await clearStoredAuth();
-                }
-            }
-        } catch (error) {
-            console.error('Error loading stored auth:', error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const storeTokens = async (accessToken: string, refreshToken: string, expiresIn: number) => {
-        try {
-            const expiryTime = Date.now() + (expiresIn * 1000);
-            
-            await Promise.all([
-                SecureStore.setItemAsync(STORAGE_KEYS.ACCESS_TOKEN, accessToken),
-                refreshToken && SecureStore.setItemAsync(STORAGE_KEYS.REFRESH_TOKEN, refreshToken),
-                SecureStore.setItemAsync(STORAGE_KEYS.TOKEN_EXPIRY, expiryTime.toString()),
-            ].filter(Boolean));
-            
-            // Schedule token refresh before expiry
-            scheduleTokenRefresh(expiresIn * 1000);
-        } catch (error) {
-            console.error('Error storing tokens:', error);
-        }
-    };
-
-    const clearStoredAuth = async () => {
-        try {
-            await Promise.all([
-                SecureStore.deleteItemAsync(STORAGE_KEYS.ACCESS_TOKEN),
-                SecureStore.deleteItemAsync(STORAGE_KEYS.REFRESH_TOKEN),
-                SecureStore.deleteItemAsync(STORAGE_KEYS.USER_DATA),
-                SecureStore.deleteItemAsync(STORAGE_KEYS.TOKEN_EXPIRY),
-            ]);
-        } catch (error) {
-            console.error('Error clearing stored auth:', error);
-        }
-    };
-
-    const scheduleTokenRefresh = (timeUntilExpiry: number) => {
-        // Clear any existing timer
-        if (refreshTimer) {
-            clearTimeout(refreshTimer);
-        }
-        
-        // Schedule refresh 5 minutes before token expires
-        const refreshTime = Math.max(timeUntilExpiry - 5 * 60 * 1000, 0);
-        
-        if (refreshTime > 0) {
-            const timer = setTimeout(() => {
-                refreshAccessToken();
-            }, refreshTime);
-            
-            setRefreshTimer(timer);
-        }
-    };
-
-    const refreshAccessToken = async () => {
-        try {
-            const refreshToken = await SecureStore.getItemAsync(STORAGE_KEYS.REFRESH_TOKEN);
-            
-            if (!refreshToken) {
-                // No refresh token, need to re-authenticate
-                await signOut();
-                return;
-            }
-            
-            // Call refresh endpoint
-            const response = await fetch(`${BASE_URL}/api/auth/refresh`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    refresh_token: refreshToken,
-                }),
-            });
-            
-            if (!response.ok) {
-                // Refresh failed, need to re-authenticate
-                await signOut();
-                return;
-            }
-            
-            const data = await response.json();
-            
-            // Store new tokens
-            await storeTokens(
-                data.access_token,
-                data.refresh_token || refreshToken, // Use new refresh token if provided
-                data.expires_in || 3600
-            );
-            
-            console.log('Token refreshed successfully');
-        } catch (error) {
-            console.error('Error refreshing token:', error);
-            await signOut();
-        }
-    };
-
-    const getUserInfo = async (token: string | undefined) => {
-        if (!token) return;
-        
-        try {
-            setIsLoading(true);
-            const response = await fetch(
-                "https://www.googleapis.com/userinfo/v2/me",
-                {
-                    headers: { Authorization: `Bearer ${token}` },
-                }
-            );
-            
-            if (!response.ok) {
-                throw new Error('Failed to get user info');
-            }
-            
-            const userInfo = await response.json();
-            const userData: AuthUser = {
-                id: userInfo.id,
-                email: userInfo.email,
-                name: userInfo.name,
-                picture: userInfo.picture,
-                email_verified: userInfo.verified_email,
-                provider: 'google'
-            };
-            
-            setUser(userData);
-            setError(null);
-            
-            // Store user data locally
-            await SecureStore.setItemAsync(STORAGE_KEYS.USER_DATA, JSON.stringify(userData));
-            
-            // Save user profile to Supabase
+        let cancelled = false;
+        (async () => {
             try {
-                await saveUserProfile({
-                    email: userInfo.email,
-                    full_name: userInfo.name || null,
-                    avatar_url: userInfo.picture || null,
-                });
-                console.log('User profile saved to Supabase');
-            } catch (supabaseError) {
-                // Don't fail the sign-in if Supabase save fails
-                console.error('Failed to save to Supabase:', supabaseError);
+                const { access } = await tokens.get();
+                if (!access) return;
+
+                const cached = await SecureStore.getItemAsync(USER_CACHE_KEY);
+                if (cached && !cancelled) setUser(JSON.parse(cached));
+
+                const fresh = await api.me.get();
+                if (!cancelled) await applyUser(fresh);
+            } catch (e) {
+                // apiFetch already cleared tokens if the refresh failed.
+                if (!cancelled && e instanceof ApiError && e.status === 401) await applyUser(null);
+                else console.warn('Session restore failed:', e);
+            } finally {
+                if (!cancelled) setIsLoading(false);
             }
+        })().then(() => { if (!cancelled) setIsLoading(false); });
+        return () => { cancelled = true; };
+    }, [applyUser]);
+
+    React.useEffect(() => {
+        setOnSessionExpired(() => { applyUser(null); });
+        return () => setOnSessionExpired(null);
+    }, [applyUser]);
+
+    // Handles `routewise://?access_token=…&refresh_token=…` from the Google callback.
+    const handleAuthRedirect = React.useCallback(async (url: string) => {
+        if (handledUrlRef.current === url) return;
+        handledUrlRef.current = url;
+
+        const { queryParams } = Linking.parse(url);
+        if (!queryParams) return;
+
+        if (queryParams.error) {
+            setError('Sign in failed: ' + String(queryParams.error));
+            setIsLoading(false);
+            return;
+        }
+
+        const accessToken = queryParams.access_token;
+        const refreshToken = queryParams.refresh_token;
+        if (typeof accessToken !== 'string' || typeof refreshToken !== 'string') return;
+
+        try {
+            await tokens.set({ access_token: accessToken, refresh_token: refreshToken });
+            await applyUser(await api.me.get());
+            setError(null);
         } catch (e) {
-            console.error(e);
-            setError("Failed to get user information");
-            await clearStoredAuth();
+            console.error('Error completing sign in:', e);
+            setError('Failed to complete sign in');
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [applyUser]);
+
+    React.useEffect(() => {
+        const subscription = Linking.addEventListener('url', (event) => { handleAuthRedirect(event.url); });
+        Linking.getInitialURL().then((url) => { if (url) handleAuthRedirect(url); });
+        return () => subscription.remove();
+    }, [handleAuthRedirect]);
 
     const signIn = async () => {
+        setError(null);
+        setIsLoading(true);
         try {
-            setError(null);
-            setIsLoading(true);
-            
-            // Use your custom OAuth endpoint
-            const authUrl = `${BASE_URL}/api/auth/authorize?` + new URLSearchParams({
-                client_id: 'google',
-                redirect_uri: APP_SCHEME,
-                scope: 'openid email profile',
-                state: Math.random().toString(36).substring(7),
-            }).toString();
-            
-            // Open the browser for OAuth
-            const result = await WebBrowser.openAuthSessionAsync(authUrl, APP_SCHEME);
-            
+            const state = Math.random().toString(36).substring(2);
+            const result = await WebBrowser.openAuthSessionAsync(
+                api.auth.googleAuthorizeUrl(APP_SCHEME, state),
+                APP_SCHEME,
+            );
+
             if (result.type === 'success' && result.url) {
-                // The callback endpoint already exchanged the code for tokens
-                const parsed = Linking.parse(result.url);
-                
-                if (parsed.queryParams?.error) {
-                    setError('Sign in failed: ' + (parsed.queryParams.error as string));
-                    setIsLoading(false);
-                    return;
-                }
-                
-                if (parsed.queryParams?.access_token) {
-                    await getUserInfo(parsed.queryParams.access_token as string);
-                } else {
-                    // Success but no token - shouldn't happen
-                    setError('No access token received');
-                    setIsLoading(false);
-                }
-            } else if (result.type === 'cancel') {
-                // User cancelled the sign in
-                setError(null); // Don't show error for user cancellation
-                setIsLoading(false);
-            } else if (result.type === 'dismiss') {
-                // Browser was dismissed
-                setError(null);
+                await handleAuthRedirect(result.url);
+            } else {
+                // cancel / dismiss
                 setIsLoading(false);
             }
         } catch (e) {
             console.error('Sign in error:', e);
-            setError("Failed to sign in");
+            setError('Failed to sign in');
             setIsLoading(false);
         }
     };
 
+    const signInWithEmail = async (email: string, password: string) => {
+        const session = await api.auth.login(email, password);
+        await tokens.set(session);
+        await applyUser(session.user);
+        setError(null);
+    };
+
+    const signUpWithEmail = async (email: string, password: string) => {
+        const result = await api.auth.signup(email, password);
+        if (result.requiresConfirmation) return { requiresConfirmation: true };
+        await tokens.set(result.session);
+        await applyUser(result.session.user);
+        setError(null);
+        return { requiresConfirmation: false };
+    };
+
     const signOut = async () => {
+        setIsLoading(true);
         try {
-            setIsLoading(true);
-            
-            // Clear stored tokens
-            await clearStoredAuth();
-            
-            // Clear timer
-            if (refreshTimer) {
-                clearTimeout(refreshTimer);
-                setRefreshTimer(null);
-            }
-            
-            setUser(null);
-            setError(null);
+            await api.auth.logout().catch(() => { /* already signed out server-side or offline */ });
         } finally {
+            await tokens.clear();
+            await applyUser(null);
+            setError(null);
             setIsLoading(false);
         }
     };
-    
-    const fetchWithAuth = async (url: string, options?: RequestInit) => {
-        // This can be implemented if you need to make authenticated API calls
-        return fetch(url, options);
+
+    const updateUser = async (updates: Partial<AuthUser>) => {
+        if (!user) return;
+        await applyUser({ ...user, ...updates });
+    };
+
+    const refreshProfile = async () => {
+        try {
+            await applyUser(await api.me.get());
+        } catch (e) {
+            console.warn('refreshProfile error', e);
+        }
     };
 
     return (
         <AuthContext.Provider value={{
             user,
-            signIn,
-            signOut,
-            fetchWithAuth,
             isLoading,
             error,
-        }}
-        >
+            signIn,
+            signInWithEmail,
+            signUpWithEmail,
+            signOut,
+            updateUser,
+            refreshProfile,
+        }}>
             {children}
         </AuthContext.Provider>
     );
-}
+};
 
 export const useAuth = () => {
     const context = React.useContext(AuthContext);

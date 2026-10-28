@@ -1,50 +1,38 @@
-# Welcome to your Expo app 👋
+# RouteWise mobile app
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Expo (React Native) app. It is frontend-only: every network request goes to the
+RouteWise API in [`../backend`](../backend/README.md). No Supabase or Google credentials
+live in this app.
 
-## Get started
+## Run it
 
-1. Install dependencies
+1. Start the backend (see its README), or use the deployed URL.
+2. Create `.env` from `.env.example` and set `EXPO_PUBLIC_API_URL`:
+   - iOS simulator with a local backend: `http://localhost:3000`
+   - Android emulator with a local backend: `http://10.0.2.2:3000`
+   - Physical device: `http://<your-mac-lan-ip>:3000`
+   - Production: your Vercel domain
+3. Install and build a development client. The app uses `expo-maps` and `expo-dev-client`,
+   so it does not run in the Expo Go store app.
 
    ```bash
-   npm install
+   pnpm install
+   pnpm ios       # or: pnpm android
    ```
 
-2. Start the app
+   The first native build takes a few minutes. After that, `pnpm start` is enough; rebuild
+   only when you add a native package or change `app.json`.
 
-   ```bash
-   npx expo start
-   ```
+## Where things are
 
-In the output, you'll find options to open the app in a
+- `app/` — screens (file-based routing via expo-router)
+- `components/` — UI components
+- `context/auth.tsx` — sign-in state. Tokens are kept in SecureStore; `lib/api.ts` refreshes them.
+- `lib/api.ts` — the only place that talks to the backend. Add new endpoints there.
+- `app/services/` — route calculation helpers that call `lib/api.ts`
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## Sign-in flow
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- Email/password: `POST /auth/login` or `/auth/signup` on the backend.
+- Google: the app opens `/auth/google/authorize` in the system browser; the backend finishes
+  OAuth and deep-links back to `routewise://` with tokens. The scheme is set in `app.json`.

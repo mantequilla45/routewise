@@ -83,7 +83,7 @@ export default function MapModalContent({ exit, setShowBottomSheet, enterPinPlac
 
                         console.log(`Created transfer polylines for result ${resultIndex} (${r.routeId})`);
                     } else if ((r.latLng && r.latLng.length > 0) || (r.coordinates && r.coordinates.length > 0)) {
-                        // Single route polyline - handle both V1 (latLng) and V2 (coordinates) formats
+                        // Single route polyline - handle both latLng and coordinates formats
                         const routeCoords = r.coordinates || r.latLng;
                         const polyline: GoogleMapsPolyline = {
                             id: `route_${resultIndex}`,

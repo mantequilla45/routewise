@@ -1,11 +1,12 @@
 import { LatLng, MappedGeoRouteResult } from "@/types/GeoTypes";
+import { api, ApiError } from "@/lib/api";
 import { adjustToNearestRoad } from "../maps/roadAdjustment";
 
 export default async function calculatePossibleRoutes(
     from: LatLng | null,
     to: LatLng | null
 ): Promise<MappedGeoRouteResult[] | { error: string; warning?: string }> {
-    
+
     if (!from || !to) {
         return [];
     }
@@ -14,7 +15,7 @@ export default async function calculatePossibleRoutes(
         // Try to snap to road, but fall back to original points if it fails
         let adjustedFrom = from;
         let adjustedTo = to;
-        
+
         try {
             const [snappedFrom, snappedTo] = await Promise.all([
                 adjustToNearestRoad(from).catch(() => from),
@@ -26,42 +27,26 @@ export default async function calculatePossibleRoutes(
             // Use original points on snap error
         }
 
-        // ==========================================
-        // NEW V2 IMPLEMENTATION ONLY - FRESH START
-        // NO FALLBACK, NO MULTI-ROUTE
-        // ==========================================
-        console.log('🆕 V2 ROUTE CALCULATION - FRESH START');
+        console.log('🧭 ROUTE CALCULATION');
         console.log('📍 From:', adjustedFrom);
         console.log('📍 To:', adjustedTo);
-        
-        const res = await fetch("http://10.0.2.2:3000/api/calculateRoutesV2", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ from: adjustedFrom, to: adjustedTo }),
-        });
 
-        if (!res.ok) {
-            const errorData = await res.json();
-            console.log('❌ V2 Error:', errorData);
-            return { 
-                error: errorData.error || "No route handler available",
-                warning: errorData.debugInfo ? JSON.stringify(errorData.debugInfo) : undefined
-            };
-        }
-
-        const data = await res.json();
-        console.log('✅ V2 Success:', data);
-        
-        // Return V2 data only
+        const data = await api.routes.calculate(adjustedFrom, adjustedTo);
+        console.log('✅ Routes:', data);
         return data as MappedGeoRouteResult[];
 
     } catch (error) {
-        console.error('🔴 V2 Fatal error:', error);
-        return { 
-            error: 'Failed to calculate routes', 
-            warning: 'V2 calculation error occurred' 
+        if (error instanceof ApiError) {
+            console.log('❌ Route error:', error.body);
+            return {
+                error: error.body.error || "No route handler available",
+                warning: error.body.debugInfo ? JSON.stringify(error.body.debugInfo) : undefined
+            };
+        }
+        console.error('🔴 Route calculation failed:', error);
+        return {
+            error: 'Failed to calculate routes',
+            warning: 'Route calculation error occurred'
         };
     }
 }

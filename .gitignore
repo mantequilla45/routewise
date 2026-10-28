@@ -1,7 +1,5 @@
 mobile/.vscode/settings.json
 
-# Documentation folder (for development docs)
-docs/
 node_modules
 
 # Claude instructions

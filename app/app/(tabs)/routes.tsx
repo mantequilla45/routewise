@@ -4,6 +4,7 @@ import { useEffect, useState, useContext } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { MapPointsContext } from '@/context/map-context';
 import Button from '@/components/Button';
+import { api } from '@/lib/api';
 
 interface Route {
     id: string;
@@ -28,13 +29,7 @@ export default function RoutesScreen() {
 
     const fetchRoutes = async () => {
         try {
-            const response = await fetch('http://10.0.2.2:3000/api/routes/all');
-            if (response.ok) {
-                const data = await response.json();
-                setRoutes(data);
-            } else {
-                console.error('Failed to fetch routes');
-            }
+            setRoutes(await api.routes.list());
         } catch (error) {
             console.error('Error fetching routes:', error);
         } finally {
@@ -51,11 +46,9 @@ export default function RoutesScreen() {
     const handleRouteSelect = async (route: Route) => {
         try {
             // Fetch the full route details including coordinates
-            const url = `http://10.0.2.2:3000/api/routes/display/${route.id}`;
-            const response = await fetch(url);
+            const fullRoute = await api.routes.get(route.id);
             
-            if (response.ok) {
-                const fullRoute = await response.json();
+            if (fullRoute) {
                 
                 // Convert coordinates to the format expected by the map
                 if (fullRoute.coordinates && fullRoute.coordinates.length > 0) {

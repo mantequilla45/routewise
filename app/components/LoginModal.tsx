@@ -1,4 +1,4 @@
-import { useAuth } from "@/context/hybrid-auth";
+import { useAuth } from "@/context/auth";
 import { PropsWithChildren, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Animated, Dimensions, Modal, PanResponder, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import LoginForm from "./LoginForm";

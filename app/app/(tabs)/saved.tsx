@@ -1,7 +1,7 @@
 import Button from "@/components/Button";
 import DynamicBoxes from "@/components/SavedRoute/DynamicBoxes";
-import { supabase } from "@/lib/supabase-client";
-import { useAuth } from "@/context/hybrid-auth";
+import { api } from "@/lib/api";
+import { useAuth } from "@/context/auth";
 import { MapPointsContext } from "@/context/map-context";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useEffect, useState, useContext } from "react";
@@ -42,27 +42,16 @@ export interface UserSavedRoute {
     created_at: string;
 }
 
-export async function getUserSavedRoutes(userId: string): Promise<UserSavedRoute[]> {
-    if (!userId) {
-        console.error("No user ID provided");
-        return [];
-    }
-
-    console.log("Fetching saved routes for user:", userId);
-
-    const { data, error } = await supabase
-        .from("saved_routes")
-        .select("*")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false });
-
-    if (error) {
+// The backend scopes results to the signed-in user via the bearer token.
+export async function getUserSavedRoutes(): Promise<UserSavedRoute[]> {
+    try {
+        const data = await api.savedRoutes.list();
+        console.log("Fetched saved routes:", data.length);
+        return data;
+    } catch (error) {
         console.error("Error fetching saved routes:", error);
         return [];
     }
-
-    console.log("Fetched saved routes:", data?.length || 0);
-    return data ?? [];
 }
 
 export default function Saved() {
@@ -91,7 +80,7 @@ export default function Saved() {
         setLoading(true);
         try {
             console.log('Fetching routes for user:', user.id);
-            const savedRoutes = await getUserSavedRoutes(user.id);
+            const savedRoutes = await getUserSavedRoutes();
             const mappedRoutes: SavedRoute[] = savedRoutes.map((route) => ({
                 id: route.id,
                 jeepCode: route.jeepney_codes ? route.jeepney_codes.join(' → ') : 'Direct',
@@ -141,10 +130,7 @@ export default function Saved() {
                         text: 'Delete',
                         style: 'destructive',
                         onPress: async () => {
-                            const { error } = await supabase
-                                .from('saved_routes')
-                                .delete()
-                                .eq('id', id);
+                            const error = await api.savedRoutes.remove(id).then(() => null, (e) => e);
                             
                             if (error) {
                                 console.error('Error deleting route:', error);

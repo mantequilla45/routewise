@@ -1,12 +1,12 @@
-import { useAuth } from "@/context/hybrid-auth";
+import { useAuth } from "@/context/auth";
 import React, { useState } from "react";
 import { View, Text, Button, StyleSheet, TextInput, TouchableOpacity, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons"; // install with expo: expo install @expo/vector-icons
 import { AntDesign } from '@expo/vector-icons';
-import { supabase } from "@/lib/supabase-client"; 
+import { ApiError } from "@/lib/api";
 import * as SecureStore from 'expo-secure-store';
 export default function LoginForm() {
-    const { signIn } = useAuth();
+    const { signIn, signInWithEmail } = useAuth();
     const [passwordVisible, setPasswordVisible] = useState(false); // toggle password visibility
     const [checked, setChecked] = useState(false);
     const [email, setEmail] = useState('');
@@ -41,37 +41,7 @@ export default function LoginForm() {
         try {
             setLoading(true);
 
-            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-            if (error) {
-                console.error('Sign in error:', error);
-                Alert.alert('Login failed', error.message || 'Invalid credentials');
-                return;
-            }
-
-            // Fetch user profile from `users` table by email
-            try {
-                const { data: userRow, error: fetchError } = await supabase
-                    .from('users')
-                    .select('*')
-                    .eq('email', email)
-                    .single();
-
-                if (fetchError) {
-                    console.warn('Could not fetch user row:', fetchError.message);
-                }
-
-                const userData = {
-                    id: userRow?.id || data?.user?.id,
-                    email: email,
-                    name: userRow?.full_name || null,
-                    picture: userRow?.avatar_url || null,
-                    provider: 'email',
-                };
-
-                await SecureStore.setItemAsync('user_data', JSON.stringify(userData));
-            } catch (e) {
-                console.warn('Error fetching user profile:', e);
-            }
+            await signInWithEmail(email, password);
 
             // Handle remember credentials
             if (checked) {
@@ -82,8 +52,8 @@ export default function LoginForm() {
 
             Alert.alert('Login', 'Logged in successfully');
         } catch (e) {
-            console.error('Unexpected login error:', e);
-            Alert.alert('Login failed', 'Unexpected error');
+            console.error('Login error:', e);
+            Alert.alert('Login failed', e instanceof ApiError ? e.message : 'Unexpected error');
         } finally {
             setLoading(false);
         }
