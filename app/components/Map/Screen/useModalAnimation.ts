@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, PanResponder } from 'react-native';
 
 /**
@@ -10,46 +10,52 @@ export function useModalAnimation(isRouteFromList: boolean) {
   const modalPosition = useRef(new Animated.Value(isRouteFromList ? 800 : 0)).current;
   const indicatorOpacity = useRef(new Animated.Value(isRouteFromList ? 1 : 0)).current;
 
-  const showModal = (callback?: () => void) => {
-    setIsModalVisible(true);
-    Animated.parallel([
-      Animated.spring(modalPosition, {
-        toValue: 0,
-        tension: 65,
-        friction: 11,
-        useNativeDriver: true,
-      }),
-      Animated.timing(indicatorOpacity, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-    ]).start(callback);
-  };
+  const showModal = useCallback(
+    (callback?: () => void) => {
+      setIsModalVisible(true);
+      Animated.parallel([
+        Animated.spring(modalPosition, {
+          toValue: 0,
+          tension: 65,
+          friction: 11,
+          useNativeDriver: true,
+        }),
+        Animated.timing(indicatorOpacity, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start(callback);
+    },
+    [modalPosition, indicatorOpacity],
+  );
 
-  const hideModal = (callback?: () => void) => {
-    setIsModalVisible(false);
-    Animated.parallel([
-      Animated.timing(modalPosition, {
-        toValue: 800,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.timing(indicatorOpacity, {
-        toValue: 1,
-        duration: 200,
-        delay: 100,
-        useNativeDriver: true,
-      }),
-    ]).start(callback);
-  };
+  const hideModal = useCallback(
+    (callback?: () => void) => {
+      setIsModalVisible(false);
+      Animated.parallel([
+        Animated.timing(modalPosition, {
+          toValue: 800,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(indicatorOpacity, {
+          toValue: 1,
+          duration: 200,
+          delay: 100,
+          useNativeDriver: true,
+        }),
+      ]).start(callback);
+    },
+    [modalPosition, indicatorOpacity],
+  );
 
   // Hide modal when route is from list
   useEffect(() => {
     if (isRouteFromList) {
       hideModal();
     }
-  }, [isRouteFromList]);
+  }, [isRouteFromList, hideModal]);
 
   // Swipe down to dismiss; slight upward drag is allowed with resistance for a bounce effect
   const panResponder = useRef(

@@ -85,7 +85,7 @@ export default function LoginModal({ isVisible, onClose }: Props) {
       overlayOpacity.setValue(0);
       translateY.setValue(screenHeight);
     }
-  }, [isVisible]);
+  }, [isVisible, overlayOpacity, translateY]);
 
   const { user, isLoading } = useAuth();
 

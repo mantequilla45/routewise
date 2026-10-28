@@ -4,7 +4,7 @@ import { api, type SavedRouteRow, type TransferPoints } from '@/lib/api';
 import { useAuth } from '@/context/auth';
 import { MapPointsContext } from '@/context/map-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useEffect, useState, useContext } from 'react';
+import { useCallback, useContext, useEffect, useState } from 'react';
 import { StyleSheet, Text, TextInput, View, Alert, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -51,16 +51,7 @@ export default function Saved() {
   const [routes, setRoutes] = useState<SavedRoute[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (user) {
-      fetchSavedRoutes();
-    } else {
-      setLoading(false);
-      setRoutes([]);
-    }
-  }, [user]);
-
-  const fetchSavedRoutes = async () => {
+  const fetchSavedRoutes = useCallback(async () => {
     if (!user) {
       setLoading(false);
       return;
@@ -92,7 +83,16 @@ export default function Saved() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      fetchSavedRoutes();
+    } else {
+      setLoading(false);
+      setRoutes([]);
+    }
+  }, [user, fetchSavedRoutes]);
 
   const sortRecent = () => {
     // Sort logic here
