@@ -2,8 +2,19 @@ import { MapPointsContext } from '@/context/map-context';
 import { LatLng } from '@/types/GeoTypes';
 import { AppleMaps, GoogleMaps } from 'expo-maps';
 import { GoogleMapsMarker } from 'expo-maps/build/google/GoogleMaps.types';
-import { forwardRef, useContext, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import {
+  type ComponentProps,
+  forwardRef,
+  useContext,
+  useEffect,
+  useImperativeHandle,
+  useState,
+} from 'react';
 import { Platform, StyleSheet, Text, Vibration } from 'react-native';
+
+type CameraMoveEvent = Parameters<
+  NonNullable<ComponentProps<typeof GoogleMaps.View>['onCameraMove']>
+>[0];
 
 export interface NativeMapRef {
   getCurrentCenter: () => Promise<LatLng | null>;
@@ -26,7 +37,6 @@ const NativeMap = forwardRef<NativeMapRef>(function NativeMap(_props, ref) {
     latitude: 10.3157,
     longitude: 123.8854,
   });
-  const mapRef = useRef<any>(null);
 
   // Provide haptic feedback when a pin is placed
   useEffect(() => {
@@ -40,11 +50,12 @@ const NativeMap = forwardRef<NativeMapRef>(function NativeMap(_props, ref) {
   }, [lastSelectedPoint]);
 
   // Update center when camera moves
-  const handleCameraChange = (event: any) => {
-    if (event.coordinates) {
+  const handleCameraChange = (event: CameraMoveEvent) => {
+    const { latitude, longitude } = event.coordinates ?? {};
+    if (latitude != null && longitude != null) {
       setCurrentCenter({
-        latitude: event.coordinates.latitude,
-        longitude: event.coordinates.longitude,
+        latitude,
+        longitude,
       });
     }
   };
@@ -57,17 +68,13 @@ const NativeMap = forwardRef<NativeMapRef>(function NativeMap(_props, ref) {
     setLocationAtCenter: () => {
       if (!isPinPlacementEnabled) return;
 
-      console.log('Setting location at center:', currentCenter);
-
       // Just set the point without snapping - we'll snap when calculating routes
       if (isPointAB) {
         setPointA(currentCenter);
         setLastSelectedPoint('A');
-        console.log('Set point A:', currentCenter);
       } else {
         setPointB(currentCenter);
         setLastSelectedPoint('B');
-        console.log('Set point B:', currentCenter);
       }
 
       // Disable pin placement after selecting a location
@@ -106,16 +113,13 @@ const NativeMap = forwardRef<NativeMapRef>(function NativeMap(_props, ref) {
 
   // Debug routes
   useEffect(() => {
-    console.log('NativeMap routes update:', routes?.length ?? 0, 'polylines');
     if (routes && routes.length > 0) {
-      console.log('First route:', routes[0]);
     }
   }, [routes]);
 
   if (Platform.OS === 'android') {
     return (
       <GoogleMaps.View
-        ref={mapRef}
         style={styles.map}
         cameraPosition={commonCamera}
         uiSettings={commonUISettings}
@@ -134,7 +138,6 @@ const NativeMap = forwardRef<NativeMapRef>(function NativeMap(_props, ref) {
   } else if (Platform.OS === 'ios') {
     return (
       <AppleMaps.View
-        ref={mapRef}
         style={styles.map}
         cameraPosition={commonCamera}
         onCameraMove={handleCameraChange}

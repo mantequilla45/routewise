@@ -1,3 +1,4 @@
+import { log } from '../../../../lib/log';
 import { LatLng } from '../../../../types/GeoTypes';
 import { query } from '../../../../lib/db';
 import { BaseRouteHandler, RouteCalculationResult, RouteSegment } from '../BaseHandler';
@@ -19,7 +20,7 @@ export class Case1NormalHandler extends BaseRouteHandler {
   }
 
   async calculate(from: LatLng, to: LatLng): Promise<RouteCalculationResult | null> {
-    console.log('🚗 Case 1 Normal: Finding routes with close starting points...');
+    log.debug('Case 1 Normal: Finding routes with close starting points...');
 
     // Simple approach - just use the pinned locations
     const routeQuery = `
@@ -60,7 +61,7 @@ export class Case1NormalHandler extends BaseRouteHandler {
             ORDER BY route_distance;
         `;
 
-    const results = await query(routeQuery, [
+    const results = await query<RouteQueryResult>(routeQuery, [
       from.longitude,
       from.latitude,
       to.longitude,
@@ -68,11 +69,11 @@ export class Case1NormalHandler extends BaseRouteHandler {
     ]);
 
     if (results.length === 0) {
-      console.log('🚗 Case 1 Normal: No routes found');
+      log.debug('Case 1 Normal: No routes found');
       return null;
     }
 
-    console.log(`🚗 Case 1 Normal: Found ${results.length} route(s)`);
+    log.debug(`Case 1 Normal: Found ${results.length} route(s)`);
 
     // Process all matching routes
     const segments: RouteSegment[] = results.map((route: RouteQueryResult) => {

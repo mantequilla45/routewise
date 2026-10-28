@@ -48,14 +48,12 @@ export default function MapModalContent({
   const [isCalculating, setIsCalculating] = useState(false);
 
   const onCalculate = useCallback(async () => {
-    console.log('🚀 onCalculate called with:', { pointA, pointB });
     try {
       if (!pointA || !pointB) {
         console.warn('Both points must be set');
         return;
       }
 
-      console.log('Starting route calculation...');
       // Clear existing results first
       setResults([]);
       setRoutes([]);
@@ -73,16 +71,12 @@ export default function MapModalContent({
           const distB = b.distanceMeters || Number.MAX_VALUE;
           return distA - distB;
         });
-        console.log(
-          'Routes sorted by distance:',
-          sortedRoutes.map((r) => `${r.routeId}: ${r.distanceMeters}m`),
-        );
         setResults(sortedRoutes);
 
         // Build polylines for ALL routes to maintain consistent indexing
         const googlePolylineRoutes: GoogleMapsPolyline[] = [];
 
-        sortedRoutes.forEach((r: any, resultIndex) => {
+        sortedRoutes.forEach((r, resultIndex) => {
           // Check if it's a transfer route by checking for the isTransfer property
           const isTransfer = 'isTransfer' in r && r.isTransfer === true;
 
@@ -91,7 +85,7 @@ export default function MapModalContent({
             if (r.firstRoute.coordinates && r.firstRoute.coordinates.length > 0) {
               const firstPolyline: GoogleMapsPolyline = {
                 id: `route_${resultIndex}_first`,
-                coordinates: r.firstRoute.coordinates.map((coord: any) => ({
+                coordinates: r.firstRoute.coordinates.map((coord) => ({
                   latitude: coord.latitude,
                   longitude: coord.longitude,
                 })),
@@ -105,7 +99,7 @@ export default function MapModalContent({
             if (r.secondRoute.coordinates && r.secondRoute.coordinates.length > 0) {
               const secondPolyline: GoogleMapsPolyline = {
                 id: `route_${resultIndex}_second`,
-                coordinates: r.secondRoute.coordinates.map((coord: any) => ({
+                coordinates: r.secondRoute.coordinates.map((coord) => ({
                   latitude: coord.latitude,
                   longitude: coord.longitude,
                 })),
@@ -115,17 +109,15 @@ export default function MapModalContent({
               };
               googlePolylineRoutes.push(secondPolyline);
             }
-
-            console.log(`Created transfer polylines for result ${resultIndex} (${r.routeId})`);
           } else if (
             (r.latLng && r.latLng.length > 0) ||
             (r.coordinates && r.coordinates.length > 0)
           ) {
             // Single route polyline - handle both latLng and coordinates formats
-            const routeCoords = r.coordinates || r.latLng;
+            const routeCoords = r.coordinates ?? r.latLng ?? [];
             const polyline: GoogleMapsPolyline = {
               id: `route_${resultIndex}`,
-              coordinates: routeCoords.map((coord: any) => ({
+              coordinates: routeCoords.map((coord) => ({
                 latitude: coord.latitude,
                 longitude: coord.longitude,
               })),
@@ -135,9 +127,6 @@ export default function MapModalContent({
             };
 
             googlePolylineRoutes.push(polyline);
-            console.log(
-              `Created polyline for result ${resultIndex} (${r.routeId}) with ${routeCoords.length} coordinates`,
-            );
           } else {
             // Push empty polyline to maintain index consistency
             const emptyPolyline: GoogleMapsPolyline = {
@@ -148,16 +137,10 @@ export default function MapModalContent({
               geodesic: true,
             };
             googlePolylineRoutes.push(emptyPolyline);
-            console.log(`Created empty polyline for result ${resultIndex} (${r.routeId})`);
           }
         });
 
-        console.log(
-          `Created ${googlePolylineRoutes.length} polylines from ${sortedRoutes.length} results`,
-        );
-
         // Store all routes (no need for index map anymore since indices match directly)
-        console.log(`Setting allRoutes with ${googlePolylineRoutes.length} polylines`);
         setAllRoutes(googlePolylineRoutes);
 
         // Don't display any route initially - wait for user selection
@@ -207,19 +190,10 @@ export default function MapModalContent({
   const checkForAutoCalculate = useCallback(async () => {
     try {
       const shouldCalculate = await AsyncStorage.getItem('shouldCalculateRoute');
-      console.log('Checking auto-calculate:', {
-        shouldCalculate,
-        hasPointA: !!pointA,
-        hasPointB: !!pointB,
-      });
 
       if (shouldCalculate === 'true' && pointA && pointB) {
-        console.log('Auto-calculating route from saved...');
-        console.log('Point A:', pointA);
-        console.log('Point B:', pointB);
         await AsyncStorage.removeItem('shouldCalculateRoute'); // Clear flag
         setTimeout(() => {
-          console.log('Triggering onCalculate...');
           onCalculate(); // Trigger calculation
         }, 500); // Small delay to ensure UI is ready
       }
@@ -262,22 +236,14 @@ export default function MapModalContent({
 
   // Monitor allRoutes changes
   useEffect(() => {
-    console.log(`allRoutes updated: now contains ${allRoutes.length} polylines`);
     if (allRoutes.length > 0) {
-      console.log(
-        `allRoutes polyline IDs:`,
-        allRoutes.map((r) => r.id || 'no-id'),
-      );
     }
   }, [allRoutes]);
 
   // Handle route selection
   const handleRouteSelect = (index: number) => {
-    console.log(`Route card clicked: index ${index}, current selected: ${selectedRouteIndex}`);
-    console.log(`Current allRoutes array length: ${allRoutes.length}`);
-
     // Find the corresponding route in results
-    const selectedResult: any = results[index];
+    const selectedResult = results[index];
     if (!selectedResult) {
       console.warn(`No result found at index ${index}`);
       return;
@@ -296,17 +262,11 @@ export default function MapModalContent({
       // Find polylines for both segments
       const polylinesToShow = allRoutes.filter((r) => r.id && r.id.startsWith(`route_${index}_`));
 
-      console.log(
-        `Selected transfer route ${index}: ${selectedResult.routeId}, showing ${polylinesToShow.length} polylines`,
-      );
       setRoutes(polylinesToShow);
     } else {
       // Single route - find the matching polyline
       const polylineToShow = allRoutes.find((r) => r.id === `route_${index}`);
       if (polylineToShow) {
-        console.log(
-          `Selected single route ${index}: ${selectedResult.routeCode || selectedResult.routeId}`,
-        );
         setRoutes([polylineToShow]);
       } else {
         console.warn(
@@ -326,8 +286,6 @@ export default function MapModalContent({
 
   const onClear = () => {
     // Clear all points and routes
-    console.log('Clearing map... (onClear called)');
-    console.trace('onClear call stack'); // This will show what called onClear
     setResults([]); // Clear route results first
     setRoutes([]); // Clear polylines from map
     setAllRoutes([]); // Clear stored routes
@@ -339,7 +297,6 @@ export default function MapModalContent({
       setPointA(null);
       setPointB(null);
       setIsPinPlacementEnabled(false);
-      console.log('Map cleared - all points and routes removed');
     }, 50);
   };
 
@@ -462,7 +419,6 @@ export default function MapModalContent({
             scrollEnabled={true}
           >
             {results.map((route, index) => {
-              console.log(`Rendering route card ${index}: ${route.routeCode || route.routeId}`);
               return (
                 <RouteCard
                   key={`route-${index}-${route.routeId}`}

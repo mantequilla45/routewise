@@ -1,3 +1,4 @@
+import { log } from '../../lib/log';
 import { query } from '../../lib/db';
 import { HttpError, notFound } from '../../lib/http';
 import type { LatLng } from '../../types/GeoTypes';
@@ -48,9 +49,9 @@ interface ProcessedRoute {
 
 export async function calculateRoutes(from: LatLng, to: LatLng): Promise<ProcessedRoute[]> {
   try {
-    console.log('🎯 Route calculation - starting');
-    console.log('📍 From:', from);
-    console.log('📍 To:', to);
+    log.debug('Route calculation - starting');
+    log.debug('From:', from);
+    log.debug('To:', to);
 
     // First, find ALL routes within 500m of both points
     const allRoutesQuery = `
@@ -76,9 +77,9 @@ export async function calculateRoutes(from: LatLng, to: LatLng): Promise<Process
       to.latitude,
     ])) as RouteInfo[];
 
-    console.log(`📊 Found ${foundRoutes.length} routes within 500m of both points:`);
+    log.debug(`Found ${foundRoutes.length} routes within 500m of both points:`);
     foundRoutes.forEach((r) => {
-      console.log(
+      log.debug(
         `  ${r.route_code}: Start ${r.start_dist.toFixed(1)}m, End ${r.end_dist.toFixed(1)}m (${(r.start_pos * 100).toFixed(1)}% → ${(r.end_pos * 100).toFixed(1)}%)`,
       );
     });
@@ -106,8 +107,8 @@ export async function calculateRoutes(from: LatLng, to: LatLng): Promise<Process
           const result = await handler.calculate(from, to);
 
           if (result && result.segments.length > 0) {
-            console.log(`📊 ${handler.getCaseName()} calculated:`);
-            console.log(`  Found ${result.segments.length} route(s)`);
+            log.debug(`${handler.getCaseName()} calculated:`);
+            log.debug(`  Found ${result.segments.length} route(s)`);
 
             // Add all routes from this handler
             result.segments.forEach((segment) => {
@@ -156,8 +157,8 @@ export async function calculateRoutes(from: LatLng, to: LatLng): Promise<Process
             });
           }
         } catch (calcError) {
-          console.log(
-            `⚠️ ${handler.getCaseName()} failed:`,
+          log.debug(
+            `${handler.getCaseName()} failed:`,
             calcError instanceof Error ? calcError.message : 'Unknown error',
           );
         }
@@ -165,7 +166,7 @@ export async function calculateRoutes(from: LatLng, to: LatLng): Promise<Process
     }
 
     if (allRoutes.length === 0) {
-      console.log('❌ No routes found');
+      log.debug('No routes found');
       throw notFound('No routes available', {
         debugInfo: {
           triedHandlers: handlers.map((h) => h.getCaseName()),
@@ -189,25 +190,25 @@ export async function calculateRoutes(from: LatLng, to: LatLng): Promise<Process
 
     const finalRoutes = Array.from(uniqueRoutes.values());
 
-    console.log('\n📊 Final results:');
-    console.log(`  Total unique routes: ${finalRoutes.length}`);
-    console.log(
+    log.debug('\n📊 Final results:');
+    log.debug(`  Total unique routes: ${finalRoutes.length}`);
+    log.debug(
       `  Routes by handler: ${handlerSummary.map((h) => `${h.handler}(${h.routeCount})`).join(', ')}`,
     );
 
     // Log each route with its case handler and polyline status
     finalRoutes.forEach((route, index) => {
       const hasPolyline = route.coordinates && route.coordinates.length > 0;
-      console.log(
-        `  [${index}] ${route.routeCode}: ${route.caseName} - ${(route.distance / 1000).toFixed(2)}km ${hasPolyline ? `✅ (${route.coordinates.length} points)` : '❌ NO POLYLINE'}`,
+      log.debug(
+        `  [${index}] ${route.routeCode}: ${route.caseName} - ${(route.distance / 1000).toFixed(2)}km ${hasPolyline ? `(${route.coordinates.length} points)` : 'NO POLYLINE'}`,
       );
       if (!hasPolyline) {
-        console.log(`    ⚠️ Missing polyline data for ${route.routeCode}`);
+        log.debug(`    ⚠️ Missing polyline data for ${route.routeCode}`);
       }
     });
 
     if (finalRoutes.length > 0) {
-      console.log(
+      log.debug(
         `  Shortest route: ${finalRoutes[0].routeCode} - ${(finalRoutes[0].distance / 1000).toFixed(2)}km`,
       );
     }
@@ -215,7 +216,7 @@ export async function calculateRoutes(from: LatLng, to: LatLng): Promise<Process
     return finalRoutes;
   } catch (error) {
     if (error instanceof HttpError) throw error;
-    console.error('🔴 Route calculation error:', error);
+    log.error('Route calculation error:', error);
     throw new HttpError(500, {
       error: 'Failed to calculate route',
       details: error instanceof Error ? error.message : 'Unknown error',

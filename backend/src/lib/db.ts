@@ -1,4 +1,5 @@
-import { Pool } from 'pg';
+import { log } from './log';
+import { Pool, type QueryResultRow } from 'pg';
 import { env } from '../env';
 
 // Small pool: on Vercel each function instance gets its own pool, and the
@@ -14,10 +15,13 @@ const pool = new Pool({
 });
 
 pool.on('error', (err) => {
-  console.error('Unexpected error on idle PostgreSQL client', err);
+  log.error('Unexpected error on idle PostgreSQL client', err);
 });
 
-export async function query<T = any>(sql: string, params?: unknown[]): Promise<T[]> {
+export async function query<T extends QueryResultRow = QueryResultRow>(
+  sql: string,
+  params?: unknown[],
+): Promise<T[]> {
   const maxRetries = 3;
   let lastError: unknown;
 
@@ -28,7 +32,7 @@ export async function query<T = any>(sql: string, params?: unknown[]): Promise<T
     } catch (error) {
       lastError = error;
       const errorObj = error as { code?: string; message?: string; detail?: string };
-      console.error(`Database query attempt ${attempt}/${maxRetries} failed:`, {
+      log.error(`Database query attempt ${attempt}/${maxRetries} failed:`, {
         code: errorObj.code,
         message: errorObj.message,
         detail: errorObj.detail,

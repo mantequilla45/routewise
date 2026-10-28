@@ -1,3 +1,4 @@
+import { log } from '../../../../lib/log';
 import { LatLng } from '../../../../types/GeoTypes';
 import { query } from '../../../../lib/db';
 import { BaseRouteHandler, RouteCalculationResult, RouteSegment } from '../BaseHandler';
@@ -17,7 +18,7 @@ export class Case4OppositeEndHandler extends BaseRouteHandler {
   }
 
   async canHandle(from: LatLng, to: LatLng): Promise<boolean> {
-    console.log('🔍 Case 4: Checking if Opposite End can handle this route...');
+    log.debug('Case 4: Checking if Opposite End can handle this route...');
 
     // Check for routes where start is close (correct side) but end is far (opposite side)
     const checkQuery = `
@@ -61,14 +62,14 @@ export class Case4OppositeEndHandler extends BaseRouteHandler {
     ]);
 
     const canHandle = results.length > 0;
-    console.log(`🔍 Case 4: ${canHandle ? '✅ Can handle' : '❌ Cannot handle'}`);
+    log.debug(`Case 4: ${canHandle ? 'Can handle' : 'Cannot handle'}`);
 
     if (canHandle && results[0]) {
       const r = results[0];
-      console.log(
+      log.debug(
         `  Route ${r.route_code}: Start ${r.start_dist.toFixed(1)}m (correct), End ${r.end_dist.toFixed(1)}m (opposite)`,
       );
-      console.log(
+      log.debug(
         `    Start pos: ${(r.start_pos * 100).toFixed(1)}%, End pos: ${(r.end_pos * 100).toFixed(1)}%`,
       );
     }
@@ -77,7 +78,7 @@ export class Case4OppositeEndHandler extends BaseRouteHandler {
   }
 
   async calculate(from: LatLng, to: LatLng): Promise<RouteCalculationResult | null> {
-    console.log('🚗 Case 4: Calculating Opposite End route...');
+    log.debug('Case 4: Calculating Opposite End route...');
 
     // Query to find routes and calculate to nearest alighting point
     const routeQuery = `
@@ -159,7 +160,7 @@ export class Case4OppositeEndHandler extends BaseRouteHandler {
             ORDER BY distance_meters;
         `;
 
-    const results = await query(routeQuery, [
+    const results = await query<RouteQueryResult>(routeQuery, [
       from.longitude,
       from.latitude,
       to.longitude,
@@ -167,11 +168,11 @@ export class Case4OppositeEndHandler extends BaseRouteHandler {
     ]);
 
     if (results.length === 0) {
-      console.log('🚗 Case 4: No valid opposite end routes found');
+      log.debug('Case 4: No valid opposite end routes found');
       return null;
     }
 
-    console.log(`🚗 Case 4: Found ${results.length} opposite end route(s)`);
+    log.debug(`Case 4: Found ${results.length} opposite end route(s)`);
 
     // Process all matching routes
     const segments: RouteSegment[] = results.map((route: RouteQueryResult) => {
@@ -179,17 +180,17 @@ export class Case4OppositeEndHandler extends BaseRouteHandler {
       const distance = route.distance_meters || route.route_distance || 0;
       const fare = this.calculateFare(distance);
 
-      console.log(`  Route ${route.route_code}: ${(distance / 1000).toFixed(2)}km, ₱${fare}`);
-      console.log(
+      log.debug(`  Route ${route.route_code}: ${(distance / 1000).toFixed(2)}km, ₱${fare}`);
+      log.debug(
         `    End correction: Walk ${(route.walking_distance ?? 0).toFixed(0)}m from alighting point`,
       );
-      console.log(
+      log.debug(
         `    Travel: ${(route.start_pos * 100).toFixed(1)}% → ${(route.end_pos * 100).toFixed(1)}%`,
       );
-      console.log(
+      log.debug(
         `    Original end would have been: ${((route.original_end_pos ?? route.end_pos) * 100).toFixed(1)}%`,
       );
-      console.log(`    Coordinates: ${coordinates.length} points`);
+      log.debug(`    Coordinates: ${coordinates.length} points`);
 
       return {
         routeId: route.id,
@@ -210,8 +211,8 @@ export class Case4OppositeEndHandler extends BaseRouteHandler {
     return {
       caseName: this.getCaseName(),
       segments,
-      totalDistance: firstRoute.distance_meters,
-      totalFare: this.calculateFare(firstRoute.distance_meters),
+      totalDistance: firstRoute.distance_meters ?? 0,
+      totalFare: this.calculateFare(firstRoute.distance_meters ?? 0),
       confidence: 0.9, // Slightly lower confidence due to end correction
       debugInfo: {
         endCorrected: true,

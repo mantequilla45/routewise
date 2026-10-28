@@ -1,3 +1,4 @@
+import { log } from '../../../../lib/log';
 import { LatLng } from '../../../../types/GeoTypes';
 import { query } from '../../../../lib/db';
 import { BaseRouteHandler, RouteCalculationResult, RouteSegment } from '../BaseHandler';
@@ -15,7 +16,7 @@ export class Case6SimpleTransferHandler extends BaseRouteHandler {
   }
 
   async canHandle(from: LatLng, to: LatLng): Promise<boolean> {
-    console.log('🔍 Case 6: Checking if Simple Transfer can handle this route...');
+    log.debug('Case 6: Checking if Simple Transfer can handle this route...');
 
     // Quick check if there's a potential transfer solution
     const checkQuery = `
@@ -47,13 +48,13 @@ export class Case6SimpleTransferHandler extends BaseRouteHandler {
     ]);
 
     const canHandle = results.length > 0;
-    console.log(`🔍 Case 6: ${canHandle ? '✅ Can handle' : '❌ Cannot handle'}`);
+    log.debug(`Case 6: ${canHandle ? 'Can handle' : 'Cannot handle'}`);
 
     return canHandle;
   }
 
   async calculate(from: LatLng, to: LatLng): Promise<RouteCalculationResult | null> {
-    console.log('🚗 Case 6: Calculating Simple Transfer route...');
+    log.debug('Case 6: Calculating Simple Transfer route...');
 
     // First, log all routes near start and end points
     const startRoutesQuery = `
@@ -76,7 +77,7 @@ export class Case6SimpleTransferHandler extends BaseRouteHandler {
     const endRoutes = await query(endRoutesQuery, [to.longitude, to.latitude]);
 
     // Reduced logging - just summary
-    console.log(`  Found ${startRoutes.length} start routes, ${endRoutes.length} end routes`);
+    log.debug(`  Found ${startRoutes.length} start routes, ${endRoutes.length} end routes`);
 
     // Check which routes intersect
     const intersectionCheckQuery = `
@@ -107,7 +108,7 @@ export class Case6SimpleTransferHandler extends BaseRouteHandler {
     const intersectCount = intersections.filter(
       (i: Record<string, unknown>) => i.intersects,
     ).length;
-    console.log(`  ${intersectCount} route pairs intersect`);
+    log.debug(`  ${intersectCount} route pairs intersect`);
 
     // Check which transfers are valid (including ALL intersection points)
     const validityCheckQuery = `
@@ -212,7 +213,7 @@ export class Case6SimpleTransferHandler extends BaseRouteHandler {
     const validTransfers = validityChecks.filter(
       (v: Record<string, unknown>) => v.can_forward_a && v.can_forward_b,
     ).length;
-    console.log(`  ${validTransfers} valid transfer points found`);
+    log.debug(`  ${validTransfers} valid transfer points found`);
 
     const routeQuery = `
             WITH start_routes AS (
@@ -347,7 +348,7 @@ export class Case6SimpleTransferHandler extends BaseRouteHandler {
             FROM best_transfers;
         `;
 
-    const results = await query(routeQuery, [
+    const results = await query<TransferRouteResult>(routeQuery, [
       from.longitude,
       from.latitude,
       to.longitude,
@@ -355,11 +356,11 @@ export class Case6SimpleTransferHandler extends BaseRouteHandler {
     ]);
 
     if (results.length === 0) {
-      console.log('🚗 Case 6: No valid transfer routes found');
+      log.debug('Case 6: No valid transfer routes found');
       return null;
     }
 
-    console.log(`🚗 Case 6: Found ${results.length} transfer route(s)`);
+    log.debug(`Case 6: Found ${results.length} transfer route(s)`);
 
     const segments: RouteSegment[] = results.map((route: TransferRouteResult) => {
       const coords_a = this.parseGeoJson(route.segment_a_geojson);
@@ -367,10 +368,10 @@ export class Case6SimpleTransferHandler extends BaseRouteHandler {
       const fare_a = this.calculateFare(route.route_a_distance);
       const fare_b = this.calculateFare(route.route_b_distance);
 
-      console.log(`  Transfer: ${route.route_a_code} → ${route.route_b_code}`);
-      console.log(`    Route A: ${(route.route_a_distance / 1000).toFixed(2)}km, ₱${fare_a}`);
-      console.log(`    Route B: ${(route.route_b_distance / 1000).toFixed(2)}km, ₱${fare_b}`);
-      console.log(`    Total: ${(route.total_distance / 1000).toFixed(2)}km, ₱${fare_a + fare_b}`);
+      log.debug(`  Transfer: ${route.route_a_code} → ${route.route_b_code}`);
+      log.debug(`    Route A: ${(route.route_a_distance / 1000).toFixed(2)}km, ₱${fare_a}`);
+      log.debug(`    Route B: ${(route.route_b_distance / 1000).toFixed(2)}km, ₱${fare_b}`);
+      log.debug(`    Total: ${(route.total_distance / 1000).toFixed(2)}km, ₱${fare_a + fare_b}`);
 
       return {
         isTransfer: true,

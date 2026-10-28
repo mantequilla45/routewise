@@ -573,7 +573,7 @@ export default function ContributeRoutePage() {
           };
           setMapCoordinates([...mapCoordinates, closingPoint]);
         }}
-        title="⚠️ Closing the Loop"
+        title="Closing the Loop"
         message={`Once you close the loop:
 • You can only add points between existing segments
 • You cannot add points at the end of the route  

@@ -134,7 +134,6 @@ export default function EditRouteModal({
   const handleMapClick = (lat: number, lng: number) => {
     // Prevent double execution
     if (isProcessingClick.current) {
-      console.log('Ignoring duplicate click');
       return;
     }
 

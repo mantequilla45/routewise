@@ -87,7 +87,7 @@ export default function LoginModal({ isVisible, onClose }: Props) {
     }
   }, [isVisible]);
 
-  const { user, isLoading, signOut } = useAuth();
+  const { user, isLoading } = useAuth();
 
   // Close modal when user signs in successfully
   useEffect(() => {

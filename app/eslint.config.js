@@ -10,8 +10,8 @@ module.exports = defineConfig([
   {
     rules: {
       // Debug logging belongs behind __DEV__ or should be removed before commit.
-      'no-console': ['warn', { allow: ['warn', 'error'] }],
-      '@typescript-eslint/no-explicit-any': 'warn',
+      'no-console': ['error', { allow: ['warn', 'error'] }],
+      '@typescript-eslint/no-explicit-any': 'error',
     },
   },
 ]);

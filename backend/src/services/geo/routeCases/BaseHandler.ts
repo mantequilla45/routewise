@@ -1,3 +1,4 @@
+import { log } from '../../../lib/log';
 import { LatLng } from '../../../types/GeoTypes';
 import { query } from '../../../lib/db';
 
@@ -91,7 +92,7 @@ export abstract class BaseRouteHandler {
       }
       return [];
     } catch (error) {
-      console.error('Error parsing GeoJSON:', error);
+      log.error('Error parsing GeoJSON:', error);
       return [];
     }
   }
@@ -237,7 +238,10 @@ export abstract class BaseRouteHandler {
             ORDER BY distance;
         `;
 
-    const results = await query(sqlQuery, [routeId, point.longitude, point.latitude]);
+    const results = await query<{ position: number; distance: number; passNumber: number }>(
+      sqlQuery,
+      [routeId, point.longitude, point.latitude],
+    );
     return results;
   }
 

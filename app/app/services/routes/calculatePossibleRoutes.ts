@@ -22,26 +22,20 @@ export default async function calculatePossibleRoutes(
       ]);
       adjustedFrom = snappedFrom;
       adjustedTo = snappedTo;
-    } catch (snapError) {
+    } catch {
       // Use original points on snap error
     }
 
-    console.log('🧭 ROUTE CALCULATION');
-    console.log('📍 From:', adjustedFrom);
-    console.log('📍 To:', adjustedTo);
-
     const data = await api.routes.calculate(adjustedFrom, adjustedTo);
-    console.log('✅ Routes:', data);
     return data as MappedGeoRouteResult[];
   } catch (error) {
     if (error instanceof ApiError) {
-      console.log('❌ Route error:', error.body);
       return {
         error: error.body.error || 'No route handler available',
         warning: error.body.debugInfo ? JSON.stringify(error.body.debugInfo) : undefined,
       };
     }
-    console.error('🔴 Route calculation failed:', error);
+    console.error('Route calculation failed:', error);
     return {
       error: 'Failed to calculate routes',
       warning: 'Route calculation error occurred',

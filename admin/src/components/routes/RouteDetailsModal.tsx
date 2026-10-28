@@ -46,8 +46,6 @@ export default function RouteDetailsModal({ routeId, onClose }: RouteDetailsModa
       const response = await fetch(`/api/routes/${routeId}`);
       const data = await response.json();
 
-      console.log('Route data received:', data);
-
       if (data.success && data.route) {
         setRoute(data.route);
 
@@ -55,14 +53,11 @@ export default function RouteDetailsModal({ routeId, onClose }: RouteDetailsModa
         // GeoJSON format: { "type": "LineString", "coordinates": [[lon, lat], ...] }
         if (data.route.forward_geojson) {
           const geojson = data.route.forward_geojson;
-          console.log('GeoJSON data:', geojson);
 
           if (geojson.type === 'LineString' && geojson.coordinates) {
             setCoordinates(geojson.coordinates);
-            console.log('Coordinates set:', geojson.coordinates.length, 'points');
           }
         } else {
-          console.log('No forward_geojson found in route data');
         }
       } else {
         console.error('Invalid response or no route found:', data);

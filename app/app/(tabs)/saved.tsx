@@ -1,6 +1,6 @@
 import Button from '@/components/Button';
 import DynamicBoxes from '@/components/SavedRoute/DynamicBoxes';
-import { api } from '@/lib/api';
+import { api, type SavedRouteRow, type TransferPoints } from '@/lib/api';
 import { useAuth } from '@/context/auth';
 import { MapPointsContext } from '@/context/map-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -22,31 +22,16 @@ export interface SavedRoute {
   startLng?: number;
   endLat?: number;
   endLng?: number;
-  transferPoints?: any;
-  routeData?: any;
+  transferPoints?: TransferPoints | null;
+  routeData?: UserSavedRoute;
 }
 
-export interface UserSavedRoute {
-  id: string;
-  user_id: string;
-  route_name: string;
-  start_location: string;
-  end_location: string;
-  start_lat: number;
-  start_lng: number;
-  end_lat: number;
-  end_lng: number;
-  jeepney_codes: string[];
-  total_fare: number;
-  transfer_points: any;
-  created_at: string;
-}
+export type UserSavedRoute = SavedRouteRow;
 
 // The backend scopes results to the signed-in user via the bearer token.
 export async function getUserSavedRoutes(): Promise<UserSavedRoute[]> {
   try {
     const data = await api.savedRoutes.list();
-    console.log('Fetched saved routes:', data.length);
     return data;
   } catch (error) {
     console.error('Error fetching saved routes:', error);
@@ -59,8 +44,6 @@ export default function Saved() {
   const {
     setPointA,
     setPointB,
-    setIsRouteFromList,
-    setSelectedRouteInfo,
     setResults,
     setRoutes: setMapRoutes,
   } = useContext(MapPointsContext);
@@ -79,14 +62,12 @@ export default function Saved() {
 
   const fetchSavedRoutes = async () => {
     if (!user) {
-      console.log('No user found, cannot fetch saved routes');
       setLoading(false);
       return;
     }
 
     setLoading(true);
     try {
-      console.log('Fetching routes for user:', user.id);
       const savedRoutes = await getUserSavedRoutes();
       const mappedRoutes: SavedRoute[] = savedRoutes.map((route) => ({
         id: route.id,
@@ -105,7 +86,6 @@ export default function Saved() {
         routeData: route,
       }));
       setRoutes(mappedRoutes);
-      console.log('Mapped routes:', mappedRoutes.length);
     } catch (error) {
       console.error('Error fetching saved routes:', error);
       Alert.alert('Error', 'Failed to load saved routes');
@@ -157,8 +137,6 @@ export default function Saved() {
   };
 
   const handleRouteSelect = async (route: SavedRoute) => {
-    console.log('Selected saved route:', route);
-
     // Clear existing routes first
     setResults([]);
     setMapRoutes([]);

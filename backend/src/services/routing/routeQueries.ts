@@ -1,3 +1,4 @@
+import { log } from '../../lib/log';
 import { query } from '../../lib/db';
 import { notFound } from '../../lib/http';
 import type { LatLng } from '../../types/GeoTypes';
@@ -123,7 +124,7 @@ export async function findNearestRoutePoint(point: LatLng, maxDistance: number) 
       nearestLat = pointGeoJson.coordinates[1];
     }
   } catch (e) {
-    console.error('Error parsing nearest point GeoJSON:', e);
+    log.error('Error parsing nearest point GeoJSON:', e);
   }
 
   return {

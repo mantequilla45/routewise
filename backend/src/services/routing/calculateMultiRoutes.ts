@@ -1,3 +1,4 @@
+import { log } from '../../lib/log';
 import { query } from '../../lib/db';
 import { HttpError, notFound } from '../../lib/http';
 import { LatLng } from '../../types/GeoTypes';
@@ -23,16 +24,16 @@ function parsePostgisGeoJson(geoJson: string): LatLng[] {
     }
     return [];
   } catch (error) {
-    console.error('Error parsing GeoJSON:', error);
+    log.error('Error parsing GeoJSON:', error);
     return [];
   }
 }
 
 export async function calculateMultiRoutes(from: LatLng, to: LatLng) {
   try {
-    console.log('🔄 MULTI-ROUTE API: Starting calculation');
-    console.log('🔄 MULTI-ROUTE API: From:', from);
-    console.log('🔄 MULTI-ROUTE API: To:', to);
+    log.debug('MULTI-ROUTE API: Starting calculation');
+    log.debug('MULTI-ROUTE API: From:', from);
+    log.debug('MULTI-ROUTE API: To:', to);
 
     // Step 1: Find ALL routes that can be taken from the starting point
     // Use ST_LineLocatePoint to find the EXACT closest point on the route
@@ -60,14 +61,14 @@ export async function calculateMultiRoutes(from: LatLng, to: LatLng) {
         `;
 
     const startRoutes = await query(startRoutesQuery, [from.longitude, from.latitude]);
-    console.log(
-      `🔄 MULTI-ROUTE API: Found ${startRoutes.length} routes near start:`,
+    log.debug(
+      `MULTI-ROUTE API: Found ${startRoutes.length} routes near start:`,
       startRoutes.map((r) => r.route_code).join(', '),
     );
 
     // Log detailed info about start routes
     startRoutes.forEach((r) => {
-      console.log(
+      log.debug(
         `  - ${r.route_code}: ${r.start_point_name} → ${r.end_point_name}, position: ${(r.position_on_route * 100).toFixed(1)}%, distance: ${r.distance_to_route.toFixed(0)}m`,
       );
     });
@@ -98,14 +99,14 @@ export async function calculateMultiRoutes(from: LatLng, to: LatLng) {
         `;
 
     const endRoutes = await query(endRoutesQuery, [to.longitude, to.latitude]);
-    console.log(
-      `🔄 MULTI-ROUTE API: Found ${endRoutes.length} routes near destination:`,
+    log.debug(
+      `MULTI-ROUTE API: Found ${endRoutes.length} routes near destination:`,
       endRoutes.map((r) => r.route_code).join(', '),
     );
 
     // Log detailed info about end routes
     endRoutes.forEach((r) => {
-      console.log(
+      log.debug(
         `  - ${r.route_code}: ${r.start_point_name} → ${r.end_point_name}, position: ${(r.position_on_route * 100).toFixed(1)}%, distance: ${r.distance_to_route.toFixed(0)}m`,
       );
     });
@@ -122,9 +123,7 @@ export async function calculateMultiRoutes(from: LatLng, to: LatLng) {
         // Skip if it's the same route (would be a single route, not multi)
         if (startRoute.id === endRoute.id) continue;
 
-        console.log(
-          `🔄 MULTI-ROUTE API: Checking ${startRoute.route_code} -> ${endRoute.route_code}`,
-        );
+        log.debug(`MULTI-ROUTE API: Checking ${startRoute.route_code} -> ${endRoute.route_code}`);
 
         // Find the closest point where these two routes meet
         // Check the entire route since jeepneys run in loops
@@ -209,15 +208,15 @@ export async function calculateMultiRoutes(from: LatLng, to: LatLng) {
 
         if (debugIntersections.length > 0) {
           const debug = debugIntersections[0];
-          console.log(
+          log.debug(
             `  DEBUG: Closest point on ${endRoute.route_code} is at position ${(debug.position2 * 100).toFixed(1)}% (distance: ${debug.distance.toFixed(1)}m), destination at ${(endRoute.position_on_route * 100).toFixed(1)}%`,
           );
         }
 
         if (intersections.length > 0) {
           const intersection = intersections[0];
-          console.log(
-            `🔄 MULTI-ROUTE API: Found valid intersection at distance ${intersection.distance}m, position1: ${intersection.position1}, position2: ${intersection.position2}`,
+          log.debug(
+            `MULTI-ROUTE API: Found valid intersection at distance ${intersection.distance}m, position1: ${intersection.position1}, position2: ${intersection.position2}`,
           );
 
           // Calculate the segments for each route
@@ -255,8 +254,8 @@ export async function calculateMultiRoutes(from: LatLng, to: LatLng) {
                             FROM jeepney_routes 
                             WHERE id = $1;`;
 
-          console.log(
-            `🔄 MULTI-ROUTE API: First segment - start pos: ${startRoute.position_on_route}, intersection pos: ${intersection.position1}`,
+          log.debug(
+            `MULTI-ROUTE API: First segment - start pos: ${startRoute.position_on_route}, intersection pos: ${intersection.position1}`,
           );
 
           const firstSegment = await query(firstSegmentQuery, [
@@ -298,8 +297,8 @@ export async function calculateMultiRoutes(from: LatLng, to: LatLng) {
                         FROM route_data;
                     `;
 
-          console.log(
-            `🔄 MULTI-ROUTE API: Second segment - intersection pos: ${intersection.position2}, destination pos: ${endRoute.position_on_route}`,
+          log.debug(
+            `MULTI-ROUTE API: Second segment - intersection pos: ${intersection.position2}, destination pos: ${endRoute.position_on_route}`,
           );
 
           const secondSegment = await query(secondSegmentQuery, [
@@ -322,17 +321,17 @@ export async function calculateMultiRoutes(from: LatLng, to: LatLng) {
               const route2Distance = secondSegment[0].distance_meters;
               const totalDistance = route1Distance + route2Distance;
 
-              console.log(
-                `🔄 MULTI-ROUTE API: First route has ${firstCoords.length} points, last point:`,
+              log.debug(
+                `MULTI-ROUTE API: First route has ${firstCoords.length} points, last point:`,
                 firstCoords[firstCoords.length - 1],
               );
-              console.log(
-                `🔄 MULTI-ROUTE API: Second route has ${secondCoords.length} points, first point:`,
+              log.debug(
+                `MULTI-ROUTE API: Second route has ${secondCoords.length} points, first point:`,
                 secondCoords[0],
                 'last point:',
                 secondCoords[secondCoords.length - 1],
               );
-              console.log(`🔄 MULTI-ROUTE API: Destination should be near:`, {
+              log.debug(`MULTI-ROUTE API: Destination should be near:`, {
                 latitude: to.latitude,
                 longitude: to.longitude,
               });
@@ -364,8 +363,8 @@ export async function calculateMultiRoutes(from: LatLng, to: LatLng) {
                 transferDistance: intersection.distance,
               });
 
-              console.log(
-                `🔄 MULTI-ROUTE API: Added route combination ${startRoute.route_code} -> ${endRoute.route_code}`,
+              log.debug(
+                `MULTI-ROUTE API: Added route combination ${startRoute.route_code} -> ${endRoute.route_code}`,
               );
             }
           }
@@ -379,12 +378,12 @@ export async function calculateMultiRoutes(from: LatLng, to: LatLng) {
     // Return top 5 options
     const topOptions = multiRouteOptions.slice(0, 5);
 
-    console.log(`🔄 MULTI-ROUTE API: Returning ${topOptions.length} route combinations`);
+    log.debug(`MULTI-ROUTE API: Returning ${topOptions.length} route combinations`);
 
     return topOptions;
   } catch (error) {
     if (error instanceof HttpError) throw error;
-    console.error('🔄 MULTI-ROUTE API ERROR:', error);
+    log.error('MULTI-ROUTE API ERROR:', error);
     throw new HttpError(500, {
       error: 'Failed to calculate multi-route journey',
       details: error instanceof Error ? error.message : 'Unknown error',

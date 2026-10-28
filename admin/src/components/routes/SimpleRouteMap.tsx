@@ -26,7 +26,6 @@ export default function SimpleRouteMap({ coordinates, height = '400px' }: Simple
         if (!mounted) return;
 
         if (mapRef.current && !mapInstanceRef.current && window.google?.maps) {
-          console.log('Creating map instance for SimpleRouteMap');
           const map = new window.google.maps.Map(mapRef.current, {
             center: { lat: 10.3157, lng: 123.8854 },
             zoom: 12,

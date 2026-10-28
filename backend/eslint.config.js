@@ -13,8 +13,8 @@ module.exports = tseslint.config(
   {
     rules: {
       // Use the logger in src/lib for request-time output; warn/error are fine for failures.
-      'no-console': ['warn', { allow: ['warn', 'error'] }],
-      '@typescript-eslint/no-explicit-any': 'warn',
+      'no-console': ['error', { allow: ['warn', 'error'] }],
+      '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
     },
   },

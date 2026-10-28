@@ -30,11 +30,9 @@ function MapScreenContent() {
     setIsRouteFromList,
     routes,
     setRoutes,
-    setAllRoutes,
     selectedRouteInfo,
     setSelectedRouteInfo,
     results,
-    setSelectedRouteIndex,
     selectedRouteIndex,
   } = useContext(MapPointsContext);
   const { user } = useAuth();
@@ -149,12 +147,6 @@ function MapScreenContent() {
   ).current;
 
   const handleConfirmLocation = () => {
-    console.log('handleConfirmLocation called', {
-      isPointAB,
-      isSelectingLocations,
-      isPinPlacementEnabled,
-    });
-
     if (mapRef.current) {
       // If we're in the selection flow
       if (isSelectingLocations) {
@@ -239,16 +231,9 @@ function MapScreenContent() {
                       try {
                         // Check if user is logged in
                         if (!user) {
-                          console.log('Save route: No user found');
                           Alert.alert('Error', 'Please login to save routes');
                           return;
                         }
-
-                        console.log('Save route: User found', {
-                          userId: user.id,
-                          email: user.email,
-                          name: user.name,
-                        });
 
                         if (isRouteSaved) {
                           // Remove from saved - we'll need the saved route ID
@@ -263,13 +248,6 @@ function MapScreenContent() {
                               (c): c is string => !!c,
                             )
                           : [route.routeCode].filter((c): c is string => !!c);
-
-                        console.log('Save route: Preparing data', {
-                          routeId: route.routeId,
-                          jeepneyCodes,
-                          isTransfer: route.isTransfer,
-                          fare: route.fare || route.totalFare,
-                        });
 
                         const routeData = {
                           route_name: jeepneyCodes.join(' → '),
@@ -290,10 +268,7 @@ function MapScreenContent() {
                             : null,
                         };
 
-                        console.log('Save route: Sending to database', routeData);
-
-                        const data = await api.savedRoutes.create(routeData);
-                        console.log('Save route: Success', data);
+                        await api.savedRoutes.create(routeData);
                         setIsRouteSaved(true);
                         Alert.alert('Success', 'Route saved successfully!');
                       } catch (error) {

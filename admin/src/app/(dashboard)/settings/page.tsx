@@ -6,11 +6,11 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('general');
 
   const tabs = [
-    { id: 'general', label: 'General', icon: '⚙️' },
-    { id: 'maps', label: 'Maps', icon: '🗺️' },
-    { id: 'notifications', label: 'Notifications', icon: '🔔' },
-    // { id: "security", label: "Security", icon: "🔒" },
-    // { id: "api", label: "API Keys", icon: "🔑" },
+    { id: 'general', label: 'General', icon: '' },
+    { id: 'maps', label: 'Maps', icon: '' },
+    { id: 'notifications', label: 'Notifications', icon: '' },
+    // { id: "security", label: "Security", icon: "" },
+    // { id: "api", label: "API Keys", icon: "" },
   ];
 
   return (

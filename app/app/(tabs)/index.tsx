@@ -1,6 +1,4 @@
-import Ionicons from '@expo/vector-icons/build/Ionicons';
-import { router } from 'expo-router';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import MapScreen from '../(screens)/MapScreen';
 
 export default function Index() {

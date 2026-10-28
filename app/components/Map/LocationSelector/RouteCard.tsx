@@ -1,8 +1,6 @@
-import { LOCATION_ICON } from '@/constants';
 import { MappedGeoRouteResult } from '@/types/GeoTypes';
 import { Ionicons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
-import { Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { MultiRouteResult } from '@/app/services/routes/calculateMultiRoutes';
 
 type RouteCardProps = {

@@ -44,7 +44,6 @@ export async function query(sql: string, params?: unknown[]) {
       }
 
       // If this works, use a different approach
-      console.log('Using alternative Supabase query method');
       // For now, throw the original error
       throw error;
     }

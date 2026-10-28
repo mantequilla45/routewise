@@ -1,6 +1,6 @@
 import * as SecureStore from 'expo-secure-store';
 import { API_URL } from '@/constants';
-import { LatLng } from '@/types/GeoTypes';
+import { LatLng, MappedGeoRouteResult, RouteSegmentInfo } from '@/types/GeoTypes';
 
 // ---------------------------------------------------------------------------
 // Types mirrored from backend/src
@@ -27,6 +27,20 @@ export type Session = {
 export type SignupResult =
   { session: Session; requiresConfirmation: false } | { session: null; requiresConfirmation: true };
 
+// Stored with a saved transfer route so it can be redrawn without recalculating.
+export type TransferPoints = {
+  transferPoint?: LatLng;
+  firstRoute?: RouteSegmentInfo;
+  secondRoute?: RouteSegmentInfo;
+};
+
+export type ApiErrorBody = {
+  error?: string;
+  warning?: string;
+  debugInfo?: unknown;
+  [key: string]: unknown;
+};
+
 export type SavedRouteRow = {
   id: string;
   user_id: string;
@@ -39,7 +53,7 @@ export type SavedRouteRow = {
   end_lng: number;
   jeepney_codes: string[];
   total_fare: number;
-  transfer_points: any;
+  transfer_points: TransferPoints | null;
   created_at: string;
 };
 
@@ -69,7 +83,7 @@ export type NearestPointResult = {
 export class ApiError extends Error {
   constructor(
     public status: number,
-    public body: Record<string, any>,
+    public body: ApiErrorBody,
   ) {
     super(typeof body?.error === 'string' ? body.error : `Request failed (${status})`);
   }
@@ -256,9 +270,13 @@ export const api = {
         auth: false,
       }),
     calculate: (from: LatLng, to: LatLng) =>
-      apiFetch<any[]>('/routes/calculate', { method: 'POST', body: { from, to }, auth: false }),
+      apiFetch<MappedGeoRouteResult[]>('/routes/calculate', {
+        method: 'POST',
+        body: { from, to },
+        auth: false,
+      }),
     calculateMulti: (from: LatLng, to: LatLng) =>
-      apiFetch<any[]>('/routes/calculate-multi', {
+      apiFetch<MappedGeoRouteResult[]>('/routes/calculate-multi', {
         method: 'POST',
         body: { from, to },
         auth: false,

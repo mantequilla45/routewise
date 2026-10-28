@@ -1,3 +1,4 @@
+import { log } from '../../../../lib/log';
 import { LatLng } from '../../../../types/GeoTypes';
 import { query } from '../../../../lib/db';
 import { BaseRouteHandler, RouteCalculationResult, RouteSegment } from '../BaseHandler';
@@ -15,7 +16,7 @@ export class Case5BothOppositeHandler extends BaseRouteHandler {
   }
 
   async canHandle(from: LatLng, to: LatLng): Promise<boolean> {
-    console.log('🔍 Case 5: Checking if Both Opposite can handle this route...');
+    log.debug('Case 5: Checking if Both Opposite can handle this route...');
 
     // Check for routes where at least one pin is far enough (opposite side)
     const checkQuery = `
@@ -44,13 +45,13 @@ export class Case5BothOppositeHandler extends BaseRouteHandler {
     ]);
 
     const canHandle = results.length > 0;
-    console.log(`🔍 Case 5: ${canHandle ? '✅ Can handle' : '❌ Cannot handle'}`);
+    log.debug(`Case 5: ${canHandle ? 'Can handle' : 'Cannot handle'}`);
 
     return canHandle;
   }
 
   async calculate(from: LatLng, to: LatLng): Promise<RouteCalculationResult | null> {
-    console.log('🚗 Case 5: Calculating Both Opposite route...');
+    log.debug('Case 5: Calculating Both Opposite route...');
 
     // Simpler approach: Find all points within range of start/end, pick best forward path
     const routeQuery = `
@@ -151,7 +152,7 @@ export class Case5BothOppositeHandler extends BaseRouteHandler {
             ORDER BY route_distance;
         `;
 
-    const results = await query(routeQuery, [
+    const results = await query<RouteQueryResult>(routeQuery, [
       from.longitude,
       from.latitude,
       to.longitude,
@@ -159,11 +160,11 @@ export class Case5BothOppositeHandler extends BaseRouteHandler {
     ]);
 
     if (results.length === 0) {
-      console.log('🚗 Case 5: No valid both opposite routes found');
+      log.debug('Case 5: No valid both opposite routes found');
       return null;
     }
 
-    console.log(`🚗 Case 5: Found ${results.length} both opposite route(s)`);
+    log.debug(`Case 5: Found ${results.length} both opposite route(s)`);
 
     const segments: RouteSegment[] = results.map((route: RouteQueryResult) => {
       const coordinates = this.parseGeoJson(route.segment_geojson);

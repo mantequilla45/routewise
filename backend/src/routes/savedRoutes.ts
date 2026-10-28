@@ -1,3 +1,4 @@
+import { log } from '../lib/log';
 import { Hono } from 'hono';
 import { supabaseAdmin } from '../lib/supabase';
 import { requireAuth, type AuthVariables } from '../middleware/auth';
@@ -14,7 +15,7 @@ savedRoutes.get('/', async (c) => {
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('Error fetching saved routes:', error);
+    log.error('Error fetching saved routes:', error);
     return c.json({ error: 'Failed to load saved routes' }, 500);
   }
   return c.json(data ?? []);
@@ -50,7 +51,7 @@ savedRoutes.post('/', async (c) => {
 
   const { data, error } = await supabaseAdmin.from('saved_routes').insert(row).select().single();
   if (error) {
-    console.error('Error saving route:', error);
+    log.error('Error saving route:', error);
     return c.json({ error: 'Failed to save route' }, 500);
   }
   return c.json(data, 201);
@@ -65,7 +66,7 @@ savedRoutes.delete('/:id', async (c) => {
     .select('id');
 
   if (error) {
-    console.error('Error deleting route:', error);
+    log.error('Error deleting route:', error);
     return c.json({ error: 'Failed to delete route' }, 500);
   }
   if (!data || data.length === 0) {

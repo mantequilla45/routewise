@@ -1,3 +1,4 @@
+import { log } from '../lib/log';
 import type { User } from '@supabase/supabase-js';
 import { supabaseAdmin } from '../lib/supabase';
 
@@ -91,7 +92,7 @@ export async function recordLogin(profile: ProfileRow): Promise<void> {
       updated_at: new Date().toISOString(),
     })
     .eq('id', profile.id);
-  if (error) console.warn('recordLogin failed:', error.message);
+  if (error) log.warn('recordLogin failed:', error.message);
 }
 
 export async function upsertGoogleProfile(google: {

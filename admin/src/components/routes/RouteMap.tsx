@@ -19,7 +19,6 @@ function loadGoogleMapsScript(): Promise<void> {
   mapLoadPromise = new Promise((resolve, reject) => {
     // Check if Google Maps is already loaded
     if (window.google?.maps) {
-      console.log('Google Maps already loaded');
       resolve();
       return;
     }
@@ -27,7 +26,6 @@ function loadGoogleMapsScript(): Promise<void> {
     // Check if script is already in the DOM
     const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
     if (existingScript) {
-      console.log('Google Maps script already in DOM, waiting for load...');
       existingScript.addEventListener('load', () => resolve());
 
       // Check again if it loaded while we were checking
@@ -49,7 +47,6 @@ function loadGoogleMapsScript(): Promise<void> {
 
     // Create global callback
     (window as Window & { initMap?: () => void }).initMap = () => {
-      console.log('Google Maps initialized via callback');
       resolve();
       delete (window as Window & { initMap?: () => void }).initMap;
     };
@@ -60,7 +57,6 @@ function loadGoogleMapsScript(): Promise<void> {
     };
 
     document.head.appendChild(script);
-    console.log('Google Maps script added to DOM');
   });
 
   return mapLoadPromise;
@@ -82,11 +78,9 @@ export default function RouteMap({
   useEffect(() => {
     const initMap = async () => {
       try {
-        console.log('Initializing map...');
         await loadGoogleMapsScript();
 
         if (mapRef.current && !map && window.google?.maps) {
-          console.log('Creating new map instance');
           const newMap = new window.google.maps.Map(mapRef.current, {
             center: { lat: 10.3157, lng: 123.8854 }, // Cebu City
             zoom: 13,
@@ -96,7 +90,6 @@ export default function RouteMap({
 
           setMap(newMap);
           setIsLoading(false);
-          console.log('Map created successfully');
 
           if (enableClickToAdd && onMapClick) {
             newMap.addListener('click', (e: google.maps.MapMouseEvent) => {
@@ -106,11 +99,6 @@ export default function RouteMap({
             });
           }
         } else {
-          console.log('Map conditions not met:', {
-            hasRef: !!mapRef.current,
-            hasExistingMap: !!map,
-            hasGoogleMaps: !!window.google?.maps,
-          });
         }
       } catch (err) {
         console.error('Error loading Google Maps:', err);

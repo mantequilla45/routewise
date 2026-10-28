@@ -1,3 +1,4 @@
+import { log } from '../../../../lib/log';
 import { LatLng } from '../../../../types/GeoTypes';
 import { query } from '../../../../lib/db';
 import { BaseRouteHandler, RouteCalculationResult, RouteSegment } from '../BaseHandler';
@@ -15,7 +16,7 @@ export class Case7TransferStartOppositeHandler extends BaseRouteHandler {
   }
 
   async canHandle(from: LatLng, to: LatLng): Promise<boolean> {
-    console.log('🔍 Case 7: Checking if Transfer with Start Opposite can handle this route...');
+    log.debug('Case 7: Checking if Transfer with Start Opposite can handle this route...');
 
     // Check if there are routes near start that are on opposite side but can transfer
     const checkQuery = `
@@ -50,13 +51,13 @@ export class Case7TransferStartOppositeHandler extends BaseRouteHandler {
     ]);
 
     const canHandle = results.length > 0;
-    console.log(`🔍 Case 7: ${canHandle ? '✅ Can handle' : '❌ Cannot handle'}`);
+    log.debug(`Case 7: ${canHandle ? 'Can handle' : 'Cannot handle'}`);
 
     return canHandle;
   }
 
   async calculate(from: LatLng, to: LatLng): Promise<RouteCalculationResult | null> {
-    console.log('🚗 Case 7: Calculating Transfer with Start Opposite route...');
+    log.debug('Case 7: Calculating Transfer with Start Opposite route...');
 
     // First check which routes need adjustment
     const checkQuery = `
@@ -97,7 +98,7 @@ export class Case7TransferStartOppositeHandler extends BaseRouteHandler {
     const needingAdjustment = checkResults.filter(
       (r: Record<string, unknown>) => r.status === 'needs_adjustment',
     ).length;
-    console.log(`  ${needingAdjustment} routes need start point adjustment`);
+    log.debug(`  ${needingAdjustment} routes need start point adjustment`);
 
     const routeQuery = `
             WITH start_routes_base AS (
@@ -310,7 +311,7 @@ export class Case7TransferStartOppositeHandler extends BaseRouteHandler {
             FROM best_transfers;
         `;
 
-    const results = await query(routeQuery, [
+    const results = await query<TransferRouteResult>(routeQuery, [
       from.longitude,
       from.latitude,
       to.longitude,
@@ -318,11 +319,11 @@ export class Case7TransferStartOppositeHandler extends BaseRouteHandler {
     ]);
 
     if (results.length === 0) {
-      console.log('🚗 Case 7: No valid transfer routes with opposite start found');
+      log.debug('Case 7: No valid transfer routes with opposite start found');
       return null;
     }
 
-    console.log(`🚗 Case 7: Found ${results.length} transfer route(s) with opposite start`);
+    log.debug(`Case 7: Found ${results.length} transfer route(s) with opposite start`);
 
     const segments: RouteSegment[] = results.map((route: TransferRouteResult) => {
       const coords_a = this.parseGeoJson(route.segment_a_geojson);

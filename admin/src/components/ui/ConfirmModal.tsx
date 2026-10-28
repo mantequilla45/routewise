@@ -67,6 +67,7 @@ export default function ConfirmModal({
             </Button>
             <Button
               size="sm"
+              className={confirmButtonClass}
               onClick={() => {
                 onConfirm();
                 onClose();

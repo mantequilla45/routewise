@@ -23,13 +23,11 @@ class GoogleMapsLoader {
   async load(): Promise<void> {
     // If already loaded, return immediately
     if (this.isLoaded && window.google?.maps) {
-      console.log('Google Maps already loaded');
       return Promise.resolve();
     }
 
     // If currently loading, return the existing promise
     if (this.loadPromise) {
-      console.log('Google Maps is currently loading, waiting...');
       return this.loadPromise;
     }
 
@@ -37,7 +35,6 @@ class GoogleMapsLoader {
     this.loadPromise = new Promise((resolve, reject) => {
       // Check if Google Maps is already available
       if (window.google?.maps) {
-        console.log('Google Maps found in window');
         this.isLoaded = true;
         resolve();
         return;
@@ -46,8 +43,6 @@ class GoogleMapsLoader {
       // Check if script is already in DOM
       const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
       if (existingScript) {
-        console.log('Google Maps script already in DOM');
-
         // Wait for it to load
         const checkLoaded = setInterval(() => {
           if (window.google?.maps) {
@@ -67,7 +62,6 @@ class GoogleMapsLoader {
       }
 
       // Load new script
-      console.log('Loading Google Maps script...');
       // Use environment variable for the API key (renamed to avoid "KEY" word for Vercel)
       const apiKey = process.env.NEXT_PUBLIC_GMAPS_API || '';
       if (!apiKey) {
@@ -79,7 +73,6 @@ class GoogleMapsLoader {
       script.defer = true;
 
       window.initMap = () => {
-        console.log('Google Maps initialized');
         this.isLoaded = true;
         delete window.initMap;
         resolve();

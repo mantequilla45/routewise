@@ -21,7 +21,6 @@ interface Route {
   route_code: string;
   route_color: string;
   created_at: string;
-  coordinates?: any;
 }
 
 export default function RoutesScreen() {

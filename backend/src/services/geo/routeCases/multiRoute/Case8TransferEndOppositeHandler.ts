@@ -1,3 +1,4 @@
+import { log } from '../../../../lib/log';
 import { LatLng } from '../../../../types/GeoTypes';
 import { query } from '../../../../lib/db';
 import { BaseRouteHandler, RouteCalculationResult, RouteSegment } from '../BaseHandler';
@@ -18,7 +19,7 @@ export class Case8TransferEndOppositeHandler extends BaseRouteHandler {
   }
 
   async canHandle(from: LatLng, to: LatLng): Promise<boolean> {
-    console.log('🔍 Case 8: Checking if Transfer with End Opposite can handle this route...');
+    log.debug('Case 8: Checking if Transfer with End Opposite can handle this route...');
 
     // Simple check: can we find transfer routes?
     const checkQuery = `
@@ -47,13 +48,13 @@ export class Case8TransferEndOppositeHandler extends BaseRouteHandler {
     ]);
 
     const canHandle = results.length > 0;
-    console.log(`🔍 Case 8: ${canHandle ? '✅ Can handle' : '❌ Cannot handle'}`);
+    log.debug(`Case 8: ${canHandle ? 'Can handle' : 'Cannot handle'}`);
 
     return canHandle;
   }
 
   async calculate(from: LatLng, to: LatLng): Promise<RouteCalculationResult | null> {
-    console.log('🚗 Case 8: Calculating Transfer with End Opposite route...');
+    log.debug('Case 8: Calculating Transfer with End Opposite route...');
 
     const routeQuery = `
             WITH start_routes AS (
@@ -202,7 +203,7 @@ export class Case8TransferEndOppositeHandler extends BaseRouteHandler {
             FROM best_transfers;
         `;
 
-    const results = await query(routeQuery, [
+    const results = await query<TransferRouteResult>(routeQuery, [
       from.longitude,
       from.latitude,
       to.longitude,
@@ -210,21 +211,21 @@ export class Case8TransferEndOppositeHandler extends BaseRouteHandler {
     ]);
 
     if (results.length === 0) {
-      console.log('🚗 Case 8: No valid transfer routes with end opposite found');
+      log.debug('Case 8: No valid transfer routes with end opposite found');
       return null;
     }
 
-    console.log(`🚗 Case 8: Found ${results.length} transfer route(s) with end opposite`);
+    log.debug(`Case 8: Found ${results.length} transfer route(s) with end opposite`);
     if (results.length > 0) {
       const topRoute = results[0];
-      console.log(`  Best Case 8: ${topRoute.route_a_code} → ${topRoute.route_b_code}`);
-      console.log(
-        `    Destination originally at ${(topRoute.original_dest_pos * 100).toFixed(1)}% of ${topRoute.route_b_code}`,
+      log.debug(`  Best Case 8: ${topRoute.route_a_code} → ${topRoute.route_b_code}`);
+      log.debug(
+        `    Destination originally at ${((topRoute.original_dest_pos ?? 0) * 100).toFixed(1)}% of ${topRoute.route_b_code}`,
       );
-      console.log(
+      log.debug(
         `    Found alighting at ${(topRoute.alighting_pos * 100).toFixed(1)}% (${topRoute.alighting_distance.toFixed(0)}m walk)`,
       );
-      console.log(`    Total distance: ${(topRoute.total_distance / 1000).toFixed(2)}km`);
+      log.debug(`    Total distance: ${(topRoute.total_distance / 1000).toFixed(2)}km`);
     }
 
     const segments: RouteSegment[] = results.map((route: TransferRouteResult) => {

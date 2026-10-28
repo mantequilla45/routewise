@@ -93,7 +93,6 @@ export default function AddRouteMap({
         if (!mounted || !mapRef.current) return;
 
         if (!mapInstanceRef.current && window.google?.maps) {
-          console.log('Creating map instance for AddRouteMap');
           const mapDiv = mapRef.current;
 
           // Create map with a defensive check
@@ -225,9 +224,6 @@ export default function AddRouteMap({
 
     // Draw new route if coordinates exist
     if (coordinates && coordinates.length > 0) {
-      console.log('Drawing route with', coordinates.length, 'points');
-      console.log('Raw coordinates:', coordinates);
-
       // Convert coordinates to Google Maps format with validation
       const path = coordinates
         .filter((coord) => {
@@ -352,9 +348,6 @@ export default function AddRouteMap({
 
       // Add markers
       if (path.length > 0) {
-        console.log('Creating markers for', path.length, 'points');
-        console.log('Highlighted index:', highlightedIndex);
-
         // Create markers for all points
         path.forEach((point, index) => {
           const markerOptions: google.maps.MarkerOptions = {
@@ -368,7 +361,6 @@ export default function AddRouteMap({
           // Determine icon and label based on position and highlight status
           if (index === 0 && !isClosedLoop) {
             // First point - Starting point with X icon (only if not a closed loop)
-            console.log(`Marker ${index}: START (first point)`);
             markerOptions.icon = {
               url:
                 'data:image/svg+xml;charset=UTF-8,' +
@@ -385,7 +377,6 @@ export default function AddRouteMap({
             markerOptions.zIndex = 200;
           } else if (index === path.length - 1 && path.length > 1 && !isClosedLoop) {
             // Last point - End point with circle icon
-            console.log(`Marker ${index}: END (last point of ${path.length} total)`);
             markerOptions.icon = {
               url:
                 'data:image/svg+xml;charset=UTF-8,' +
@@ -402,7 +393,6 @@ export default function AddRouteMap({
             markerOptions.zIndex = 200;
           } else if (isClosedLoop && index === path.length - 1) {
             // Loop closing point - show as Point 1 (same as first point)
-            console.log(`Marker ${index}: LOOP CLOSE (same as Point 1)`);
             if (showPointNumbers) {
               markerOptions.icon = {
                 url:
@@ -449,7 +439,6 @@ export default function AddRouteMap({
             markerOptions.zIndex = 250;
           } else {
             // Regular middle points - with or without numbers
-            console.log(`Marker ${index}: Middle point (${index + 1}/${path.length})`);
             if (showPointNumbers) {
               markerOptions.icon = {
                 url:

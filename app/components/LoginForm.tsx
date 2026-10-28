@@ -1,8 +1,7 @@
 import { useAuth } from '@/context/auth';
 import React, { useState } from 'react';
-import { View, Text, Button, StyleSheet, TextInput, TouchableOpacity, Alert } from 'react-native';
-import { Ionicons } from '@expo/vector-icons'; // install with expo: expo install @expo/vector-icons
-import { AntDesign } from '@expo/vector-icons';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { AntDesign, Ionicons } from '@expo/vector-icons';
 import { ApiError } from '@/lib/api';
 import * as SecureStore from 'expo-secure-store';
 export default function LoginForm() {

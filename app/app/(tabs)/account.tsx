@@ -18,23 +18,17 @@ import { api } from '@/lib/api';
 import { LOGO } from '@/constants';
 
 export default function Account() {
-  const { user, signOut, isLoading, updateUser, refreshProfile } = useAuth();
-  const isVerified = !!(
-    (user as any)?.email_confirmed_at ||
-    // some auth providers use different field names
-    (user as any)?.email_confirmed ||
-    (user as any)?.confirmed_at ||
-    (user as any)?.email_verified
-  );
+  const { user, signOut, isLoading, updateUser } = useAuth();
+  const isVerified = !!user?.email_verified;
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
   const [isEditingName, setIsEditingName] = useState<boolean>(false);
-  const [nameValue, setNameValue] = useState<string>((user as any)?.name || '');
+  const [nameValue, setNameValue] = useState<string>(user?.name || '');
   const [isSavingName, setIsSavingName] = useState<boolean>(false);
-  const nameInputRef = useRef<any>(null);
+  const nameInputRef = useRef<TextInput>(null);
   const [isEditingCommuter, setIsEditingCommuter] = useState<boolean>(false);
-  const [commuterValue, setCommuterValue] = useState<string>((user as any)?.commuter || '');
+  const [commuterValue, setCommuterValue] = useState<string>(user?.commuter || '');
   const [isSavingCommuter, setIsSavingCommuter] = useState<boolean>(false);
-  const commuterInputRef = useRef<any>(null);
+  const commuterInputRef = useRef<TextInput>(null);
   const [isEditingSection, setIsEditingSection] = useState<boolean>(false);
   const [isCommuterModalVisible, setIsCommuterModalVisible] = useState<boolean>(false);
   const commuterOptions = ['Regular', 'Student', 'PWD', 'Senior'];
@@ -52,8 +46,8 @@ export default function Account() {
   };
 
   const handleSaveAll = async () => {
-    const originalName = (user as any)?.name || '';
-    const originalCommuter = (user as any)?.commuter || '';
+    const originalName = user?.name || '';
+    const originalCommuter = user?.commuter || '';
 
     // Save name if it changed
     if (nameValue !== originalName) {
@@ -72,7 +66,7 @@ export default function Account() {
 
   // Keep local nameValue in sync when user changes externally
   useEffect(() => {
-    setNameValue((user as any)?.name || '');
+    setNameValue(user?.name || '');
   }, [user]);
 
   // Focus the input when entering edit mode
@@ -90,7 +84,7 @@ export default function Account() {
 
   // Keep local commuterValue in sync when user changes externally
   useEffect(() => {
-    setCommuterValue((user as any)?.commuter || '');
+    setCommuterValue(user?.commuter || '');
   }, [user]);
 
   // Focus the input when entering commuter edit mode
@@ -109,7 +103,7 @@ export default function Account() {
   async function saveName(newName: string) {
     try {
       if (!user) return;
-      const currentName = (user as any)?.name || '';
+      const currentName = user?.name || '';
       if (newName === currentName) return;
       setIsSavingName(true);
 
@@ -126,7 +120,7 @@ export default function Account() {
   async function saveCommuter(newCommuter: string) {
     try {
       if (!user) return;
-      const current = (user as any)?.commuter || '';
+      const current = user?.commuter || '';
       if (newCommuter === current) return;
       setIsSavingCommuter(true);
 

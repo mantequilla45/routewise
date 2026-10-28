@@ -1,3 +1,4 @@
+import { log } from '../../../../lib/log';
 import { LatLng } from '../../../../types/GeoTypes';
 import { query } from '../../../../lib/db';
 import { BaseRouteHandler, RouteCalculationResult, RouteSegment } from '../BaseHandler';
@@ -17,7 +18,7 @@ export class Case3OppositeStartHandler extends BaseRouteHandler {
   }
 
   async canHandle(from: LatLng, to: LatLng): Promise<boolean> {
-    console.log('🔍 Case 3: Checking if Opposite Start can handle this route...');
+    log.debug('Case 3: Checking if Opposite Start can handle this route...');
 
     // Check for routes where start is far enough to be considered opposite side
     // Find ALL routes that pass near both points
@@ -59,28 +60,28 @@ export class Case3OppositeStartHandler extends BaseRouteHandler {
     ]);
 
     const validRoutes = results.filter((r) => {
-      console.log(
+      log.debug(
         `  Route ${r.route_code}: Start ${r.start_dist.toFixed(1)}m (opposite), End ${r.end_dist.toFixed(1)}m (correct)`,
       );
-      console.log(
+      log.debug(
         `    Start pos: ${(r.start_pos * 100).toFixed(1)}%, End pos: ${(r.end_pos * 100).toFixed(1)}%`,
       );
       return true;
     });
 
     const canHandle = validRoutes.length > 0;
-    console.log(`🔍 Case 3: ${canHandle ? '✅ Can handle' : '❌ Cannot handle'}`);
+    log.debug(`Case 3: ${canHandle ? 'Can handle' : 'Cannot handle'}`);
 
     if (canHandle && validRoutes[0]) {
       const r = validRoutes[0];
-      console.log(`  Will find nearest boarding point for route ${r.route_code}`);
+      log.debug(`  Will find nearest boarding point for route ${r.route_code}`);
     }
 
     return canHandle;
   }
 
   async calculate(from: LatLng, to: LatLng): Promise<RouteCalculationResult | null> {
-    console.log('🚗 Case 3: Calculating Opposite Start route...');
+    log.debug('Case 3: Calculating Opposite Start route...');
 
     // Query to find alternative boarding points for routes with opposite start
     const routeQuery = `
@@ -177,7 +178,7 @@ export class Case3OppositeStartHandler extends BaseRouteHandler {
             ORDER BY distance_meters;
         `;
 
-    const results = await query(routeQuery, [
+    const results = await query<RouteQueryResult>(routeQuery, [
       from.longitude,
       from.latitude,
       to.longitude,
@@ -185,11 +186,11 @@ export class Case3OppositeStartHandler extends BaseRouteHandler {
     ]);
 
     if (results.length === 0) {
-      console.log('🚗 Case 3: No valid opposite start routes found');
+      log.debug('Case 3: No valid opposite start routes found');
       return null;
     }
 
-    console.log(`🚗 Case 3: Found ${results.length} opposite start route(s)`);
+    log.debug(`Case 3: Found ${results.length} opposite start route(s)`);
 
     // Process all matching routes
     const segments: RouteSegment[] = results.map((route: RouteQueryResult) => {
@@ -197,17 +198,17 @@ export class Case3OppositeStartHandler extends BaseRouteHandler {
       const distance = route.distance_meters || route.route_distance || 0;
       const fare = this.calculateFare(distance);
 
-      console.log(`  Route ${route.route_code}: ${(distance / 1000).toFixed(2)}km, ₱${fare}`);
-      console.log(
+      log.debug(`  Route ${route.route_code}: ${(distance / 1000).toFixed(2)}km, ₱${fare}`);
+      log.debug(
         `    Start correction: Walk ${(route.walking_distance ?? 0).toFixed(0)}m to correct side`,
       );
-      console.log(
+      log.debug(
         `    Original position: ${((route.original_start_pos ?? 0) * 100).toFixed(1)}%, Corrected: ${((route.corrected_start_pos ?? route.start_pos) * 100).toFixed(1)}%`,
       );
-      console.log(
+      log.debug(
         `    Travel: ${((route.corrected_start_pos ?? route.start_pos) * 100).toFixed(1)}% → ${(route.end_pos * 100).toFixed(1)}%`,
       );
-      console.log(`    Coordinates: ${coordinates.length} points`);
+      log.debug(`    Coordinates: ${coordinates.length} points`);
 
       return {
         routeId: route.id,

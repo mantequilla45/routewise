@@ -1,3 +1,4 @@
+import { log } from '../lib/log';
 import { Hono } from 'hono';
 import type { ContentfulStatusCode } from 'hono/utils/http-status';
 import type { AuthError, Session, User } from '@supabase/supabase-js';
@@ -100,7 +101,7 @@ auth.post('/refresh', async (c) => {
 
 auth.post('/logout', requireAuth, async (c) => {
   const { error } = await supabaseAdmin.auth.admin.signOut(c.get('accessToken'));
-  if (error) console.warn('signOut failed:', error.message);
+  if (error) log.warn('signOut failed:', error.message);
   return c.body(null, 204);
 });
 
@@ -177,7 +178,7 @@ auth.get('/google/callback', async (c) => {
     });
 
     if (!tokenResponse.ok) {
-      console.error('Google token exchange failed:', await tokenResponse.text());
+      log.error('Google token exchange failed:', await tokenResponse.text());
       return c.redirect(appRedirect(redirectUri, { error: 'token_exchange_failed' }));
     }
 
@@ -193,7 +194,7 @@ auth.get('/google/callback', async (c) => {
     });
 
     if (error || !data.session || !data.user?.email) {
-      console.error('Supabase signInWithIdToken failed:', error?.message);
+      log.error('Supabase signInWithIdToken failed:', error?.message);
       return c.redirect(appRedirect(redirectUri, { error: 'supabase_sign_in_failed' }));
     }
 
@@ -214,7 +215,7 @@ auth.get('/google/callback', async (c) => {
       }),
     );
   } catch (error) {
-    console.error('Google callback error:', error);
+    log.error('Google callback error:', error);
     return c.redirect(appRedirect(redirectUri, { error: 'token_exchange_error' }));
   }
 });

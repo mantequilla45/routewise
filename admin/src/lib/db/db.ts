@@ -7,8 +7,6 @@ if (!DATABASE_URL) {
   console.error('DATABASE_URL or DATABASE_POOLER_URL must be set in environment variables');
 }
 
-console.log('Connecting to database:', DATABASE_URL.replace(/:[^:@]*@/, ':****@'));
-
 const pool = new Pool({
   connectionString: DATABASE_URL,
   ssl: { rejectUnauthorized: false },
@@ -25,9 +23,7 @@ pool.on('error', (err) => {
   console.error('Unexpected error on idle PostgreSQL client', err);
 });
 
-pool.on('connect', () => {
-  console.log('New client connected to PostgreSQL pool');
-});
+pool.on('connect', () => {});
 
 export async function query(sql: string, params?: unknown[]) {
   const maxRetries = 3;
@@ -54,7 +50,6 @@ export async function query(sql: string, params?: unknown[]) {
           errorObj.code === 'ENOTFOUND' ||
           errorObj.message?.includes('Connection terminated'))
       ) {
-        console.log(`Waiting ${attempt * 1000}ms before retry...`);
         await new Promise((resolve) => setTimeout(resolve, attempt * 1000));
         continue;
       }
@@ -71,8 +66,7 @@ export async function query(sql: string, params?: unknown[]) {
 // Health check function
 export async function checkConnection() {
   try {
-    const result = await query('SELECT NOW() as current_time');
-    console.log('Database connection successful:', result[0]);
+    await query('SELECT NOW() as current_time');
     return true;
   } catch (error) {
     console.error('Database connection failed:', error);

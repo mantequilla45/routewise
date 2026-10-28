@@ -44,7 +44,6 @@ export async function DELETE(request: NextRequest, { params }: Params) {
 export async function GET(request: NextRequest, { params }: Params) {
   try {
     const { id } = await params;
-    console.log('GET route details for ID:', id);
 
     if (!id) {
       console.error('No ID provided');
@@ -62,12 +61,9 @@ export async function GET(request: NextRequest, { params }: Params) {
             WHERE id = $1;
         `;
 
-    console.log('Executing query for route ID:', id);
     const result = await query(sql, [id]);
-    console.log('Query result:', result);
 
     if (!result || result.length === 0) {
-      console.log('No route found with ID:', id);
       return NextResponse.json({ error: 'Route not found' }, { status: 404 });
     }
 
@@ -85,7 +81,6 @@ export async function GET(request: NextRequest, { params }: Params) {
       },
     };
 
-    console.log('Sending response:', response);
     return NextResponse.json(response);
   } catch (error) {
     console.error('Error fetching route:', error);
