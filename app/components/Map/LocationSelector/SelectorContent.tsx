@@ -1,7 +1,7 @@
 import { MapPointsContext } from '@/context/map-context';
-import { Ionicons } from '@expo/vector-icons';
 import { useContext, useEffect, useRef } from 'react';
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { colors, spacing, type, ui } from '@/theme';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import PointPicker from './PointPicker';
 import RouteResultsList from './RouteResultsList';
 import useRouteCalculation from './useRouteCalculation';
@@ -132,48 +132,41 @@ export default function MapModalContent({
     }, 50);
   };
 
+  const title = !pointA ? 'Where are you starting?' : !pointB ? 'Where to?' : 'Your trip';
+  const canSearch = !!pointA && !!pointB && !isCalculating;
+
   return (
-    <View style={styles.container}>
-      <View style={styles.bottomSheetTopRow}>
-        <Text style={styles.bottomSheetTitleText}>
-          {!pointA
-            ? 'Select your first location'
-            : !pointB
-              ? 'Select your second location'
-              : 'Directions'}
-        </Text>
+    <View>
+      <View style={styles.header}>
+        <Text style={type.title}>{title}</Text>
         {(pointA || pointB) && (
-          <TouchableOpacity onPress={onClear} style={styles.clearButton}>
-            <Ionicons name="refresh-outline" color="white" size={20} />
-          </TouchableOpacity>
+          <Pressable onPress={onClear} hitSlop={8} accessibilityRole="button">
+            <Text style={styles.clearText}>Clear</Text>
+          </Pressable>
         )}
       </View>
 
-      <View style={styles.bottomSheetRow}>
-        <PointPicker
-          pointA={pointA}
-          pointB={pointB}
-          onSelectPointA={onSelectPointA}
-          onSelectPointB={onSelectPointB}
-        />
-      </View>
+      <PointPicker
+        pointA={pointA}
+        pointB={pointB}
+        onSelectPointA={onSelectPointA}
+        onSelectPointB={onSelectPointB}
+      />
 
-      <View style={styles.bottomSheetRow}>
-        <TouchableOpacity
-          style={[styles.calculateButton, isCalculating && styles.calculateButtonDisabled]}
-          onPress={onCalculate}
-          disabled={isCalculating || !pointA || !pointB}
-        >
-          {isCalculating ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="small" color="white" />
-              <Text style={styles.calculateButtonText}>Finding Routes...</Text>
-            </View>
-          ) : (
-            <Text style={styles.calculateButtonText}>Find Jeeps</Text>
-          )}
-        </TouchableOpacity>
-      </View>
+      <Pressable
+        style={({ pressed }) => [
+          ui.primaryButton,
+          styles.searchButton,
+          pressed && styles.searchButtonPressed,
+          !canSearch && !isCalculating && styles.searchButtonDisabled,
+        ]}
+        onPress={onCalculate}
+        disabled={!canSearch}
+        accessibilityRole="button"
+      >
+        {isCalculating && <ActivityIndicator size="small" color={colors.textOnAccent} />}
+        <Text style={ui.primaryButtonText}>{isCalculating ? 'Finding routes…' : 'Find jeeps'}</Text>
+      </Pressable>
 
       <RouteResultsList
         results={results}
@@ -185,69 +178,23 @@ export default function MapModalContent({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 5,
-  },
-  bottomSheetTopRow: {
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: spacing.lg,
   },
-
-  bottomSheetTitleText: {
-    color: 'white',
-    textAlign: 'left',
-    fontSize: 20,
-    fontWeight: '600',
-    fontFamily: 'Lexend_500Medium',
-    flex: 1,
+  clearText: {
+    ...type.bodyMedium,
+    color: colors.textSecondary,
   },
-
-  clearButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 6,
-    borderRadius: 16,
-    gap: 4,
+  searchButton: {
+    marginTop: spacing.md,
   },
-
-  bottomSheetRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    alignItems: 'center',
-    marginBottom: 10,
+  searchButtonPressed: {
+    backgroundColor: colors.accentPressed,
   },
-
-  calculateButton: {
-    height: 48,
-    shadowRadius: 25,
-    backgroundColor: '#FFCC66',
-    padding: 8,
-    borderRadius: 8,
-    flexDirection: 'row',
-    alignSelf: 'center',
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: '100%',
-  },
-
-  calculateButtonText: {
-    fontFamily: 'Lexend_400Regular',
-    fontSize: 16,
-    color: '#2D2D2D',
-    marginRight: 5,
-  },
-
-  calculateButtonDisabled: {
-    opacity: 0.7,
-    backgroundColor: '#E0B050',
-  },
-
-  loadingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
+  searchButtonDisabled: {
+    opacity: 0.45,
   },
 });

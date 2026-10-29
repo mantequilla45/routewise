@@ -4,6 +4,7 @@ import { api } from '@/lib/api';
 import { MappedGeoRouteResult } from '@/types/GeoTypes';
 import { Ionicons } from '@expo/vector-icons';
 import { useContext } from 'react';
+import { colors, spacing } from '@/theme';
 import { Alert, StyleSheet, TouchableOpacity } from 'react-native';
 
 type Props = {
@@ -69,8 +70,8 @@ export default function SaveRouteButton({ route, isRouteSaved, onSaved }: Props)
     <TouchableOpacity onPress={handleSave} style={styles.button}>
       <Ionicons
         name={isRouteSaved ? 'bookmark' : 'bookmark-outline'}
-        size={24}
-        color={isRouteSaved ? '#FF6B6B' : '#666'}
+        size={22}
+        color={isRouteSaved ? colors.text : colors.textSecondary}
       />
     </TouchableOpacity>
   );
@@ -78,7 +79,6 @@ export default function SaveRouteButton({ route, isRouteSaved, onSaved }: Props)
 
 const styles = StyleSheet.create({
   button: {
-    padding: 8,
-    marginLeft: 10,
+    padding: spacing.sm,
   },
 });

@@ -15,6 +15,7 @@ import {
 import { MapPointsContext } from '@/context/map-context';
 import Button from '@/components/Button';
 import { api } from '@/lib/api';
+import { colors } from '@/theme';
 
 interface Route {
   id: string;
@@ -68,7 +69,7 @@ export default function RoutesScreen() {
           const polyline = {
             id: `route_${route.route_id}`,
             coordinates: fullRoute.coordinates,
-            color: route.route_color || '#33ff00',
+            color: colors.routePrimary,
             width: POLYLINE_WIDTH,
             geodesic: true,
           };

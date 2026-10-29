@@ -1,159 +1,123 @@
 import { MapPointsContext } from '@/context/map-context';
+import { colors, elevation, radius, spacing, type, ui } from '@/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useContext } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 type Props = {
   onCancel: () => void;
   onConfirm: () => void;
 };
 
+const PIN_SIZE = 40;
+
 /**
- * Full-screen overlay for pin placement: instruction banner, centre crosshair and confirm
- * button. Renders nothing unless pin placement is enabled.
+ * Full-screen overlay for pin placement: instruction bar, a pin fixed at the map's centre, and
+ * a confirm button. Renders nothing unless pin placement is enabled.
  */
 export default function PinPlacementOverlay({ onCancel, onConfirm }: Props) {
-  const { isPinPlacementEnabled, isPointAB, pointA, pointB } = useContext(MapPointsContext);
+  const { isPinPlacementEnabled, isPointAB } = useContext(MapPointsContext);
 
   if (!isPinPlacementEnabled) return null;
+
+  const pinColor = isPointAB ? colors.origin : colors.destination;
 
   return (
     <View style={styles.overlay}>
       <View style={styles.banner}>
-        <Ionicons name="location" size={24} color="#007AFF" />
-        <Text style={styles.bannerText}>
-          Move map to position crosshair at{' '}
-          {isPointAB
-            ? !pointA
-              ? 'starting point'
-              : 'starting point (updating)'
-            : !pointB
-              ? 'destination'
-              : 'destination (updating)'}
-        </Text>
-        <TouchableOpacity onPress={onCancel} style={styles.cancelButton}>
-          <Text style={styles.cancelButtonText}>Cancel</Text>
-        </TouchableOpacity>
+        <View style={styles.bannerText}>
+          <Text style={type.heading}>{isPointAB ? 'Set starting point' : 'Set destination'}</Text>
+          <Text style={type.caption}>Move the map to place the pin</Text>
+        </View>
+        <Pressable
+          onPress={onCancel}
+          hitSlop={8}
+          style={styles.closeButton}
+          accessibilityRole="button"
+          accessibilityLabel="Cancel"
+        >
+          <Ionicons name="close" size={20} color={colors.textSecondary} />
+        </Pressable>
       </View>
 
-      {/* Crosshair in center of map */}
-      <View style={styles.crosshairContainer}>
-        <View style={styles.crosshairVertical} />
-        <View style={styles.crosshairHorizontal} />
-        <View style={styles.crosshairCenter} />
+      {/* The pin's tip sits on the exact centre of the map */}
+      <View style={styles.pinContainer} pointerEvents="none">
+        <Ionicons name="location-sharp" size={PIN_SIZE} color={pinColor} />
+        <View style={styles.pinShadow} />
       </View>
 
-      <TouchableOpacity style={styles.confirmButton} onPress={onConfirm} activeOpacity={0.8}>
-        <Ionicons name="checkmark-circle" size={32} color="#303030" />
-        <Text style={styles.confirmText}>
-          Confirm {isPointAB ? 'Starting Point' : 'Destination'}
+      <Pressable
+        style={({ pressed }) => [
+          ui.primaryButton,
+          styles.confirmButton,
+          pressed && { backgroundColor: colors.accentPressed },
+        ]}
+        onPress={onConfirm}
+        accessibilityRole="button"
+      >
+        <Text style={ui.primaryButtonText}>
+          Confirm {isPointAB ? 'starting point' : 'destination'}
         </Text>
-      </TouchableOpacity>
+      </Pressable>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   overlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    ...StyleSheet.absoluteFill,
     pointerEvents: 'box-none',
   },
   banner: {
     position: 'absolute',
     top: 60,
-    left: 20,
-    right: 20,
-    backgroundColor: 'white',
+    left: spacing.lg,
+    right: spacing.lg,
+    backgroundColor: colors.background,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    borderRadius: 12,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    gap: 12,
+    paddingVertical: spacing.md,
+    paddingLeft: spacing.lg,
+    paddingRight: spacing.sm,
+    borderRadius: radius.lg,
     zIndex: 100,
+    ...elevation.floating,
   },
   bannerText: {
     flex: 1,
-    fontSize: 16,
-    color: '#333',
-    fontFamily: 'Lexend_400Regular',
+    gap: spacing.xxs,
   },
-  cancelButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#F0F0F0',
-    borderRadius: 8,
+  closeButton: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  cancelButtonText: {
-    color: '#666',
-    fontSize: 14,
-    fontFamily: 'Lexend_500Medium',
-  },
-  crosshairContainer: {
+  pinContainer: {
     position: 'absolute',
     top: '50%',
     left: '50%',
-    width: 40,
-    height: 40,
-    marginTop: -20,
-    marginLeft: -20,
+    width: PIN_SIZE,
+    height: PIN_SIZE,
+    marginLeft: -PIN_SIZE / 2,
+    marginTop: -PIN_SIZE, // tip of the pin at the centre point
     alignItems: 'center',
-    justifyContent: 'center',
   },
-  crosshairVertical: {
+  pinShadow: {
     position: 'absolute',
-    width: 2,
-    height: 40,
-    backgroundColor: '#007AFF',
-    opacity: 0.8,
-  },
-  crosshairHorizontal: {
-    position: 'absolute',
-    width: 40,
-    height: 2,
-    backgroundColor: '#007AFF',
-    opacity: 0.8,
-  },
-  crosshairCenter: {
+    bottom: -3,
     width: 10,
-    height: 10,
+    height: 4,
     borderRadius: 5,
-    backgroundColor: '#007AFF',
-    borderWidth: 2,
-    borderColor: 'white',
+    backgroundColor: 'rgba(0, 0, 0, 0.25)',
   },
   confirmButton: {
     position: 'absolute',
-    bottom: 20,
-    alignSelf: 'center',
-    left: 20,
-    right: 20,
-    backgroundColor: '#FFCC66',
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  confirmText: {
-    color: '#303030',
-    fontSize: 18,
-    fontWeight: '600',
-    fontFamily: 'Lexend_600SemiBold',
+    bottom: spacing.xl,
+    left: spacing.lg,
+    right: spacing.lg,
+    ...elevation.floating,
   },
 });

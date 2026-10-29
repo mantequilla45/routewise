@@ -1,5 +1,6 @@
 import { MapPointsContext } from '@/context/map-context';
 import { useContext } from 'react';
+import { colors, elevation, radius, spacing, type, ui } from '@/theme';
 import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 type Props = {
@@ -22,9 +23,9 @@ export default function SwipeUpIndicator({ opacity, isModalVisible, onPress }: P
       style={[styles.indicator, { opacity, pointerEvents: isModalVisible ? 'none' : 'auto' }]}
     >
       <TouchableOpacity onPress={onPress} activeOpacity={0.9} style={styles.touchable}>
-        <View style={styles.dragHandle} />
+        <View style={ui.handle} />
         <Text style={styles.text}>
-          {results && results.length > 0 ? 'Tap to view routes' : 'Tap to select location'}
+          {results && results.length > 0 ? 'View routes' : 'Plan a trip'}
         </Text>
       </TouchableOpacity>
     </Animated.View>
@@ -37,31 +38,21 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#303030',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingTop: 12,
-    paddingBottom: 15,
-    alignItems: 'center',
+    backgroundColor: colors.background,
+    borderTopLeftRadius: radius.sheet,
+    borderTopRightRadius: radius.sheet,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.lg,
     zIndex: 10,
-    elevation: 10,
+    ...elevation.sheet,
   },
   touchable: {
     width: '100%',
     alignItems: 'center',
-  },
-  dragHandle: {
-    width: 40,
-    height: 5,
-    backgroundColor: '#666',
-    borderRadius: 3,
-    alignSelf: 'center',
-    marginBottom: 10,
-    marginTop: -5,
+    gap: spacing.md,
   },
   text: {
-    color: '#999',
-    fontSize: 14,
-    marginBottom: 5,
+    ...type.bodyMedium,
+    color: colors.textSecondary,
   },
 });

@@ -3,6 +3,7 @@ import { useSavedRouteStatus } from '@/components/Map/Screen/useSavedRouteStatus
 import { MapPointsContext } from '@/context/map-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useContext } from 'react';
+import { colors, elevation, fonts, radius, spacing, type } from '@/theme';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 /**
@@ -42,13 +43,15 @@ export default function RouteInfoHeader() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{selectedRouteInfo?.id || 'Route'}</Text>
+        </View>
         <View style={styles.content}>
-          <Text style={styles.label}>Showing Route</Text>
-          <Text style={styles.code}>{selectedRouteInfo?.id || 'Route'}</Text>
+          <Text style={type.caption}>Showing route</Text>
         </View>
         {isRouteFromList ? (
           <TouchableOpacity onPress={clearListRoute} style={styles.closeButton}>
-            <Ionicons name="close-circle" size={24} color="#666" />
+            <Ionicons name="close" size={22} color={colors.textSecondary} />
           </TouchableOpacity>
         ) : (
           results.length > 0 &&
@@ -69,39 +72,37 @@ const styles = StyleSheet.create({
   container: {
     position: 'absolute',
     top: 60,
-    left: 20,
-    right: 20,
+    left: spacing.lg,
+    right: spacing.lg,
     zIndex: 100,
   },
   header: {
-    backgroundColor: 'white',
+    backgroundColor: colors.background,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-    borderRadius: 12,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    gap: spacing.md,
+    paddingVertical: spacing.md,
+    paddingLeft: spacing.lg,
+    paddingRight: spacing.sm,
+    borderRadius: radius.lg,
+    ...elevation.floating,
+  },
+  badge: {
+    backgroundColor: colors.text,
+    borderRadius: radius.sm - 2,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+  },
+  badgeText: {
+    fontFamily: fonts.semibold,
+    fontSize: 15,
+    letterSpacing: 0.3,
+    color: colors.textOnDark,
   },
   content: {
     flex: 1,
   },
-  label: {
-    fontSize: 12,
-    color: '#666',
-    fontFamily: 'Lexend_400Regular',
-  },
-  code: {
-    fontSize: 20,
-    color: '#303030',
-    fontFamily: 'Lexend_600SemiBold',
-    marginTop: 2,
-  },
   closeButton: {
-    padding: 8,
-    marginLeft: 10,
+    padding: spacing.sm,
   },
 });

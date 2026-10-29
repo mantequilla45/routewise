@@ -1,8 +1,9 @@
+import { colors, spacing, type } from '@/theme';
 import { MappedGeoRouteResult } from '@/types/GeoTypes';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import RouteCard from './RouteCard';
 
-/** Scrollable list of route results. Renders nothing when there are no results. */
+/** Scrollable list of route results, fastest first. Renders nothing when there are no results. */
 export default function RouteResultsList({
   results,
   selectedRouteIndex,
@@ -17,50 +18,44 @@ export default function RouteResultsList({
   }
 
   return (
-    <View style={styles.routeList}>
-      <Text style={styles.resultsTitle}>Results</Text>
+    <View style={styles.container}>
+      <Text style={[type.overline, styles.header]}>
+        {results.length} {results.length === 1 ? 'route' : 'routes'} · fastest first
+      </Text>
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.routeCardContainer}
-        showsVerticalScrollIndicator={true}
-        nestedScrollEnabled={true}
-        scrollEnabled={true}
+        showsVerticalScrollIndicator={false}
+        nestedScrollEnabled
       >
-        {results.map((route, index) => {
-          return (
+        {results.map((route, index) => (
+          <View key={`route-${index}-${route.routeId}`}>
+            {index > 0 && <View style={styles.divider} />}
             <RouteCard
-              key={`route-${index}-${route.routeId}`}
               route={route}
               isSelected={selectedRouteIndex === index}
               onSelect={() => onSelect(index)}
             />
-          );
-        })}
+          </View>
+        ))}
       </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  routeList: {
-    marginTop: 10,
-    width: '100%',
-    minHeight: 400,
-    maxHeight: 800,
+  container: {
+    marginTop: spacing.lg,
   },
-
-  resultsTitle: {
-    color: 'white',
-    fontFamily: 'Lexend_400Regular',
-    marginBottom: 10,
+  header: {
+    marginBottom: spacing.xs,
+    paddingHorizontal: spacing.md,
   },
-
   scrollView: {
-    maxHeight: 400,
+    maxHeight: 360,
   },
-
-  routeCardContainer: {
-    paddingBottom: 10,
-    gap: 15,
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border,
+    marginHorizontal: spacing.md,
   },
 });

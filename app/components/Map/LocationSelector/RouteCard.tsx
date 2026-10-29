@@ -1,180 +1,153 @@
+import { MultiRouteResult } from '@/services/routes/calculateMultiRoutes';
+import { colors, fonts, radius, spacing, type } from '@/theme';
 import { MappedGeoRouteResult } from '@/types/GeoTypes';
 import { Ionicons } from '@expo/vector-icons';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { MultiRouteResult } from '@/services/routes/calculateMultiRoutes';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 function formatMeters(meters: number) {
   return meters < 1000 ? `${Math.round(meters)} m` : `${(meters / 1000).toFixed(1)} km`;
+}
+
+function RouteBadge({ code }: Readonly<{ code: string }>) {
+  return (
+    <View style={styles.badge}>
+      <Text style={styles.badgeText}>{code}</Text>
+    </View>
+  );
 }
 
 type RouteCardProps = {
   route: MappedGeoRouteResult | MultiRouteResult;
   isSelected?: boolean;
   onSelect?: () => void;
-  onSave?: () => void;
-  isSaved?: boolean;
 };
 
+/** One route result row: jeep code(s), estimated time, walking, and fare. */
 export default function RouteCard({
   route,
   isSelected = false,
   onSelect,
-  onSave,
-  isSaved = false,
 }: Readonly<RouteCardProps>) {
   const isTransfer = 'isTransfer' in route && route.isTransfer;
+  const fare = isTransfer && route.totalFare ? route.totalFare : route.fare;
+  const rideMeters = route.distance ?? route.distanceMeters;
   const hasWalk = route.boardingWalk != null && route.alightingWalk != null;
+  const totalWalk = hasWalk ? route.boardingWalk! + route.alightingWalk! : null;
 
   return (
-    <TouchableOpacity onPress={onSelect} activeOpacity={0.7}>
-      <View style={[styles.routeCard, isSelected && styles.selectedCard]}>
-        <View style={[styles.contentWrapper, isTransfer && styles.contentWrapperTransfer]}>
-          <View style={styles.routeInfo}>
-            {isTransfer ? (
-              <View style={styles.transferRoutesContainer}>
-                <View style={styles.transferRouteRow}>
-                  <Text style={styles.routeCode}>
-                    {route.firstRoute?.routeCode || route.firstRoute?.routeId}
-                  </Text>
-                  <Ionicons
-                    name="arrow-forward"
-                    size={20}
-                    color="#2D2D2D"
-                    style={styles.transferArrow}
-                  />
-                  <Text style={styles.routeCode}>
-                    {route.secondRoute?.routeCode || route.secondRoute?.routeId}
-                  </Text>
-                </View>
-                <Text style={styles.transferLabel}>2 Jeeps Required</Text>
-              </View>
-            ) : (
-              <Text style={styles.routeCode}>{route.routeCode || route.routeId}</Text>
-            )}
-            {hasWalk && (
-              <View style={styles.walkRow}>
-                <Ionicons name="walk" size={14} color="#555" />
-                <Text style={styles.walkText}>
-                  {route.estimatedMinutes != null && `~${route.estimatedMinutes} min · `}
-                  {formatMeters(route.boardingWalk!)} to board ·{' '}
-                  {formatMeters(route.alightingWalk!)} to destination
-                </Text>
-              </View>
-            )}
-          </View>
-        </View>
-        <View style={[styles.priceBox, isTransfer && styles.priceBoxTransfer]}>
-          <Text style={styles.fare}>
-            P{isTransfer && route.totalFare ? route.totalFare : route.fare}
-          </Text>
-          {isTransfer && (
-            <Text style={styles.fareBreakdown}>
-              P{route.firstRoute?.fare} + P{route.secondRoute?.fare}
-            </Text>
+    <Pressable
+      onPress={onSelect}
+      style={({ pressed }) => [
+        styles.row,
+        isSelected && styles.rowSelected,
+        pressed && styles.rowPressed,
+      ]}
+      accessibilityRole="button"
+      accessibilityState={{ selected: isSelected }}
+    >
+      <View style={styles.main}>
+        <View style={styles.codes}>
+          {isTransfer ? (
+            <>
+              <RouteBadge code={route.firstRoute?.routeCode || route.firstRoute?.routeId || '?'} />
+              <Ionicons name="chevron-forward" size={14} color={colors.textTertiary} />
+              <RouteBadge
+                code={route.secondRoute?.routeCode || route.secondRoute?.routeId || '?'}
+              />
+            </>
+          ) : (
+            <RouteBadge code={route.routeCode || route.routeId} />
+          )}
+          {route.estimatedMinutes != null && (
+            <Text style={styles.minutes}>{route.estimatedMinutes} min</Text>
           )}
         </View>
+
+        <View style={styles.meta}>
+          {totalWalk != null && (
+            <View style={styles.metaItem}>
+              <Ionicons name="walk" size={13} color={colors.textSecondary} />
+              <Text style={type.caption}>{formatMeters(totalWalk)}</Text>
+            </View>
+          )}
+          {rideMeters != null && (
+            <View style={styles.metaItem}>
+              <Ionicons name="bus-outline" size={13} color={colors.textSecondary} />
+              <Text style={type.caption}>{formatMeters(rideMeters)}</Text>
+            </View>
+          )}
+          {isTransfer && <Text style={type.caption}>1 transfer</Text>}
+        </View>
       </View>
-    </TouchableOpacity>
+
+      <View style={styles.fareBlock}>
+        <Text style={styles.fare}>₱{fare}</Text>
+        {isTransfer && (
+          <Text style={type.caption}>
+            ₱{route.firstRoute?.fare} + ₱{route.secondRoute?.fare}
+          </Text>
+        )}
+      </View>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  routeCard: {
-    width: '100%',
-    backgroundColor: '#FFCC66',
-    borderRadius: 10,
+  row: {
     flexDirection: 'row',
-    position: 'relative',
-    overflow: 'hidden',
-    borderWidth: 3,
-    borderColor: '#FFCC66',
-    minHeight: 80,
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.md,
+    gap: spacing.md,
   },
-  selectedCard: {
-    borderColor: '#4CAF50',
-    backgroundColor: '#E8F5E9',
+  rowSelected: {
+    backgroundColor: colors.accentSubtle,
   },
-  contentWrapper: {
+  rowPressed: {
+    backgroundColor: colors.surface,
+  },
+  main: {
     flex: 1,
-    paddingHorizontal: 25,
-    paddingVertical: 15,
-    justifyContent: 'center',
+    gap: spacing.xs + 2,
   },
-  contentWrapperTransfer: {
-    paddingVertical: 20,
-  },
-  routeInfo: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  priceBox: {
-    aspectRatio: 1,
-    backgroundColor: '#E6B85C', // Darker shade of yellow
-    justifyContent: 'center',
-    alignItems: 'center',
-    minWidth: 80,
-  },
-  priceBoxTransfer: {
-    minWidth: 100,
-  },
-  transferRoutesContainer: {
-    gap: 8,
-  },
-  transferRouteRow: {
+  codes: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: spacing.xs + 2,
   },
-  transferArrow: {
-    marginHorizontal: 5,
+  badge: {
+    backgroundColor: colors.text,
+    borderRadius: radius.sm - 2,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
   },
-  walkRow: {
+  badgeText: {
+    fontFamily: fonts.semibold,
+    fontSize: 14,
+    letterSpacing: 0.3,
+    color: colors.textOnDark,
+  },
+  minutes: {
+    ...type.bodyMedium,
+    marginLeft: spacing.xs,
+  },
+  meta: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    marginTop: 4,
+    gap: spacing.md,
   },
-  walkText: {
-    fontSize: 12,
-    color: '#555',
-    fontFamily: 'Lexend_400Regular',
+  metaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
   },
-  transferLabel: {
-    fontSize: 12,
-    color: '#666',
-    fontFamily: 'Lexend_400Regular',
-    marginTop: 4,
-  },
-  fareBreakdown: {
-    fontSize: 12,
-    color: '#2D2D2D',
-    fontFamily: 'Lexend_400Regular',
-    marginTop: 4,
-  },
-  routeCode: {
-    fontFamily: 'Lexend_600SemiBold',
-    fontSize: 32,
-    color: '#2D2D2D',
+  fareBlock: {
+    alignItems: 'flex-end',
   },
   fare: {
-    fontFamily: 'Lexend_600SemiBold',
-    fontSize: 30,
-    color: '#2D2D2D',
-  },
-  route: {
-    fontFamily: 'Lexend_400Regular',
-    fontSize: 16,
-    color: '#2D2D2D',
-  },
-  icon: {
-    width: 20,
-    height: 20,
-  },
-  routeSave: {
-    width: '15%',
-  },
-  routeCardSmallText: {
-    fontFamily: 'Lexend_400Regular',
-    color: '#FFFFFF',
+    fontFamily: fonts.semibold,
+    fontSize: 17,
+    color: colors.text,
   },
 });

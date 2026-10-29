@@ -1,42 +1,37 @@
 import { latLongStringifier } from '@/lib/util/latLngStringifier';
+import { colors, radius, spacing, type } from '@/theme';
 import { LatLng } from '@/types/GeoTypes';
 import { Ionicons } from '@expo/vector-icons';
-import { ComponentProps } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-
-type IoniconName = ComponentProps<typeof Ionicons>['name'];
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 function PointRow({
-  icon,
-  label,
+  placeholder,
+  point,
   onPress,
-}: Readonly<{ icon: IoniconName; label: string; onPress: () => void }>) {
+}: Readonly<{ placeholder: string; point: LatLng | null; onPress: () => void }>) {
   return (
-    <TouchableOpacity onPress={onPress}>
-      <View style={styles.pointInputRow}>
-        <View style={styles.pointInputBlock}>
-          <View style={styles.pointInputIconLeft}>
-            <Ionicons name={icon} color="blue" size={18} />
-          </View>
-          <Text style={styles.pointInputText} numberOfLines={1} ellipsizeMode="tail">
-            {label}
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+      accessibilityRole="button"
+      accessibilityLabel={point ? `${placeholder}: pinned` : placeholder}
+    >
+      <View style={styles.rowText}>
+        <Text style={point ? type.bodyMedium : styles.placeholder} numberOfLines={1}>
+          {point ? 'Pinned on map' : placeholder}
+        </Text>
+        {point && (
+          <Text style={type.caption} numberOfLines={1}>
+            {latLongStringifier(point)}
           </Text>
-        </View>
-
-        <View style={[styles.pointInputBlock, { justifyContent: 'flex-end' }]}>
-          <Text style={styles.pointPickerText} numberOfLines={1}>
-            Select on Map
-          </Text>
-          <View style={styles.pointInputIconRight}>
-            <Ionicons name={'globe-outline'} color={'black'} size={16} />
-          </View>
-        </View>
+        )}
       </View>
-    </TouchableOpacity>
+      <Ionicons name="map-outline" size={18} color={colors.textTertiary} />
+    </Pressable>
   );
 }
 
-/** The two "Select on Map" rows for the starting point (A) and destination (B). */
+/** "From" and "To" fields joined by a route connector, each opening pin placement on the map. */
 export default function PointPicker({
   pointA,
   pointB,
@@ -49,87 +44,74 @@ export default function PointPicker({
   onSelectPointB: () => void;
 }>) {
   return (
-    <View style={styles.pointInputBox}>
-      <View style={styles.pointInputContainer}>
-        <PointRow
-          icon="navigate-circle-outline"
-          label={pointA ? latLongStringifier(pointA) : 'Select starting point'}
-          onPress={onSelectPointA}
-        />
-
-        <View style={styles.line}></View>
-
-        <PointRow
-          icon="location-outline"
-          label={pointB ? latLongStringifier(pointB) : 'Select destination'}
-          onPress={onSelectPointB}
-        />
+    <View style={styles.container}>
+      <View style={styles.connector}>
+        <View style={styles.originDot} />
+        <View style={styles.connectorLine} />
+        <Ionicons name="location-sharp" size={16} color={colors.destination} />
+      </View>
+      <View style={styles.fields}>
+        <PointRow placeholder="Choose starting point" point={pointA} onPress={onSelectPointA} />
+        <View style={styles.divider} />
+        <PointRow placeholder="Choose destination" point={pointB} onPress={onSelectPointB} />
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  pointInputBox: {
-    backgroundColor: '#D9D9D9',
-    padding: 8,
-    borderRadius: 8,
+  container: {
     flexDirection: 'row',
-    alignItems: 'stretch',
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    paddingLeft: spacing.md,
   },
-
-  pointInputContainer: {
+  connector: {
+    width: 16,
+    alignItems: 'center',
+    paddingVertical: 22,
+    gap: spacing.xs,
+  },
+  originDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 2.5,
+    borderColor: colors.origin,
+    backgroundColor: colors.background,
+  },
+  connectorLine: {
     flex: 1,
-    flexDirection: 'column',
-    justifyContent: 'center',
-    alignItems: 'stretch',
+    width: 1.5,
+    backgroundColor: colors.textTertiary,
+    opacity: 0.5,
   },
-
-  pointInputRow: {
+  fields: {
+    flex: 1,
+  },
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
-    width: '100%',
-    paddingVertical: 8,
+    gap: spacing.sm,
+    minHeight: 58,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
-
-  pointInputBlock: {
-    flexDirection: 'row',
-    width: '50%',
+  rowPressed: {
+    backgroundColor: colors.surfacePressed,
   },
-
-  pointInputIconLeft: {
-    width: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 8,
+  rowText: {
+    flex: 1,
+    gap: spacing.xxs,
   },
-
-  pointInputIconRight: {
-    width: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 8,
+  placeholder: {
+    ...type.body,
+    color: colors.textTertiary,
   },
-
-  pointInputText: {
-    fontWeight: 'bold',
-    color: '#000',
-    fontSize: 14,
-    flexShrink: 1,
-    fontFamily: 'Lexend_400Regular',
-  },
-
-  pointPickerText: {
-    color: '#000',
-    fontSize: 12,
-    flexShrink: 1,
-    fontFamily: 'Lexend_300Light',
-  },
-
-  line: {
-    height: 1,
-    backgroundColor: '#6C6C6C',
-    width: '100%',
-    marginVertical: 4,
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border,
+    marginRight: spacing.md,
+    marginLeft: spacing.md,
   },
 });

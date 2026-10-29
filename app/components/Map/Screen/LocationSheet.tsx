@@ -1,6 +1,7 @@
 import MapModalContent from '@/components/Map/LocationSelector/SelectorContent';
 import { MapPointsContext } from '@/context/map-context';
 import { useContext } from 'react';
+import { colors, elevation, radius, spacing, ui } from '@/theme';
 import { Animated, GestureResponderHandlers, StyleSheet, View } from 'react-native';
 
 type Props = {
@@ -35,7 +36,7 @@ export default function LocationSheet({
       {/* Extended background for bounce effect */}
       <View style={styles.extension} />
 
-      <View style={styles.dragHandle} />
+      <View style={[ui.handle, styles.dragHandle]} />
       <MapModalContent
         exit={() => hideModal()}
         setShowBottomSheet={(value) => (value ? showModal() : hideModal())}
@@ -49,33 +50,28 @@ export default function LocationSheet({
 const styles = StyleSheet.create({
   sheet: {
     position: 'absolute',
-    bottom: 0, // Sit at bottom, let content push it up
+    bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#303030',
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    paddingHorizontal: 20,
-    paddingTop: 15,
-    paddingBottom: 20, // Add padding for tab bar
-    zIndex: 10, // Above map
-    elevation: 10, // For Android
+    backgroundColor: colors.background,
+    borderTopLeftRadius: radius.sheet,
+    borderTopRightRadius: radius.sheet,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xl,
+    zIndex: 10,
+    ...elevation.sheet,
   },
+  // Extends the sheet's background below the screen so the bounce never shows a gap
   extension: {
     position: 'absolute',
     bottom: -200,
-    left: -20,
-    right: -20,
+    left: 0,
+    right: 0,
     height: 250,
-    backgroundColor: '#303030',
+    backgroundColor: colors.background,
   },
   dragHandle: {
-    width: 40,
-    height: 5,
-    backgroundColor: '#666',
-    borderRadius: 3,
-    alignSelf: 'center',
-    marginBottom: 10,
-    marginTop: -5,
+    marginBottom: spacing.md,
   },
 });
