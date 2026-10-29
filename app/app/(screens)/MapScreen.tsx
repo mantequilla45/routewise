@@ -66,7 +66,8 @@ export default function MapScreen() {
         <NativeMap ref={mapRef} />
       </View>
 
-      <RouteInfoHeader />
+      {/* Only over the map: while the sheet is open, the selected row shows the route instead */}
+      {!isModalVisible && <RouteInfoHeader />}
 
       <PinPlacementOverlay onCancel={handleCancelPlacement} onConfirm={handleConfirmLocation} />
 

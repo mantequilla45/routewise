@@ -1,6 +1,6 @@
 import { colors, spacing, type } from '@/theme';
 import { MappedGeoRouteResult } from '@/types/GeoTypes';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import RouteCard from './RouteCard';
 
 /** Scrollable list of route results, fastest first. Renders nothing when there are no results. */
@@ -13,6 +13,9 @@ export default function RouteResultsList({
   selectedRouteIndex: number | null;
   onSelect: (index: number) => void;
 }>) {
+  // Keep the sheet short enough that the map stays visible above it.
+  const { height } = useWindowDimensions();
+
   if (!results || results.length === 0) {
     return null;
   }
@@ -23,7 +26,7 @@ export default function RouteResultsList({
         {results.length} {results.length === 1 ? 'route' : 'routes'} · fastest first
       </Text>
       <ScrollView
-        style={styles.scrollView}
+        style={{ maxHeight: Math.round(height * 0.32) }}
         showsVerticalScrollIndicator={false}
         nestedScrollEnabled
       >
@@ -49,9 +52,6 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: spacing.xs,
     paddingHorizontal: spacing.md,
-  },
-  scrollView: {
-    maxHeight: 360,
   },
   divider: {
     height: StyleSheet.hairlineWidth,
