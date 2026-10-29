@@ -6,16 +6,16 @@ import {
   ActivityIndicator,
   FlatList,
   RefreshControl,
+  Pressable,
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MapPointsContext } from '@/context/map-context';
-import Button from '@/components/Button';
 import { api } from '@/lib/api';
-import { colors } from '@/theme';
+import { colors, hairline, radius, spacing, type, ui } from '@/theme';
 
 interface Route {
   id: string;
@@ -31,6 +31,7 @@ export default function RoutesScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const {
     setRoutes: setMapRoutes,
     setAllRoutes,
@@ -104,75 +105,85 @@ export default function RoutesScreen() {
     setRoutes(sorted);
   };
 
-  const renderRoute = ({ item }: { item: Route }) => {
-    return (
-      <TouchableOpacity
-        style={styles.routeCard}
-        onPress={() => handleRouteSelect(item)}
-        activeOpacity={0.7}
-      >
-        <View style={styles.routeHeader}>
-          <View style={styles.routeInfo}>
-            <Text style={styles.routeCode}>{item.route_id}</Text>
-            <Text style={styles.routeName}>{item.route_code}</Text>
-          </View>
-          <View style={styles.routeActions}>
-            <View
-              style={[styles.colorIndicator, { backgroundColor: item.route_color || '#33ff00' }]}
-            />
-            <Ionicons name="chevron-forward" size={24} color="#666" />
-          </View>
-        </View>
-      </TouchableOpacity>
-    );
-  };
+  const renderRoute = ({ item }: { item: Route }) => (
+    <Pressable
+      onPress={() => handleRouteSelect(item)}
+      style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+      accessibilityRole="button"
+    >
+      <View style={styles.badge}>
+        <Text style={type.badge}>{item.route_id}</Text>
+      </View>
+      <Text style={[type.body, styles.rowName]} numberOfLines={1}>
+        {item.route_code}
+      </Text>
+      <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+    </Pressable>
+  );
 
   if (loading) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#FFCC66" />
-        <Text style={styles.loadingText}>Loading routes...</Text>
+      <View style={[ui.screen, styles.center]}>
+        <ActivityIndicator size="large" color={colors.textSecondary} />
+        <Text style={type.caption}>Loading routes…</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.heading}>
-        <Text style={styles.headingText}>Browse all jeepney routes.</Text>
-        <View style={styles.searchContainer}>
-          <Ionicons name="search-outline" size={20} color="gray" />
+    <View style={[ui.screen, { paddingTop: insets.top + spacing.lg }]}>
+      <View style={styles.header}>
+        <View>
+          <Text style={type.title}>Routes</Text>
+          <Text style={type.caption}>Browse all jeepney routes.</Text>
+        </View>
+        <View>
+          <Ionicons
+            name="search"
+            size={SEARCH_ICON_SIZE}
+            color={colors.textTertiary}
+            style={styles.searchIcon}
+          />
           <TextInput
-            placeholder="Search routes..."
+            placeholder="Search routes"
+            placeholderTextColor={colors.textTertiary}
             value={searchQuery}
             onChangeText={setSearchQuery}
-            style={styles.searchBox}
+            style={[ui.input, styles.searchInput]}
           />
         </View>
+        <View style={styles.toolbar}>
+          <Text style={type.caption}>{filteredRoutes.length} routes</Text>
+          <Pressable
+            onPress={sortAlphabetically}
+            style={({ pressed }) => [styles.chip, pressed && styles.chipPressed]}
+            accessibilityRole="button"
+          >
+            <Text style={type.label}>Sort A–Z</Text>
+          </Pressable>
+        </View>
       </View>
-
-      <View style={styles.recentHeading}>
-        <Button label="Sort A-Z" onPress={sortAlphabetically} theme="tags" />
-        <Text style={styles.recentText}>{filteredRoutes.length} Routes Available</Text>
-      </View>
+      <View style={ui.divider} />
 
       <FlatList
         data={filteredRoutes}
         renderItem={renderRoute}
         keyExtractor={(item) => item.id}
+        ItemSeparatorComponent={RowDivider}
         contentContainerStyle={styles.listContent}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={['#FFCC66']}
-            tintColor="#FFCC66"
+            colors={[colors.textSecondary]}
+            tintColor={colors.textSecondary}
           />
         }
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Ionicons name="bus-outline" size={64} color="#666" />
-            <Text style={styles.emptyText}>No routes found</Text>
+          <View style={styles.empty}>
+            <Ionicons name="bus-outline" size={40} color={colors.textTertiary} />
+            <Text style={type.heading}>No routes found</Text>
+            <Text style={[type.caption, styles.emptyCaption]}>Try a different route code.</Text>
           </View>
         }
       />
@@ -180,115 +191,81 @@ export default function RoutesScreen() {
   );
 }
 
+function RowDivider() {
+  return <View style={styles.rowDivider} />;
+}
+
+const SEARCH_ICON_SIZE = 18;
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingHorizontal: 40,
-    paddingTop: 80,
-    backgroundColor: 'white',
-  },
-  centerContainer: {
-    flex: 1,
+  center: {
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'white',
+    gap: spacing.md,
   },
-  heading: {
-    gap: 20,
-    width: '100%',
+  header: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.sm,
+    gap: spacing.md,
   },
-  headingText: {
-    fontFamily: 'Lexend_500Medium',
-    fontSize: 20,
-    textAlignVertical: 'center',
-    color: '#303030',
+  searchIcon: {
+    position: 'absolute',
+    left: spacing.md,
+    top: (ui.input.height - SEARCH_ICON_SIZE) / 2,
+    zIndex: 1,
   },
-  searchContainer: {
-    backgroundColor: '#D9D9D9',
-    height: 45,
-    borderRadius: 10,
-    paddingLeft: 15,
+  searchInput: {
+    paddingLeft: spacing.md + SEARCH_ICON_SIZE + spacing.sm,
+  },
+  toolbar: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'space-between',
   },
-  searchBox: {
-    height: '100%',
-    flex: 1,
-    fontFamily: 'Lexend_300Light',
-    color: '#303030',
+  chip: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs + 2,
   },
-  recentHeading: {
-    marginVertical: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  recentText: {
-    marginLeft: 12,
-    fontFamily: 'Lexend_400Regular',
-    color: '#303030',
+  chipPressed: {
+    backgroundColor: colors.surfacePressed,
   },
   listContent: {
-    paddingBottom: 100,
+    paddingBottom: spacing.xxl,
   },
-  routeCard: {
-    backgroundColor: '#FFCC66',
-    borderRadius: 10,
-    marginBottom: 12,
-    borderWidth: 3,
-    borderColor: '#FFCC66',
-    overflow: 'hidden',
-  },
-  routeHeader: {
+  row: {
+    minHeight: 56,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
   },
-  routeInfo: {
+  rowPressed: {
+    backgroundColor: colors.surface,
+  },
+  rowName: {
     flex: 1,
   },
-  routeCode: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: '#303030',
-    fontFamily: 'Lexend_600SemiBold',
+  badge: {
+    backgroundColor: colors.text,
+    borderRadius: radius.sm - 2,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
   },
-  routeName: {
-    fontSize: 14,
-    color: '#303030',
-    marginTop: 2,
-    fontFamily: 'Lexend_400Regular',
+  rowDivider: {
+    height: hairline,
+    backgroundColor: colors.border,
+    marginLeft: spacing.lg,
   },
-  routeActions: {
-    flexDirection: 'row',
+  empty: {
     alignItems: 'center',
-    gap: 8,
+    paddingTop: spacing.xxl * 2,
+    paddingHorizontal: spacing.xl,
+    gap: spacing.sm,
   },
-  colorIndicator: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: '#303030',
-  },
-  loadingText: {
-    color: '#666',
-    marginTop: 12,
-    fontSize: 16,
-    fontFamily: 'Lexend_400Regular',
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 60,
-  },
-  emptyText: {
-    color: '#666',
-    fontSize: 16,
-    marginTop: 12,
-    fontFamily: 'Lexend_400Regular',
+  emptyCaption: {
     textAlign: 'center',
   },
 });

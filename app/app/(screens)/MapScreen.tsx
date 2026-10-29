@@ -67,7 +67,7 @@ export default function MapScreen() {
       </View>
 
       {/* Only over the map: while the sheet is open, the selected row shows the route instead */}
-      {!isModalVisible && <RouteInfoHeader />}
+      {!isModalVisible && <RouteInfoHeader onCloseResult={() => showModal()} />}
 
       <PinPlacementOverlay onCancel={handleCancelPlacement} onConfirm={handleConfirmLocation} />
 

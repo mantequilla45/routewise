@@ -1,5 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 import MapScreen from '../(screens)/MapScreen';
+import { colors } from '@/theme';
 
 export default function Index() {
   return (
@@ -22,14 +23,14 @@ const styles = StyleSheet.create({
     right: 60,
     paddingVertical: 16,
     paddingHorizontal: 32,
-    backgroundColor: '#FFCC66',
+    backgroundColor: colors.accent,
     borderRadius: 10,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
   fabText: {
-    color: '#000',
+    color: colors.textOnAccent,
     fontSize: 16,
   },
 });

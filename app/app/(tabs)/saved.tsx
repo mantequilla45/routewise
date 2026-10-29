@@ -1,13 +1,14 @@
-import Button from '@/components/Button';
 import DynamicBoxes from '@/components/SavedRoute/DynamicBoxes';
 import { api, type SavedRouteRow, type TransferPoints } from '@/lib/api';
 import { useAuth } from '@/context/auth';
 import { MapPointsContext } from '@/context/map-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useState, type ComponentProps } from 'react';
 import { StyleSheet, Text, TextInput, View, Alert, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { colors, spacing, type, ui } from '@/theme';
 
 export interface SavedRoute {
   id: string;
@@ -58,6 +59,7 @@ export default function Saved() {
   const [searchQuery, setSearchQuery] = useState('');
   const [routes, setRoutes] = useState<SavedRoute[]>([]);
   const [loading, setLoading] = useState(true);
+  const insets = useSafeAreaInsets();
 
   // Show the spinner again whenever the signed-in user changes (set during render, not in
   // the effect, so the fetch below doesn't trigger an extra render).
@@ -87,10 +89,6 @@ export default function Saved() {
       ignore = true;
     };
   }, [user]);
-
-  const sortRecent = () => {
-    // Sort logic here
-  };
 
   const toggleFavorite = (id: string) => {
     setRoutes((prevRoutes) =>
@@ -167,41 +165,49 @@ export default function Saved() {
     );
   });
   return (
-    <View style={styles.container}>
-      <View style={styles.heading}>
-        <Text style={styles.headingText}>Find your saved routes.</Text>
-        <View style={styles.searchContainer}>
-          <Ionicons name="search-outline" size={20} color="gray" />
+    <View style={[ui.screen, { paddingTop: insets.top + spacing.lg }]}>
+      <View style={styles.header}>
+        <View>
+          <Text style={type.title}>Saved</Text>
+          <Text style={type.caption}>
+            {user ? `${filteredRoutes.length} saved routes` : 'Find your saved routes.'}
+          </Text>
+        </View>
+        <View>
+          <Ionicons
+            name="search"
+            size={SEARCH_ICON_SIZE}
+            color={colors.textTertiary}
+            style={styles.searchIcon}
+          />
           <TextInput
-            placeholder="Find destination..."
+            placeholder="Find destination"
+            placeholderTextColor={colors.textTertiary}
             value={searchQuery}
             onChangeText={setSearchQuery}
-            style={styles.searchBox}
-          ></TextInput>
+            style={[ui.input, styles.searchInput]}
+          />
         </View>
       </View>
-      <View style={styles.recentHeading}>
-        <Button label="Recent" onPress={sortRecent} theme="tags" />
-        <Text style={styles.recentText}>{filteredRoutes.length} Saved Routes</Text>
-      </View>
-      <View style={styles.savedContainer}>
+      <View style={ui.divider} />
+      <View style={styles.body}>
         {!user ? (
-          <View style={styles.emptyContainer}>
-            <Ionicons name="person-outline" size={64} color="#ccc" />
-            <Text style={styles.emptyText}>Please login</Text>
-            <Text style={styles.emptySubtext}>Login to see your saved routes</Text>
-          </View>
+          <EmptyState
+            icon="person-outline"
+            title="Please login"
+            caption="Login to see your saved routes"
+          />
         ) : loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#007AFF" />
-            <Text style={styles.loadingText}>Loading saved routes...</Text>
+          <View style={styles.center}>
+            <ActivityIndicator size="large" color={colors.textSecondary} />
+            <Text style={type.caption}>Loading saved routes…</Text>
           </View>
         ) : filteredRoutes.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Ionicons name="bookmark-outline" size={64} color="#ccc" />
-            <Text style={styles.emptyText}>No saved routes yet</Text>
-            <Text style={styles.emptySubtext}>Calculate a route and save it to see it here</Text>
-          </View>
+          <EmptyState
+            icon="bookmark-outline"
+            title="No saved routes yet"
+            caption="Calculate a route and save it to see it here"
+          />
         ) : (
           <DynamicBoxes
             routes={filteredRoutes}
@@ -215,75 +221,48 @@ export default function Saved() {
   );
 }
 
+function EmptyState({
+  icon,
+  title,
+  caption,
+}: Readonly<{ icon: ComponentProps<typeof Ionicons>['name']; title: string; caption: string }>) {
+  return (
+    <View style={styles.center}>
+      <Ionicons name={icon} size={40} color={colors.textTertiary} />
+      <Text style={type.heading}>{title}</Text>
+      <Text style={[type.caption, styles.centerText]}>{caption}</Text>
+    </View>
+  );
+}
+
+const SEARCH_ICON_SIZE = 18;
+
 const styles = StyleSheet.create({
-  container: {
+  header: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.md,
+    gap: spacing.md,
+  },
+  searchIcon: {
+    position: 'absolute',
+    left: spacing.md,
+    top: (ui.input.height - SEARCH_ICON_SIZE) / 2,
+    zIndex: 1,
+  },
+  searchInput: {
+    paddingLeft: spacing.md + SEARCH_ICON_SIZE + spacing.sm,
+  },
+  body: {
     flex: 1,
-    paddingHorizontal: 40,
-    paddingTop: 80,
   },
-  heading: {
-    gap: 20,
-    width: '100%',
-  },
-  headingText: {
-    fontFamily: 'Lexend_500Medium',
-    fontSize: 20,
-    textAlignVertical: 'center',
-  },
-  searchContainer: {
-    backgroundColor: '#D9D9D9',
-    height: 45,
-    borderRadius: 10,
-    paddingLeft: 15,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  searchBox: {
-    height: '100%',
-    width: '100%',
-    fontFamily: 'Lexend_300Light',
-  },
-  recentHeading: {
-    marginVertical: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  recentText: {
-    marginLeft: 12,
-    fontFamily: 'Lexend_400Regular',
-  },
-  savedContainer: {
-    flex: 1,
-    width: '100%',
-  },
-  loadingContainer: {
+  center: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 12,
+    paddingHorizontal: spacing.xl,
+    gap: spacing.sm,
   },
-  loadingText: {
-    fontFamily: 'Lexend_300Light',
-    color: '#666',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 8,
-  },
-  emptyText: {
-    fontFamily: 'Lexend_500Medium',
-    fontSize: 18,
-    color: '#666',
-    marginTop: 12,
-  },
-  emptySubtext: {
-    fontFamily: 'Lexend_300Light',
-    fontSize: 14,
-    color: '#999',
+  centerText: {
     textAlign: 'center',
-    paddingHorizontal: 40,
   },
 });

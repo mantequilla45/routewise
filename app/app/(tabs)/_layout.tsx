@@ -3,12 +3,13 @@ import { Tabs } from 'expo-router';
 import type { ComponentProps } from 'react';
 import type { ColorValue } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { colors, hairline, spacing, type } from '@/theme';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
 
 // Tab colors may arrive as processed native numbers; Ionicons only accepts strings.
 function TabIcon({ color, name }: { color: ColorValue; name: IconName }) {
-  return <Ionicons name={name} color={typeof color === 'string' ? color : undefined} size={24} />;
+  return <Ionicons name={name} color={typeof color === 'string' ? color : undefined} size={22} />;
 }
 
 export default function TabLayout() {
@@ -16,30 +17,20 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#FFCC66',
-        headerStyle: {
-          backgroundColor: '#fff',
-        },
-        headerTitleStyle: {
-          fontFamily: 'Lexend_600SemiBold',
-          color: '#303030',
-          fontSize: 24,
-        },
         headerShown: false,
-        headerShadowVisible: true,
-        headerTintColor: '#fff',
+        tabBarActiveTintColor: colors.text,
+        tabBarInactiveTintColor: colors.textTertiary,
         tabBarStyle: {
-          backgroundColor: '#25292e',
-          paddingTop: 10,
-          paddingBottom: insets.bottom > 0 ? insets.bottom : 10,
-          borderRadius: 0,
-          height: 70 + (insets.bottom > 0 ? insets.bottom : 0),
-          borderTopWidth: 1,
-          borderTopColor: '#404040',
+          backgroundColor: colors.tabBar,
+          paddingTop: spacing.sm,
+          paddingBottom: insets.bottom > 0 ? insets.bottom : spacing.sm,
+          height: 60 + (insets.bottom > 0 ? insets.bottom : 0),
+          borderTopWidth: hairline,
+          borderTopColor: colors.border,
+          elevation: 0,
+          shadowOpacity: 0,
         },
-        tabBarLabelStyle: {
-          fontFamily: 'Lexend_400Regular',
-        },
+        tabBarLabelStyle: type.tabLabel,
       }}
     >
       <Tabs.Screen

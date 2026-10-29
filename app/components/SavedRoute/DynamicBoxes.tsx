@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SavedRoute } from '@/app/(tabs)/saved';
+import { colors, hairline, radius, spacing, type } from '@/theme';
 
 interface DynamicBoxesProps {
   routes: SavedRoute[];
@@ -10,67 +11,69 @@ interface DynamicBoxesProps {
   onDelete?: (id: string) => void;
 }
 
-export default function DynamicBoxes({
-  routes,
-  onToggleFavorite,
-  onRouteSelect,
-  onDelete,
-}: DynamicBoxesProps) {
-  const renderRoute = ({ item }: { item: SavedRoute }) => (
-    <TouchableOpacity onPress={() => onRouteSelect && onRouteSelect(item)} activeOpacity={0.7}>
-      <View style={styles.routeBox}>
-        <View style={styles.routeHeader}>
-          <View style={styles.jeepCodeContainer}>
-            <Text style={styles.jeepCode}>{item.jeepCode}</Text>
-          </View>
-          <View style={styles.headerActions}>
-            {item.totalFare && (
-              <View style={styles.fareContainer}>
-                <Text style={styles.fareText}>₱{item.totalFare}</Text>
-              </View>
-            )}
-            <TouchableOpacity
-              onPress={(e) => {
-                e.stopPropagation(); // Prevent triggering route selection
-                onDelete && onDelete(item.id);
-              }}
-            >
-              <Ionicons name="trash-outline" size={24} color="#FF6B6B" />
-            </TouchableOpacity>
-          </View>
-        </View>
-        <View style={styles.routeDetails}>
-          <View style={styles.locationRow}>
-            <Ionicons name="location" size={16} color="#4CAF50" />
-            <Text style={styles.locationText} numberOfLines={1}>
-              {item.start}
-            </Text>
-          </View>
+function RowDivider() {
+  return <View style={styles.rowDivider} />;
+}
 
-          <View style={styles.divider}>
-            <Ionicons name="arrow-down" size={16} color="#999" />
+export default function DynamicBoxes({ routes, onRouteSelect, onDelete }: DynamicBoxesProps) {
+  const renderRoute = ({ item }: { item: SavedRoute }) => {
+    const codes = item.jeepCode.split(' → ');
+    return (
+      <Pressable
+        onPress={() => onRouteSelect && onRouteSelect(item)}
+        style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+        accessibilityRole="button"
+        accessibilityHint="Shows this route on the map"
+      >
+        <View style={styles.main}>
+          <View style={styles.codes}>
+            {codes.map((code, index) => (
+              <React.Fragment key={`${code}-${index}`}>
+                {index > 0 && (
+                  <Ionicons name="chevron-forward" size={14} color={colors.textTertiary} />
+                )}
+                <View style={styles.badge}>
+                  <Text style={type.badge}>{code}</Text>
+                </View>
+              </React.Fragment>
+            ))}
           </View>
-
-          <View style={styles.locationRow}>
-            <Ionicons name="flag" size={16} color="#FF5722" />
-            <Text style={styles.locationText} numberOfLines={1}>
+          <Text style={type.caption} numberOfLines={1}>
+            {item.start}
+          </Text>
+          <View style={styles.toLine}>
+            <Ionicons name="arrow-forward" size={12} color={colors.textTertiary} />
+            <Text style={[type.caption, styles.flex]} numberOfLines={1}>
               {item.destination}
             </Text>
           </View>
         </View>
-        <View style={styles.tapHint}>
-          <Text style={styles.tapHintText}>Tap to view on map</Text>
+
+        <View style={styles.side}>
+          {item.totalFare != null && <Text style={type.heading}>₱{item.totalFare}</Text>}
+          <Pressable
+            onPress={(e) => {
+              e.stopPropagation(); // Prevent triggering route selection
+              onDelete && onDelete(item.id);
+            }}
+            hitSlop={spacing.sm}
+            style={({ pressed }) => [styles.deleteButton, pressed && styles.deletePressed]}
+            accessibilityRole="button"
+            accessibilityLabel="Delete saved route"
+          >
+            <Ionicons name="trash-outline" size={18} color={colors.textTertiary} />
+          </Pressable>
         </View>
-      </View>
-    </TouchableOpacity>
-  );
+      </Pressable>
+    );
+  };
 
   if (routes.length === 0) {
     return (
-      <View style={styles.emptyContainer}>
-        <Ionicons name="bookmark-outline" size={48} color="#ccc" />
-        <Text style={styles.emptyText}>No saved routes yet</Text>
-        <Text style={styles.emptySubtext}>Start saving your favorite routes!</Text>
+      <View style={styles.empty}>
+        <Ionicons name="bookmark-outline" size={40} color={colors.textTertiary} />
+        <Text style={type.heading}>No saved routes yet</Text>
+        <Text style={type.caption}>Start saving your favorite routes!</Text>
       </View>
     );
   }
@@ -80,6 +83,7 @@ export default function DynamicBoxes({
       data={routes}
       renderItem={renderRoute}
       keyExtractor={(item) => item.id}
+      ItemSeparatorComponent={RowDivider}
       showsVerticalScrollIndicator={false}
       contentContainerStyle={styles.listContent}
     />
@@ -87,102 +91,66 @@ export default function DynamicBoxes({
 }
 
 const styles = StyleSheet.create({
-  listContent: {},
-  routeBox: {
-    backgroundColor: '#fff',
-    marginBottom: 12,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 4,
-    overflow: 'hidden',
-    width: '100%',
+  listContent: {
+    paddingBottom: spacing.xxl,
   },
-  routeHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    paddingBottom: 12,
-  },
-  headerActions: {
+  row: {
+    minHeight: 56,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
   },
-  fareContainer: {
-    backgroundColor: '#E8F5E9',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
+  rowPressed: {
+    backgroundColor: colors.surface,
   },
-  fareText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#2E7D32',
-    fontFamily: 'Lexend_500Medium',
-  },
-  jeepCodeContainer: {
-    backgroundColor: '#FFCC66',
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
-  jeepCode: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    fontFamily: 'Lexend_500Medium',
-  },
-  routeDetails: {
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-  },
-  locationRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  locationText: {
+  main: {
     flex: 1,
-    fontSize: 14,
-    color: '#333',
-    fontFamily: 'Lexend_400Regular',
+    gap: spacing.xxs,
   },
-  divider: {
-    paddingLeft: 20,
-    paddingVertical: 4,
-  },
-  tapHint: {
-    backgroundColor: '#F5F5F5',
-    paddingVertical: 8,
+  codes: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
+    gap: spacing.xs + 2,
+    marginBottom: spacing.xs,
   },
-  tapHintText: {
-    fontSize: 12,
-    color: '#666',
-    fontFamily: 'Lexend_300Light',
+  badge: {
+    backgroundColor: colors.text,
+    borderRadius: radius.sm - 2,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
   },
-  emptyContainer: {
+  toLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  flex: {
+    flex: 1,
+  },
+  side: {
+    alignItems: 'flex-end',
+    gap: spacing.sm,
+  },
+  deleteButton: {
+    padding: spacing.xs,
+    borderRadius: radius.pill,
+  },
+  deletePressed: {
+    backgroundColor: colors.surfacePressed,
+  },
+  rowDivider: {
+    height: hairline,
+    backgroundColor: colors.border,
+    marginLeft: spacing.lg,
+  },
+  empty: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: 60,
-  },
-  emptyText: {
-    fontSize: 18,
-    color: '#666',
-    marginTop: 16,
-    fontFamily: 'Lexend_500Medium',
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: '#999',
-    marginTop: 8,
-    fontFamily: 'Lexend_300Light',
+    paddingHorizontal: spacing.xl,
+    gap: spacing.sm,
   },
 });

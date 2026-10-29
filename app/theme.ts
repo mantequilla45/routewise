@@ -24,6 +24,7 @@ export const colors = {
   accent: '#FFC94D',
   accentPressed: '#F2B92E',
   accentSubtle: '#FFF7E0', // selected row background
+  google: '#DB4437', // Google logo mark on the "Continue with Google" button only
 
   // Status / map
   origin: '#2563EB',
@@ -79,6 +80,10 @@ export const type = StyleSheet.create({
     textTransform: 'uppercase',
     color: colors.textTertiary,
   },
+  // Bottom tab bar labels. No color: the navigator applies the active/inactive tint.
+  tabLabel: { fontFamily: fonts.medium, fontSize: 11, lineHeight: 14 },
+  // Text on the dark route-code badge (list rows).
+  badge: { fontFamily: fonts.semibold, fontSize: 14, letterSpacing: 0.3, color: colors.textOnDark },
 }) satisfies Record<string, TextStyle>;
 
 /** Only for surfaces that float above the map (sheet, overlays, map buttons). */

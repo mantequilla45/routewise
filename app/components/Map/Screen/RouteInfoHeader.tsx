@@ -7,10 +7,11 @@ import { colors, elevation, fonts, radius, spacing, type } from '@/theme';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 /**
- * "Showing Route" card at the top of the map. Routes opened from the saved list get a close
- * button; calculated routes get a save button. Renders nothing when no route is displayed.
+ * "Showing route" bar at the top of the map. Calculated routes get save and close buttons;
+ * closing hands back to the caller (which reopens the results). Routes opened from the Routes
+ * tab only get close. Renders nothing when no route is displayed.
  */
-export default function RouteInfoHeader() {
+export default function RouteInfoHeader({ onCloseResult }: { onCloseResult: () => void }) {
   const {
     routes,
     setRoutes,
@@ -18,6 +19,7 @@ export default function RouteInfoHeader() {
     selectedRouteIndex,
     selectedRouteInfo,
     setSelectedRouteInfo,
+    setSelectedRouteIndex,
     isRouteFromList,
     setIsRouteFromList,
     pointA,
@@ -40,6 +42,14 @@ export default function RouteInfoHeader() {
     setSelectedRouteInfo(null);
   };
 
+  // Stop showing the picked result on the map and go back to the list of results.
+  const closeResult = () => {
+    setRoutes([]);
+    setSelectedRouteIndex(null);
+    setSelectedRouteInfo(null);
+    onCloseResult();
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -49,20 +59,22 @@ export default function RouteInfoHeader() {
         <View style={styles.content}>
           <Text style={type.caption}>Showing route</Text>
         </View>
-        {isRouteFromList ? (
-          <TouchableOpacity onPress={clearListRoute} style={styles.closeButton}>
-            <Ionicons name="close" size={22} color={colors.textSecondary} />
-          </TouchableOpacity>
-        ) : (
-          results.length > 0 &&
-          selectedRouteIndex !== null && (
-            <SaveRouteButton
-              route={results[selectedRouteIndex]}
-              isRouteSaved={isRouteSaved}
-              onSaved={() => setIsRouteSaved(true)}
-            />
-          )
+        {!isRouteFromList && results.length > 0 && selectedRouteIndex !== null && (
+          <SaveRouteButton
+            route={results[selectedRouteIndex]}
+            isRouteSaved={isRouteSaved}
+            onSaved={() => setIsRouteSaved(true)}
+          />
         )}
+        <TouchableOpacity
+          onPress={isRouteFromList ? clearListRoute : closeResult}
+          style={styles.closeButton}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={isRouteFromList ? 'Close route' : 'Back to results'}
+        >
+          <Ionicons name="close" size={22} color={colors.textSecondary} />
+        </TouchableOpacity>
       </View>
     </View>
   );

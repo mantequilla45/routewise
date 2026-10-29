@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text } from 'react-native';
+import { colors, radius, spacing, type, ui } from '@/theme';
 
 type Props = {
   label: string;
@@ -7,85 +8,53 @@ type Props = {
 };
 
 export default function Button({ label, onPress, theme }: Props) {
-  if (theme === 'primary') {
+  if (theme === 'primary' || theme === 'secondary') {
+    const isPrimary = theme === 'primary';
     return (
-      <View
-        style={[
-          styles.buttonContainer,
-          {
-            borderRadius: 25,
-          },
+      <Pressable
+        onPress={onPress}
+        accessibilityRole="button"
+        style={({ pressed }) => [
+          isPrimary ? ui.primaryButton : ui.secondaryButton,
+          styles.block,
+          pressed && (isPrimary ? styles.primaryPressed : styles.secondaryPressed),
         ]}
       >
-        <Pressable
-          style={[styles.button, { backgroundColor: '#FFCC66', borderRadius: 25 }]}
-          onPress={onPress}
-        >
-          <Text style={styles.buttonLabel}>{label}</Text>
-        </Pressable>
-      </View>
+        <Text style={isPrimary ? ui.primaryButtonText : ui.secondaryButtonText}>{label}</Text>
+      </Pressable>
     );
-  } else if (theme === 'secondary') {
   } else if (theme === 'tags') {
     return (
-      <View
-        style={[
-          styles.buttonContainer,
-          {
-            borderRadius: 25,
-            width: 'auto',
-            height: 'auto',
-          },
-        ]}
+      <Pressable
+        onPress={onPress}
+        accessibilityRole="button"
+        style={({ pressed }) => [styles.chip, pressed && styles.chipPressed]}
       >
-        <Pressable
-          style={[
-            styles.button,
-            {
-              backgroundColor: '#FFCC66',
-              borderRadius: 25,
-              width: 'auto',
-              height: 'auto',
-              paddingHorizontal: 25,
-              paddingVertical: 10,
-            },
-          ]}
-          onPress={onPress}
-        >
-          <Text style={[styles.buttonLabel, { fontSize: 14, fontFamily: 'Lexend_400Regular' }]}>
-            {label}
-          </Text>
-        </Pressable>
-      </View>
+        <Text style={type.label}>{label}</Text>
+      </Pressable>
     );
   }
 }
 
 const styles = StyleSheet.create({
-  buttonContainer: {
+  block: {
     width: 240,
-    height: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowRadius: 25,
+    paddingHorizontal: spacing.xl,
   },
-  button: {
-    borderRadius: 10,
-    width: '100%',
-    height: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4.65,
-    elevation: 8,
+  primaryPressed: {
+    backgroundColor: colors.accentPressed,
   },
-  buttonLabel: {
-    fontFamily: 'Lexend_400Regular',
-    fontSize: 16,
-    color: '#2D2D2D',
-    marginRight: 5,
+  secondaryPressed: {
+    backgroundColor: colors.surfacePressed,
+  },
+  chip: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.surface,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs + 2,
+  },
+  chipPressed: {
+    backgroundColor: colors.surfacePressed,
   },
 });
