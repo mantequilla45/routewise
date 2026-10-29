@@ -9,15 +9,6 @@ const FIRST_SEGMENT_COLOR = '#4CAF50'; // Green for first segment
 const SECOND_SEGMENT_COLOR = '#FF6B6B'; // Red for second segment
 const DEFAULT_COLOR = '#33ff00'; // Default green
 
-/** Sort routes by distance, shortest first. Routes without a distance sort last. */
-export function sortRoutesByDistance(routes: MappedGeoRouteResult[]): MappedGeoRouteResult[] {
-  return [...routes].sort((a, b) => {
-    const distA = a.distanceMeters || Number.MAX_VALUE;
-    const distB = b.distanceMeters || Number.MAX_VALUE;
-    return distA - distB;
-  });
-}
-
 function toPolyline(id: string, coordinates: LatLng[], color: string): GoogleMapsPolyline {
   return {
     id,

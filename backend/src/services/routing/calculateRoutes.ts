@@ -44,8 +44,45 @@ interface ProcessedRoute {
   optimized?: boolean;
   boardingWalk?: number;
   alightingWalk?: number;
+  estimatedMinutes?: number;
   debugInfo?: Record<string, unknown>;
 }
+
+// Straight-line meters between two points (haversine). Good enough for walking estimates.
+function metersBetween(a: LatLng, b: LatLng): number {
+  const R = 6371000;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(b.latitude - a.latitude);
+  const dLng = toRad(b.longitude - a.longitude);
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(a.latitude)) * Math.cos(toRad(b.latitude)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+
+// Walk from the start pin to where the jeep is boarded, and from where it's left to the
+// destination pin. Uses the ridden segment's ends, the same for every handler.
+function withWalkingDistances(route: ProcessedRoute, from: LatLng, to: LatLng): ProcessedRoute {
+  const first = route.isTransfer ? route.firstRoute?.coordinates : route.coordinates;
+  const last = route.isTransfer ? route.secondRoute?.coordinates : route.coordinates;
+  const boardAt = first?.[0];
+  const alightAt = last?.[last.length - 1];
+  return {
+    ...route,
+    boardingWalk: boardAt ? Math.round(metersBetween(from, boardAt)) : undefined,
+    alightingWalk: alightAt ? Math.round(metersBetween(alightAt, to)) : undefined,
+  };
+}
+
+const totalWalk = (r: ProcessedRoute) => (r.boardingWalk ?? 0) + (r.alightingWalk ?? 0);
+
+// Rough door-to-door speeds in meters per minute: walking ~5 km/h, a jeepney in city traffic
+// ~15 km/h. Used to rank results and shown to the user as an estimate.
+const WALK_M_PER_MIN = 83;
+const JEEP_M_PER_MIN = 250;
+
+const estimateMinutes = (r: ProcessedRoute) =>
+  Math.round(totalWalk(r) / WALK_M_PER_MIN + r.distance / JEEP_M_PER_MIN);
 
 export async function calculateRoutes(from: LatLng, to: LatLng): Promise<ProcessedRoute[]> {
   try {
@@ -188,7 +225,11 @@ export async function calculateRoutes(from: LatLng, to: LatLng): Promise<Process
       }
     });
 
-    const finalRoutes = Array.from(uniqueRoutes.values());
+    const finalRoutes = Array.from(uniqueRoutes.values())
+      .map((route) => withWalkingDistances(route, from, to))
+      .map((route) => ({ ...route, estimatedMinutes: estimateMinutes(route) }))
+      // Fastest estimated door-to-door time first; less walking breaks ties.
+      .sort((a, b) => a.estimatedMinutes - b.estimatedMinutes || totalWalk(a) - totalWalk(b));
 
     log.debug('\n📊 Final results:');
     log.debug(`  Total unique routes: ${finalRoutes.length}`);
@@ -200,18 +241,12 @@ export async function calculateRoutes(from: LatLng, to: LatLng): Promise<Process
     finalRoutes.forEach((route, index) => {
       const hasPolyline = route.coordinates && route.coordinates.length > 0;
       log.debug(
-        `  [${index}] ${route.routeCode}: ${route.caseName} - ${(route.distance / 1000).toFixed(2)}km ${hasPolyline ? `(${route.coordinates.length} points)` : 'NO POLYLINE'}`,
+        `  [${index}] ${route.routeCode}: ${route.caseName} - ${(route.distance / 1000).toFixed(2)}km, walk ${route.boardingWalk}m + ${route.alightingWalk}m, ~${route.estimatedMinutes} min ${hasPolyline ? `(${route.coordinates.length} points)` : 'NO POLYLINE'}`,
       );
       if (!hasPolyline) {
         log.debug(`    ⚠️ Missing polyline data for ${route.routeCode}`);
       }
     });
-
-    if (finalRoutes.length > 0) {
-      log.debug(
-        `  Shortest route: ${finalRoutes[0].routeCode} - ${(finalRoutes[0].distance / 1000).toFixed(2)}km`,
-      );
-    }
 
     return finalRoutes;
   } catch (error) {

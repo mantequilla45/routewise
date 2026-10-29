@@ -3,6 +3,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { MultiRouteResult } from '@/services/routes/calculateMultiRoutes';
 
+function formatMeters(meters: number) {
+  return meters < 1000 ? `${Math.round(meters)} m` : `${(meters / 1000).toFixed(1)} km`;
+}
+
 type RouteCardProps = {
   route: MappedGeoRouteResult | MultiRouteResult;
   isSelected?: boolean;
@@ -19,6 +23,7 @@ export default function RouteCard({
   isSaved = false,
 }: Readonly<RouteCardProps>) {
   const isTransfer = 'isTransfer' in route && route.isTransfer;
+  const hasWalk = route.boardingWalk != null && route.alightingWalk != null;
 
   return (
     <TouchableOpacity onPress={onSelect} activeOpacity={0.7}>
@@ -45,6 +50,16 @@ export default function RouteCard({
               </View>
             ) : (
               <Text style={styles.routeCode}>{route.routeCode || route.routeId}</Text>
+            )}
+            {hasWalk && (
+              <View style={styles.walkRow}>
+                <Ionicons name="walk" size={14} color="#555" />
+                <Text style={styles.walkText}>
+                  {route.estimatedMinutes != null && `~${route.estimatedMinutes} min · `}
+                  {formatMeters(route.boardingWalk!)} to board ·{' '}
+                  {formatMeters(route.alightingWalk!)} to destination
+                </Text>
+              </View>
             )}
           </View>
         </View>
@@ -112,6 +127,17 @@ const styles = StyleSheet.create({
   },
   transferArrow: {
     marginHorizontal: 5,
+  },
+  walkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 4,
+  },
+  walkText: {
+    fontSize: 12,
+    color: '#555',
+    fontFamily: 'Lexend_400Regular',
   },
   transferLabel: {
     fontSize: 12,

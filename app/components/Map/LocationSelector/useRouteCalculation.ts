@@ -3,7 +3,7 @@ import { MapPointsContext } from '@/context/map-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useContext, useEffect, useState } from 'react';
 import { Alert } from 'react-native';
-import { buildPolylines, sortRoutesByDistance } from './buildPolylines';
+import { buildPolylines } from './buildPolylines';
 
 /**
  * Runs the A→B route calculation, stores sorted results and their polylines in the map
@@ -40,11 +40,11 @@ export default function useRouteCalculation() {
       const routes = await calculatePossibleRoutes(pointA, pointB);
 
       if (Array.isArray(routes) && routes.length > 0) {
-        const sortedRoutes = sortRoutesByDistance(routes);
-        setResults(sortedRoutes);
+        // The backend returns results already ranked.
+        setResults(routes);
 
         // Build polylines for ALL routes to maintain consistent indexing
-        setAllRoutes(buildPolylines(sortedRoutes));
+        setAllRoutes(buildPolylines(routes));
 
         // Don't display any route initially - wait for user selection
         setRoutes([]);

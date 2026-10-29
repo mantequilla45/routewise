@@ -39,5 +39,7 @@ export interface MappedGeoRouteResult {
   optimized?: boolean;
   boardingWalk?: number;
   alightingWalk?: number;
+  /** Estimated door-to-door minutes (walk + ride), computed by the backend. */
+  estimatedMinutes?: number;
   debugInfo?: Record<string, unknown>;
 }
