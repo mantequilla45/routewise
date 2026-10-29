@@ -1,135 +1,86 @@
+import { colors, spacing, type, ui } from '@/theme';
 import { StyleSheet } from 'react-native';
 
 /** Styles shared by LoginForm and SignupForm and the pieces under components/Auth. */
 export const authFormStyles = StyleSheet.create({
   container: {
     flex: 1,
+    gap: spacing.lg,
   },
-  fieldContainer: {
-    flexDirection: 'column', // stack children vertically
-    justifyContent: 'flex-start', // start content from top
-    alignItems: 'stretch', // stretch inputs to full width (or use 'flex-start' to align left)
-    paddingBottom: 10, // space at the bottom
+  field: {
+    gap: spacing.xs,
   },
-  text: {
-    fontFamily: 'Lexend_400Regular',
-    fontSize: 16,
-    fontWeight: '400', // normal
-    lineHeight: 12 * 1.6, // 160% → React Native needs a number, not %
-    letterSpacing: -0.02 * 12, // -2% of font size
-    color: '#FFFFFF',
-    paddingBottom: 10,
+  input: {
+    ...ui.input,
   },
-  emailtextbox: {
-    fontSize: 16,
-    fontFamily: 'Lexend_400Regular',
-    paddingLeft: 10, // 10px padding to the left
-    borderWidth: 2, // 2px border thickness
-    borderColor: '#585756', // default black border, change if you want
-    borderRadius: 8, // 8px corner radius
-    height: 40, // optional: keeps the box nicely sized
-    color: 'white',
-  },
-  passwordWrapper: {
-    flexDirection: 'row', // input and eye icon in a row
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#585756',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-  },
-  passwordtextbox: {
-    flex: 1, // fills the remaining space
-    fontSize: 16,
-    fontFamily: 'Lexend_400Regular',
-    paddingVertical: 8, // adjust instead of fixed height
-    color: 'white',
-  },
-  eyeButton: {
-    marginLeft: 10,
-  },
-  thirdcontainer: {
-    flexDirection: 'row', // side by side
-    justifyContent: 'space-between', // optional: space between them
-    alignItems: 'center', // center vertically
-    paddingBottom: 10,
-  },
-  firsthalf: {
-    flex: 1, // takes 50% of width
-    flexDirection: 'row', // checkbox + text in a row
-    alignItems: 'center',
-  },
-  rememberText: {
-    fontFamily: 'Lexend_400Regular',
-    fontSize: 16,
-    color: '#FFFFFF',
-    marginLeft: 4, // spacing between icon and text
-  },
-  secondhalf: {
-    flex: 1, // takes the other 50%
-  },
-  forgotText: {
-    fontFamily: 'Lexend_400Regular',
-    fontSize: 16,
-    color: '#FFCC66', // golden color
-    alignSelf: 'flex-end', // right-aligned
-    fontWeight: '700', // bold
-  },
-  loginbutton: {
-    paddingVertical: 10,
-    paddingHorizontal: 40,
-    borderRadius: 8,
-    backgroundColor: '#4C4C4C',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  loginbuttonText: {
-    paddingVertical: 10,
-    paddingHorizontal: 40,
-    color: 'white',
-    fontFamily: 'Lexend_400Regular',
-    fontSize: 16,
-  },
-  dividerContainer: {
+  inputWithIcon: {
     flexDirection: 'row',
     alignItems: 'center',
+    height: ui.input.height,
+    borderRadius: ui.input.borderRadius,
+    backgroundColor: colors.surface,
+    paddingLeft: spacing.lg,
+  },
+  inputInner: {
+    ...ui.input,
+    flex: 1,
+    height: '100%',
+    paddingHorizontal: 0,
+  },
+  iconButton: {
+    height: '100%',
+    paddingHorizontal: spacing.md,
     justifyContent: 'center',
   },
-  dividerText: {
-    fontFamily: 'Lexend_400Regular',
-    fontSize: 12,
-    color: '#FFFFFF',
+  optionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  dividersText: {
-    fontFamily: 'Lexend_400Regular',
-    fontSize: 12,
-    color: '#FFFFFF',
-    marginTop: 10,
-    textAlign: 'center',
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  optionText: {
+    ...type.caption,
+    color: colors.text,
   },
   linkText: {
-    color: '#888888', // grey for links
-    textDecorationLine: 'underline', // optional: makes it look clickable
+    ...type.label,
+    color: colors.text,
   },
-  googlebutton: {
-    paddingVertical: 10, // same height as login button
-    borderRadius: 8,
-    backgroundColor: '#FFFFFF',
+  dividerRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    width: '50%', // 50% of parent container width
-    alignSelf: 'center', // center horizontally
+    gap: spacing.md,
   },
-  googlebuttonContent: {
-    flexDirection: 'row', // logo + text in a row
-    alignItems: 'center',
+  dividerLine: {
+    ...ui.divider,
+    flex: 1,
   },
-  googleIcon: {
-    marginRight: 4,
+  dividerText: {
+    ...type.caption,
+    color: colors.textTertiary,
   },
-  googlebuttonText: {
-    color: 'black',
-    fontFamily: 'Lexend_400Regular',
-    fontSize: 16,
+  terms: {
+    ...type.caption,
+    textAlign: 'center',
+  },
+  termsLink: {
+    color: colors.text,
+    textDecorationLine: 'underline',
+  },
+  pressed: {
+    opacity: 0.7,
+  },
+  primaryPressed: {
+    backgroundColor: colors.accentPressed,
+  },
+  secondaryPressed: {
+    backgroundColor: colors.surfacePressed,
+  },
+  disabled: {
+    opacity: 0.6,
   },
 });

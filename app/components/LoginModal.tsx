@@ -6,16 +6,25 @@ import {
   Dimensions,
   Modal,
   PanResponder,
+  Pressable,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
   useAnimatedValue,
 } from 'react-native';
+import { colors, radius, spacing, type, ui } from '@/theme';
 import LoginForm from './LoginForm';
 import SignupForm from './SignupForm';
 
 const { height: screenHeight } = Dimensions.get('window');
+
+type Tab = 'login' | 'signup';
+
+const SEGMENTS: { key: Tab; label: string }[] = [
+  { key: 'login', label: 'Login' },
+  { key: 'signup', label: 'Signup' },
+];
 
 type Props = PropsWithChildren<{
   isVisible: boolean;
@@ -23,7 +32,7 @@ type Props = PropsWithChildren<{
 }>;
 
 export default function LoginModal({ isVisible, onClose }: Props) {
-  const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
+  const [activeTab, setActiveTab] = useState<Tab>('login');
   const translateY = useAnimatedValue(screenHeight);
   const overlayOpacity = useAnimatedValue(0);
 
@@ -130,32 +139,31 @@ export default function LoginModal({ isVisible, onClose }: Props) {
             style={[styles.loginModalContent, { transform: [{ translateY }] }]}
             {...panResponder.panHandlers}
           >
-            <View style={styles.dragIndicator} />
-            <View style={styles.loginSelector}>
-              <TouchableOpacity
-                style={[styles.loginSwitch, activeTab === 'login' && styles.activeSwitch]}
-                onPress={() => setActiveTab('login')}
-              >
-                <Text style={[styles.switchText, activeTab === 'login' && styles.activeText]}>
-                  Login
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.loginSwitch, activeTab === 'signup' && styles.activeSwitch]}
-                onPress={() => setActiveTab('signup')}
-              >
-                <Text style={[styles.switchText, activeTab === 'signup' && styles.activeText]}>
-                  Signup
-                </Text>
-              </TouchableOpacity>
+            <View style={[ui.handle, styles.handle]} />
+            <View style={styles.segmented} accessibilityRole="tablist">
+              {SEGMENTS.map(({ key, label }) => {
+                const isActive = activeTab === key;
+                return (
+                  <Pressable
+                    key={key}
+                    style={[styles.segment, isActive && styles.segmentActive]}
+                    onPress={() => setActiveTab(key)}
+                    accessibilityRole="tab"
+                    accessibilityState={{ selected: isActive }}
+                  >
+                    <Text style={[styles.segmentText, isActive && styles.segmentTextActive]}>
+                      {label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
             </View>
 
             <View style={styles.contentContainer}>
               {isLoading ? (
                 <View style={styles.loadingContainer}>
-                  <ActivityIndicator size="large" color="#FFCC66" />
-                  <Text style={styles.loadingText}>Signing in...</Text>
+                  <ActivityIndicator size="large" color={colors.textSecondary} />
+                  <Text style={type.caption}>Signing in...</Text>
                 </View>
               ) : activeTab === 'login' ? (
                 <LoginForm />
@@ -171,86 +179,58 @@ export default function LoginModal({ isVisible, onClose }: Props) {
 }
 
 const styles = StyleSheet.create({
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: colors.scrim,
+    justifyContent: 'flex-end',
+  },
   loginModalContent: {
     height: '70%',
     width: '100%',
-    backgroundColor: '#303030',
-    borderTopRightRadius: 59,
-    borderTopLeftRadius: 59,
+    backgroundColor: colors.background,
+    borderTopLeftRadius: radius.sheet,
+    borderTopRightRadius: radius.sheet,
     overflow: 'hidden',
     position: 'absolute',
     bottom: 0,
-    paddingVertical: 15,
-    paddingHorizontal: 34,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xl,
+    paddingHorizontal: spacing.xl,
   },
-  loginSelector: {
+  handle: {
+    marginBottom: spacing.lg,
+  },
+  segmented: {
     flexDirection: 'row',
-    backgroundColor: '#404040',
-    borderRadius: 50,
-    padding: 8,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    padding: spacing.xs,
   },
-  loginSwitch: {
+  segment: {
     flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 50,
+    height: 36,
+    borderRadius: radius.sm,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  activeSwitch: {
-    backgroundColor: '#FFCC66',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+  segmentActive: {
+    backgroundColor: colors.background,
   },
-  activeText: {
-    color: '#303030',
-    fontWeight: '600',
-    fontFamily: 'Lexend_500Medium',
+  segmentText: {
+    ...type.bodyMedium,
+    color: colors.textSecondary,
   },
-  switchText: {
-    fontSize: 16,
-    color: '#fff',
-    fontWeight: '500',
-    fontFamily: 'Lexend_400Regular',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  dragIndicator: {
-    width: 80,
-    height: 4,
-    backgroundColor: '#ccc',
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginBottom: 15,
+  segmentTextActive: {
+    color: colors.text,
   },
   contentContainer: {
     flex: 1,
-    marginTop: 20,
+    marginTop: spacing.xl,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  loadingText: {
-    color: '#fff',
-    marginTop: 10,
-    fontSize: 16,
-    fontFamily: 'Lexend_400Regular',
-  },
-  signupContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  signupText: {
-    color: '#fff',
-    fontSize: 18,
-    fontFamily: 'Lexend_400Regular',
+    gap: spacing.md,
   },
 });

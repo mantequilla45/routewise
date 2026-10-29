@@ -1,11 +1,13 @@
+import { colors, spacing, type } from '@/theme';
+import { Ionicons } from '@expo/vector-icons';
 import { RefObject } from 'react';
 import {
   type TextInputInstance,
   ActivityIndicator,
+  Pressable,
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native';
 
@@ -32,7 +34,7 @@ type Props = {
   inputRef?: RefObject<TextInputInstance | null>;
 };
 
-/** A label/value row in the account section that can be edited when the section is in edit mode. */
+/** A settings row (label left, value right) that becomes tappable when the section is in edit mode. */
 export default function EditableField({
   label,
   value,
@@ -42,34 +44,52 @@ export default function EditableField({
   textInput,
   inputRef,
 }: Props) {
-  const valueRow = (
-    <View style={styles.valueRow}>
-      <Text style={styles.value}>{value || 'Not provided'}</Text>
-      {isSaving && <ActivityIndicator size="small" style={styles.spinner} />}
-    </View>
-  );
-
-  return (
-    <View style={[styles.row, isEditing && styles.rowActive]}>
-      <Text style={styles.label}>{isEditing ? `${label}**` : label}</Text>
-      {isEditing && textInput?.active ? (
+  if (isEditing && textInput?.active) {
+    return (
+      <View style={styles.row}>
+        <Text style={type.body}>{label}</Text>
         <TextInput
           ref={inputRef}
           value={value}
           onChangeText={textInput.onChangeText}
           onBlur={textInput.onDone}
           onSubmitEditing={textInput.onDone}
-          style={[styles.value, styles.input]}
+          style={styles.input}
           returnKeyType="done"
         />
-      ) : isEditing ? (
-        <TouchableOpacity onPress={onPress} style={styles.valueButton}>
-          {valueRow}
-        </TouchableOpacity>
-      ) : (
-        valueRow
-      )}
+      </View>
+    );
+  }
+
+  const valueContent = (
+    <View style={styles.valueRow}>
+      {isSaving && <ActivityIndicator size="small" color={colors.textTertiary} />}
+      <Text style={[styles.value, isEditing && styles.valueEditable]} numberOfLines={1}>
+        {value || 'Not provided'}
+      </Text>
+      {isEditing && <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />}
     </View>
+  );
+
+  if (!isEditing) {
+    return (
+      <View style={styles.row}>
+        <Text style={type.body}>{label}</Text>
+        {valueContent}
+      </View>
+    );
+  }
+
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+      accessibilityRole="button"
+      accessibilityLabel={`Edit ${label}`}
+    >
+      <Text style={type.body}>{label}</Text>
+      {valueContent}
+    </Pressable>
   );
 }
 
@@ -77,8 +97,10 @@ export default function EditableField({
 export function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.row}>
-      <Text style={styles.label}>{label}</Text>
-      <Text style={styles.value}>{value}</Text>
+      <Text style={type.body}>{label}</Text>
+      <Text style={styles.value} numberOfLines={1}>
+        {value}
+      </Text>
     </View>
   );
 }
@@ -86,43 +108,34 @@ export function InfoRow({ label, value }: { label: string; value: string }) {
 const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    gap: spacing.lg,
+    minHeight: 52,
+    paddingHorizontal: spacing.lg,
   },
-  rowActive: {
-    backgroundColor: '#f0f8f0',
-    borderBottomColor: '#4CAF50',
-    borderBottomWidth: 2,
-  },
-  label: {
-    fontSize: 14,
-    fontFamily: 'Lexend_400Regular',
-    color: '#666',
-  },
-  value: {
-    fontSize: 14,
-    fontFamily: 'Lexend_400Regular',
-    color: '#333',
-  },
-  input: {
-    fontSize: 14,
-    fontFamily: 'Lexend_400Regular',
-    color: '#333',
-    textAlign: 'right',
-    minWidth: 120,
-    padding: 0,
-  },
-  valueButton: {
-    flex: 1,
-    alignItems: 'flex-end',
+  rowPressed: {
+    backgroundColor: colors.surfacePressed,
   },
   valueRow: {
+    flexShrink: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    gap: spacing.xs,
   },
-  spinner: {
-    marginLeft: 8,
+  value: {
+    ...type.body,
+    flexShrink: 1,
+    color: colors.textSecondary,
+  },
+  valueEditable: {
+    color: colors.text,
+  },
+  input: {
+    ...type.body,
+    flex: 1,
+    minWidth: 120,
+    textAlign: 'right',
+    padding: 0,
   },
 });

@@ -1,16 +1,18 @@
 import AccountInfoSection from '@/components/Account/AccountInfoSection';
 import ProfileHeader from '@/components/Account/ProfileHeader';
-import Button from '@/components/Button';
 import LoginModal from '@/components/LoginModal';
 import { LOGO } from '@/constants';
 import { useAuth } from '@/context/auth';
+import { colors, spacing, type, ui } from '@/theme';
 import { Image } from 'expo-image';
 import { useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function Account() {
   const { user, signOut, isLoading } = useAuth();
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
+  const insets = useSafeAreaInsets();
 
   const openModal = () => {
     setIsModalVisible(true);
@@ -26,15 +28,22 @@ export default function Account() {
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#000" />
+      <View style={[ui.screen, styles.centered]}>
+        <ActivityIndicator size="large" color={colors.textSecondary} />
       </View>
     );
   }
 
   if (user) {
     return (
-      <ScrollView style={styles.profileContainer}>
+      <ScrollView
+        style={ui.screen}
+        contentContainerStyle={{
+          paddingTop: insets.top + spacing.lg,
+          paddingBottom: spacing.xxl,
+        }}
+      >
+        <Text style={[type.title, styles.title]}>Account</Text>
         <ProfileHeader user={user} />
         <AccountInfoSection user={user} onSignOut={handleSignOut} />
       </ScrollView>
@@ -43,48 +52,53 @@ export default function Account() {
 
   // Not signed in: sign-up prompt
   return (
-    <View style={styles.container}>
+    <View style={[ui.screen, styles.centered, styles.signedOut]}>
       <Image source={LOGO} style={styles.logo} contentFit="contain" />
-      <Text style={styles.heading}>Sign up now!</Text>
-      <Text style={styles.paragraph}>
-        Create an account to save your routes, activities, and many more.
-      </Text>
-      <View>
-        <Button label="Sign Up" onPress={openModal} theme="primary" />
+      <View style={styles.copy}>
+        <Text style={[type.title, styles.centerText]}>Sign up now!</Text>
+        <Text style={[type.caption, styles.centerText]}>
+          Create an account to save your routes, activities, and many more.
+        </Text>
       </View>
+      <Pressable
+        onPress={openModal}
+        style={({ pressed }) => [ui.primaryButton, styles.cta, pressed && styles.ctaPressed]}
+        accessibilityRole="button"
+      >
+        <Text style={ui.primaryButtonText}>Sign Up</Text>
+      </Pressable>
       <LoginModal isVisible={isModalVisible} onClose={closeModal}></LoginModal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'flex-start',
-    paddingHorizontal: 40,
-    paddingTop: 100,
-    gap: 12,
-  },
-  logo: {
-    width: '100%',
-    height: 90,
-  },
-  heading: {
-    fontSize: 24,
-    fontFamily: 'Lexend_400Regular',
-  },
-  paragraph: {
-    fontSize: 18,
-    fontFamily: 'Lexend_300Light',
-  },
-  loadingContainer: {
-    flex: 1,
+  centered: {
     justifyContent: 'center',
     alignItems: 'center',
   },
-  profileContainer: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-    marginTop: 50,
+  title: {
+    paddingHorizontal: spacing.lg,
+  },
+  signedOut: {
+    paddingHorizontal: spacing.xl,
+    gap: spacing.xl,
+  },
+  logo: {
+    width: '60%',
+    height: 64,
+  },
+  copy: {
+    gap: spacing.sm,
+    maxWidth: 320,
+  },
+  centerText: {
+    textAlign: 'center',
+  },
+  cta: {
+    alignSelf: 'stretch',
+  },
+  ctaPressed: {
+    backgroundColor: colors.accentPressed,
   },
 });

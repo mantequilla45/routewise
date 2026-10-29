@@ -1,6 +1,7 @@
 import { useAuth } from '@/context/auth';
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, Pressable, Alert } from 'react-native';
+import { ui } from '@/theme';
 import { ApiError } from '@/lib/api';
 import { authFormStyles as styles } from '@/components/Auth/authFormStyles';
 import { useSavedCredentials } from '@/components/Auth/useSavedCredentials';
@@ -55,40 +56,45 @@ export default function SignupForm() {
       />
 
       {/* Remember me + forgot password */}
-      <View style={styles.thirdcontainer}>
+      <View style={styles.optionsRow}>
         <RememberMeCheckbox checked={rememberMe} onToggle={() => setRememberMe(!rememberMe)} />
 
-        <View style={styles.secondhalf}>
-          <TouchableOpacity
-            onPress={() =>
-              Alert.alert('Forgot password', 'Use the login screen to reset your password.')
-            }
-          >
-            <Text style={styles.forgotText}>Forgot?</Text>
-          </TouchableOpacity>
-        </View>
+        <Pressable
+          onPress={() =>
+            Alert.alert('Forgot password', 'Use the login screen to reset your password.')
+          }
+          style={({ pressed }) => pressed && styles.pressed}
+          hitSlop={8}
+        >
+          <Text style={styles.linkText}>Forgot?</Text>
+        </Pressable>
       </View>
 
-      <TouchableOpacity style={styles.loginbutton} onPress={handleSignUp} disabled={loading}>
-        <Text style={styles.loginbuttonText}>Sign Up</Text>
-      </TouchableOpacity>
+      <Pressable
+        style={({ pressed }) => [
+          ui.primaryButton,
+          pressed && styles.primaryPressed,
+          loading && styles.disabled,
+        ]}
+        onPress={handleSignUp}
+        disabled={loading}
+        accessibilityRole="button"
+      >
+        <Text style={ui.primaryButtonText}>Sign Up</Text>
+      </Pressable>
 
-      <View style={[styles.dividerContainer, local.divider]}>
-        <Text style={styles.dividerText}>or signup with</Text>
+      <View style={styles.dividerRow}>
+        <View style={styles.dividerLine} />
+        <Text style={styles.dividerText}>or</Text>
+        <View style={styles.dividerLine} />
       </View>
 
       <GoogleSignInButton onPress={signIn} />
 
-      <Text style={styles.dividersText}>
-        By signing up, you agree to the <Text style={styles.linkText}>Terms of Service</Text> and{' '}
-        <Text style={styles.linkText}>Data Processing Agreement</Text>
+      <Text style={styles.terms}>
+        By signing up, you agree to the <Text style={styles.termsLink}>Terms of Service</Text> and{' '}
+        <Text style={styles.termsLink}>Data Processing Agreement</Text>
       </Text>
     </View>
   );
 }
-
-const local = StyleSheet.create({
-  divider: {
-    marginVertical: 10,
-  },
-});

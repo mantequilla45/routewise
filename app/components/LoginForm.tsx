@@ -1,6 +1,7 @@
 import { useAuth } from '@/context/auth';
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, Pressable, Alert } from 'react-native';
+import { ui } from '@/theme';
 import { ApiError } from '@/lib/api';
 import { authFormStyles as styles } from '@/components/Auth/authFormStyles';
 import { useSavedCredentials } from '@/components/Auth/useSavedCredentials';
@@ -45,39 +46,37 @@ export default function LoginForm() {
       />
 
       {/* Remember me + forgot password */}
-      <View style={styles.thirdcontainer}>
+      <View style={styles.optionsRow}>
         <RememberMeCheckbox checked={rememberMe} onToggle={() => setRememberMe(!rememberMe)} />
 
-        <View style={styles.secondhalf}>
-          <Text style={styles.forgotText}>Forgot Password?</Text>
-        </View>
+        <Text style={styles.linkText}>Forgot Password?</Text>
       </View>
 
-      <TouchableOpacity
-        style={styles.loginbutton}
+      <Pressable
+        style={({ pressed }) => [
+          ui.primaryButton,
+          pressed && styles.primaryPressed,
+          loading && styles.disabled,
+        ]}
         onPress={handleLogin}
         disabled={loading}
         accessibilityRole="button"
       >
-        <Text style={styles.loginbuttonText}>{loading ? 'Loading...' : 'Log In'}</Text>
-      </TouchableOpacity>
+        <Text style={ui.primaryButtonText}>{loading ? 'Loading...' : 'Log In'}</Text>
+      </Pressable>
 
-      <View style={[styles.dividerContainer, local.divider]}>
-        <Text style={styles.dividerText}>or login with</Text>
+      <View style={styles.dividerRow}>
+        <View style={styles.dividerLine} />
+        <Text style={styles.dividerText}>or</Text>
+        <View style={styles.dividerLine} />
       </View>
 
       <GoogleSignInButton onPress={signIn} />
 
-      <Text style={styles.dividersText}>
-        By signing in, you agree to the <Text style={styles.linkText}>Terms of Service</Text> and{' '}
-        <Text style={styles.linkText}>Data Processing Agreement</Text>
+      <Text style={styles.terms}>
+        By signing in, you agree to the <Text style={styles.termsLink}>Terms of Service</Text> and{' '}
+        <Text style={styles.termsLink}>Data Processing Agreement</Text>
       </Text>
     </View>
   );
 }
-
-const local = StyleSheet.create({
-  divider: {
-    marginVertical: 15,
-  },
-});
