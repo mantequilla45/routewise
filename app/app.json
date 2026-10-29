@@ -10,10 +10,11 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.routewise.app",
+      "bundleIdentifier": "ph.routewise.app",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
-      }
+      },
+      "appleTeamId": "A725LV998N"
     },
     "android": {
       "package": "com.routewise.app",
@@ -77,7 +78,8 @@
         }
       ],
       "expo-web-browser",
-      "expo-secure-store"
+      "expo-secure-store",
+      "./plugins/withPodDeploymentTarget"
     ],
     "experiments": {
       "typedRoutes": true,
