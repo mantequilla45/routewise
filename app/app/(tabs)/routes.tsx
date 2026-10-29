@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useEffect, useState, useContext } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -36,20 +36,20 @@ export default function RoutesScreen() {
     setSelectedRouteInfo,
   } = useContext(MapPointsContext);
 
+  const fetchRoutes = () =>
+    api.routes
+      .list()
+      .then(setRoutes)
+      .catch((error) => console.error('Error fetching routes:', error))
+      .finally(() => {
+        setLoading(false);
+        setRefreshing(false);
+      });
+
   useEffect(() => {
     fetchRoutes();
+    // Initial load only; pull-to-refresh calls fetchRoutes again.
   }, []);
-
-  const fetchRoutes = async () => {
-    try {
-      setRoutes(await api.routes.list());
-    } catch (error) {
-      console.error('Error fetching routes:', error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -82,7 +82,7 @@ export default function RoutesScreen() {
           });
 
           // Navigate to the map screen
-          router.push('/(tabs)/');
+          router.push('/');
         }
       }
     } catch (error) {

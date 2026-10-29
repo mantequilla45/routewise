@@ -1,5 +1,5 @@
 import { useAuth } from '@/context/auth';
-import { PropsWithChildren, useEffect, useRef, useState } from 'react';
+import { PropsWithChildren, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
@@ -10,6 +10,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  useAnimatedValue,
 } from 'react-native';
 import LoginForm from './LoginForm';
 import SignupForm from './SignupForm';
@@ -23,10 +24,11 @@ type Props = PropsWithChildren<{
 
 export default function LoginModal({ isVisible, onClose }: Props) {
   const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
-  const translateY = useRef(new Animated.Value(screenHeight)).current;
-  const overlayOpacity = useRef(new Animated.Value(0)).current;
+  const translateY = useAnimatedValue(screenHeight);
+  const overlayOpacity = useAnimatedValue(0);
 
-  const panResponder = useRef(
+  // Created once; it only touches the stable animated values and onClose.
+  const [panResponder] = useState(() =>
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: (_, gestureState) => {
@@ -63,7 +65,7 @@ export default function LoginModal({ isVisible, onClose }: Props) {
         }
       },
     }),
-  ).current;
+  );
 
   useEffect(() => {
     if (isVisible) {
@@ -102,7 +104,7 @@ export default function LoginModal({ isVisible, onClose }: Props) {
         <Animated.View style={[styles.modalOverlay, { opacity: overlayOpacity }]}>
           {/* Invisible overlay to detect taps */}
           <TouchableOpacity
-            style={StyleSheet.absoluteFillObject}
+            style={StyleSheet.absoluteFill}
             activeOpacity={1}
             onPress={() => {
               // Same animation as your swipe dismiss

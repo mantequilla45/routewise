@@ -11,6 +11,12 @@ module.exports = defineConfig([
     rules: {
       // Debug logging belongs behind __DEV__ or should be removed before commit.
       'no-console': ['error', { allow: ['warn', 'error'] }],
+    },
+  },
+  {
+    // eslint-config-expo registers the TypeScript plugin for TS files only.
+    files: ['**/*.ts', '**/*.tsx'],
+    rules: {
       '@typescript-eslint/no-explicit-any': 'error',
     },
   },

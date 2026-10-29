@@ -1,6 +1,6 @@
 import { MapPointsContext } from '@/context/map-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useRef } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import PointPicker from './PointPicker';
 import RouteResultsList from './RouteResultsList';
@@ -34,28 +34,22 @@ export default function MapModalContent({
     setSelectedRouteIndex,
     setSelectedRouteInfo,
   } = useContext(MapPointsContext);
-  const [wasSelectingFirstLocation, setWasSelectingFirstLocation] = useState(false);
+  // Set when the user starts picking point A; read once pointA lands to open point B picking.
+  const wasSelectingFirstLocation = useRef(false);
   const { isCalculating, onCalculate } = useRouteCalculation();
 
   // Auto-open second location selection after first location is selected
   useEffect(() => {
-    if (wasSelectingFirstLocation && pointA && !isPinPlacementEnabled) {
+    if (wasSelectingFirstLocation.current && pointA && !isPinPlacementEnabled) {
       // First location was just selected, now open second location selection
-      setWasSelectingFirstLocation(false);
+      wasSelectingFirstLocation.current = false;
       setTimeout(() => {
         setIsPinPlacementEnabled(true);
         setIsPointAB(false);
         setShowBottomSheet(false);
       }, 100);
     }
-  }, [
-    pointA,
-    isPinPlacementEnabled,
-    wasSelectingFirstLocation,
-    setIsPinPlacementEnabled,
-    setIsPointAB,
-    setShowBottomSheet,
-  ]);
+  }, [pointA, isPinPlacementEnabled, setIsPinPlacementEnabled, setIsPointAB, setShowBottomSheet]);
 
   const onSelectPointA = () => {
     if (enterPinPlacementMode) {
@@ -63,7 +57,7 @@ export default function MapModalContent({
     } else {
       setIsPinPlacementEnabled(true);
       setIsPointAB(true);
-      setWasSelectingFirstLocation(true);
+      wasSelectingFirstLocation.current = true;
       setShowBottomSheet(false);
     }
   };

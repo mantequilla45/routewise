@@ -33,10 +33,10 @@ export default function AccountInfoSection({ user, onSignOut }: Props) {
         onPress={name.startEdit}
         textInput={{
           active: name.isEditing,
-          ref: name.inputRef,
           onChangeText: name.setValue,
           onDone: name.finishEdit,
         }}
+        inputRef={name.inputRef}
       />
       <EditableField
         label="Commuter Type"

@@ -1,5 +1,6 @@
 import { RefObject } from 'react';
 import {
+  type TextInputInstance,
   ActivityIndicator,
   StyleSheet,
   Text,
@@ -11,7 +12,6 @@ import {
 type TextInputProps = {
   /** True while the inline input is open; otherwise the value is shown as a tappable text. */
   active: boolean;
-  ref: RefObject<TextInput | null>;
   onChangeText: (text: string) => void;
   /** Called on blur and on "done"; the caller closes the input and saves. */
   onDone: () => void;
@@ -27,6 +27,9 @@ type Props = {
   onPress: () => void;
   /** Supply to edit the value with an inline TextInput; omit for pick-from-list fields. */
   textInput?: TextInputProps;
+  /** Ref to the inline TextInput, so the caller can focus it. Kept separate from `textInput`
+   *  because the React Compiler treats every field of an object holding a ref as a ref. */
+  inputRef?: RefObject<TextInputInstance | null>;
 };
 
 /** A label/value row in the account section that can be edited when the section is in edit mode. */
@@ -37,6 +40,7 @@ export default function EditableField({
   isSaving,
   onPress,
   textInput,
+  inputRef,
 }: Props) {
   const valueRow = (
     <View style={styles.valueRow}>
@@ -50,7 +54,7 @@ export default function EditableField({
       <Text style={styles.label}>{isEditing ? `${label}**` : label}</Text>
       {isEditing && textInput?.active ? (
         <TextInput
-          ref={textInput.ref}
+          ref={inputRef}
           value={value}
           onChangeText={textInput.onChangeText}
           onBlur={textInput.onDone}

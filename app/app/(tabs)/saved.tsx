@@ -4,7 +4,7 @@ import { api, type SavedRouteRow, type TransferPoints } from '@/lib/api';
 import { useAuth } from '@/context/auth';
 import { MapPointsContext } from '@/context/map-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useCallback, useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { StyleSheet, Text, TextInput, View, Alert, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -28,15 +28,23 @@ export interface SavedRoute {
 
 export type UserSavedRoute = SavedRouteRow;
 
-// The backend scopes results to the signed-in user via the bearer token.
-export async function getUserSavedRoutes(): Promise<UserSavedRoute[]> {
-  try {
-    const data = await api.savedRoutes.list();
-    return data;
-  } catch (error) {
-    console.error('Error fetching saved routes:', error);
-    return [];
-  }
+function toSavedRoute(route: UserSavedRoute): SavedRoute {
+  return {
+    id: route.id,
+    jeepCode: route.jeepney_codes ? route.jeepney_codes.join(' → ') : 'Direct',
+    start: route.start_location,
+    destination: route.end_location,
+    favorite: false,
+    totalFare: route.total_fare,
+    createdAt: route.created_at,
+    // Include additional data for map display
+    startLat: route.start_lat,
+    startLng: route.start_lng,
+    endLat: route.end_lat,
+    endLng: route.end_lng,
+    transferPoints: route.transfer_points,
+    routeData: route,
+  };
 }
 
 export default function Saved() {
@@ -51,48 +59,34 @@ export default function Saved() {
   const [routes, setRoutes] = useState<SavedRoute[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchSavedRoutes = useCallback(async () => {
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-
+  // Show the spinner again whenever the signed-in user changes (set during render, not in
+  // the effect, so the fetch below doesn't trigger an extra render).
+  const [loadedFor, setLoadedFor] = useState(user);
+  if (user !== loadedFor) {
+    setLoadedFor(user);
     setLoading(true);
-    try {
-      const savedRoutes = await getUserSavedRoutes();
-      const mappedRoutes: SavedRoute[] = savedRoutes.map((route) => ({
-        id: route.id,
-        jeepCode: route.jeepney_codes ? route.jeepney_codes.join(' → ') : 'Direct',
-        start: route.start_location,
-        destination: route.end_location,
-        favorite: false,
-        totalFare: route.total_fare,
-        createdAt: route.created_at,
-        // Include additional data for map display
-        startLat: route.start_lat,
-        startLng: route.start_lng,
-        endLat: route.end_lat,
-        endLng: route.end_lng,
-        transferPoints: route.transfer_points,
-        routeData: route,
-      }));
-      setRoutes(mappedRoutes);
-    } catch (error) {
-      console.error('Error fetching saved routes:', error);
-      Alert.alert('Error', 'Failed to load saved routes');
-    } finally {
-      setLoading(false);
-    }
-  }, [user]);
+  }
 
+  // The backend scopes results to the signed-in user via the bearer token.
   useEffect(() => {
-    if (user) {
-      fetchSavedRoutes();
-    } else {
-      setLoading(false);
-      setRoutes([]);
-    }
-  }, [user, fetchSavedRoutes]);
+    if (!user) return;
+    let ignore = false;
+    api.savedRoutes
+      .list()
+      .then((rows) => {
+        if (!ignore) setRoutes(rows.map(toSavedRoute));
+      })
+      .catch((error) => {
+        console.error('Error fetching saved routes:', error);
+        if (!ignore) Alert.alert('Error', 'Failed to load saved routes');
+      })
+      .finally(() => {
+        if (!ignore) setLoading(false);
+      });
+    return () => {
+      ignore = true;
+    };
+  }, [user]);
 
   const sortRecent = () => {
     // Sort logic here
@@ -160,10 +154,11 @@ export default function Saved() {
     await AsyncStorage.setItem('shouldCalculateRoute', 'true');
 
     // Navigate to home tab (which contains the map)
-    router.replace('/(tabs)/');
+    router.replace('/');
   };
 
-  const filteredRoutes = routes.filter((route) => {
+  // Signed out: show nothing, even if routes from a previous session are still in state.
+  const filteredRoutes = (user ? routes : []).filter((route) => {
     const query = searchQuery.toLowerCase();
     return (
       route.jeepCode.toLowerCase().includes(query) ||
@@ -190,16 +185,16 @@ export default function Saved() {
         <Text style={styles.recentText}>{filteredRoutes.length} Saved Routes</Text>
       </View>
       <View style={styles.savedContainer}>
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#007AFF" />
-            <Text style={styles.loadingText}>Loading saved routes...</Text>
-          </View>
-        ) : !user ? (
+        {!user ? (
           <View style={styles.emptyContainer}>
             <Ionicons name="person-outline" size={64} color="#ccc" />
             <Text style={styles.emptyText}>Please login</Text>
             <Text style={styles.emptySubtext}>Login to see your saved routes</Text>
+          </View>
+        ) : loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#007AFF" />
+            <Text style={styles.loadingText}>Loading saved routes...</Text>
           </View>
         ) : filteredRoutes.length === 0 ? (
           <View style={styles.emptyContainer}>

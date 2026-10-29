@@ -1,6 +1,9 @@
 import { LatLng, MappedGeoRouteResult } from '@/types/GeoTypes';
-import { GoogleMapsPolyline } from 'expo-maps/build/google/GoogleMaps.types';
+import type { GoogleMaps } from 'expo-maps';
 import React, { createContext, ReactNode, useMemo, useState } from 'react';
+
+// expo-maps no longer exports its type files directly; derive the polyline type from the map props.
+export type GoogleMapsPolyline = NonNullable<GoogleMaps.MapProps['polylines']>[number];
 
 type MapPointsContextType = {
   pointA: LatLng | null;

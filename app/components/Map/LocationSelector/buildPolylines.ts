@@ -1,5 +1,5 @@
 import { LatLng, MappedGeoRouteResult } from '@/types/GeoTypes';
-import { GoogleMapsPolyline } from 'expo-maps/build/google/GoogleMaps.types';
+import type { GoogleMapsPolyline } from '@/context/map-context';
 
 const POLYLINE_WIDTH = 16;
 const FIRST_SEGMENT_COLOR = '#4CAF50'; // Green for first segment

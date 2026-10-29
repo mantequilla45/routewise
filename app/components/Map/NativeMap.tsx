@@ -1,7 +1,6 @@
 import { MapPointsContext } from '@/context/map-context';
 import { LatLng } from '@/types/GeoTypes';
 import { AppleMaps, GoogleMaps } from 'expo-maps';
-import { GoogleMapsMarker } from 'expo-maps/build/google/GoogleMaps.types';
 import {
   type ComponentProps,
   forwardRef,
@@ -82,7 +81,7 @@ const NativeMap = forwardRef<NativeMapRef>(function NativeMap(_props, ref) {
     },
   }));
 
-  const markers: GoogleMapsMarker[] = [];
+  const markers: GoogleMaps.Marker[] = [];
 
   if (pointA) {
     markers.push({

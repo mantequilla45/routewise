@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, PanResponder } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { Animated, PanResponder, useAnimatedValue } from 'react-native';
 
 /**
  * Drives the bottom sheet on the map screen: one translateY value (0 = visible, 800 = hidden),
@@ -7,12 +7,11 @@ import { Animated, PanResponder } from 'react-native';
  */
 export function useModalAnimation(isRouteFromList: boolean) {
   const [isModalVisible, setIsModalVisible] = useState(!isRouteFromList);
-  const modalPosition = useRef(new Animated.Value(isRouteFromList ? 800 : 0)).current;
-  const indicatorOpacity = useRef(new Animated.Value(isRouteFromList ? 1 : 0)).current;
+  const modalPosition = useAnimatedValue(isRouteFromList ? 800 : 0);
+  const indicatorOpacity = useAnimatedValue(isRouteFromList ? 1 : 0);
 
-  const showModal = useCallback(
+  const animateIn = useCallback(
     (callback?: () => void) => {
-      setIsModalVisible(true);
       Animated.parallel([
         Animated.spring(modalPosition, {
           toValue: 0,
@@ -30,9 +29,8 @@ export function useModalAnimation(isRouteFromList: boolean) {
     [modalPosition, indicatorOpacity],
   );
 
-  const hideModal = useCallback(
+  const animateOut = useCallback(
     (callback?: () => void) => {
-      setIsModalVisible(false);
       Animated.parallel([
         Animated.timing(modalPosition, {
           toValue: 800,
@@ -50,15 +48,36 @@ export function useModalAnimation(isRouteFromList: boolean) {
     [modalPosition, indicatorOpacity],
   );
 
-  // Hide modal when route is from list
-  useEffect(() => {
-    if (isRouteFromList) {
-      hideModal();
-    }
-  }, [isRouteFromList, hideModal]);
+  const showModal = useCallback(
+    (callback?: () => void) => {
+      setIsModalVisible(true);
+      animateIn(callback);
+    },
+    [animateIn],
+  );
 
-  // Swipe down to dismiss; slight upward drag is allowed with resistance for a bounce effect
-  const panResponder = useRef(
+  const hideModal = useCallback(
+    (callback?: () => void) => {
+      setIsModalVisible(false);
+      animateOut(callback);
+    },
+    [animateOut],
+  );
+
+  // Hide the sheet when a route is opened from the list: the flag is adjusted during render,
+  // the animation runs in the effect.
+  const [prevIsRouteFromList, setPrevIsRouteFromList] = useState(isRouteFromList);
+  if (isRouteFromList !== prevIsRouteFromList) {
+    setPrevIsRouteFromList(isRouteFromList);
+    if (isRouteFromList) setIsModalVisible(false);
+  }
+  useEffect(() => {
+    if (isRouteFromList) animateOut();
+  }, [isRouteFromList, animateOut]);
+
+  // Swipe down to dismiss; slight upward drag is allowed with resistance for a bounce effect.
+  // Created once: it only uses the stable animated value and the memoized show/hide.
+  const [panResponder] = useState(() =>
     PanResponder.create({
       onStartShouldSetPanResponder: () => false,
       onMoveShouldSetPanResponder: (_, gestureState) => {
@@ -89,7 +108,7 @@ export function useModalAnimation(isRouteFromList: boolean) {
         }
       },
     }),
-  ).current;
+  );
 
   return {
     isModalVisible,

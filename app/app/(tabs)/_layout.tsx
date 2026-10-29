@@ -1,6 +1,15 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Tabs } from 'expo-router';
+import type { ComponentProps } from 'react';
+import type { ColorValue } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+type IconName = ComponentProps<typeof Ionicons>['name'];
+
+// Tab colors may arrive as processed native numbers; Ionicons only accepts strings.
+function TabIcon({ color, name }: { color: ColorValue; name: IconName }) {
+  return <Ionicons name={name} color={typeof color === 'string' ? color : undefined} size={24} />;
+}
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
@@ -35,11 +44,10 @@ export default function TabLayout() {
     >
       <Tabs.Screen
         name="index"
-
         options={{
           title: 'Home',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'home-sharp' : 'home-outline'} color={color} size={24} />
+            <TabIcon name={focused ? 'home-sharp' : 'home-outline'} color={color} />
           ),
         }}
       />
@@ -48,7 +56,7 @@ export default function TabLayout() {
         options={{
           title: 'Routes',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'bus' : 'bus-outline'} color={color} size={24} />
+            <TabIcon name={focused ? 'bus' : 'bus-outline'} color={color} />
           ),
         }}
       />
@@ -57,7 +65,7 @@ export default function TabLayout() {
         options={{
           title: 'Saved',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'bookmark' : 'bookmark-outline'} color={color} size={24} />
+            <TabIcon name={focused ? 'bookmark' : 'bookmark-outline'} color={color} />
           ),
         }}
       />
@@ -66,11 +74,7 @@ export default function TabLayout() {
         options={{
           title: 'Account',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name={focused ? 'person-circle' : 'person-circle-outline'}
-              color={color}
-              size={24}
-            />
+            <TabIcon name={focused ? 'person-circle' : 'person-circle-outline'} color={color} />
           ),
         }}
       />

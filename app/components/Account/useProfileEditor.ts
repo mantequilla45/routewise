@@ -1,7 +1,7 @@
 import { useAuth } from '@/context/auth';
 import { api } from '@/lib/api';
 import { useEffect, useRef, useState } from 'react';
-import { TextInput } from 'react-native';
+import type { TextInputInstance } from 'react-native';
 
 /**
  * State for the editable "Account Information" section: local copies of the name and commuter
@@ -13,16 +13,19 @@ export function useProfileEditor() {
   const [isEditingName, setIsEditingName] = useState<boolean>(false);
   const [nameValue, setNameValue] = useState<string>(user?.name || '');
   const [isSavingName, setIsSavingName] = useState<boolean>(false);
-  const nameInputRef = useRef<TextInput>(null);
+  const nameInputRef = useRef<TextInputInstance>(null);
   const [commuterValue, setCommuterValue] = useState<string>(user?.commuter || '');
   const [isSavingCommuter, setIsSavingCommuter] = useState<boolean>(false);
   const [isCommuterPickerVisible, setIsCommuterPickerVisible] = useState<boolean>(false);
 
-  // Keep local values in sync when the user changes externally
-  useEffect(() => {
+  // Keep local values in sync when the user changes externally (React's recommended
+  // "adjust state when a prop changes" pattern; avoids a second render from an effect).
+  const [syncedUser, setSyncedUser] = useState(user);
+  if (user !== syncedUser) {
+    setSyncedUser(user);
     setNameValue(user?.name || '');
     setCommuterValue(user?.commuter || '');
-  }, [user]);
+  }
 
   // Focus the input when entering name edit mode
   useEffect(() => {
