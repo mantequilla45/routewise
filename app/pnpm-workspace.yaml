@@ -36,3 +36,4 @@ minimumReleaseAgeExclude:
   - expo-router@58.0.28
   - expo-splash-screen@58.0.12
   - expo-system-ui@58.0.7
+  - expo-notifications@58.1.7

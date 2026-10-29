@@ -1,7 +1,7 @@
-import { MultiRouteResult } from '@/services/routes/calculateMultiRoutes';
 import { colors, fonts, radius, spacing, type } from '@/theme';
-import { MappedGeoRouteResult } from '@/types/GeoTypes';
+import { TripOption } from '@/types/GeoTypes';
 import { Ionicons } from '@expo/vector-icons';
+import { Fragment } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 function formatMeters(meters: number) {
@@ -17,22 +17,20 @@ function RouteBadge({ code }: Readonly<{ code: string }>) {
 }
 
 type RouteCardProps = {
-  route: MappedGeoRouteResult | MultiRouteResult;
+  route: TripOption;
   isSelected?: boolean;
   onSelect?: () => void;
 };
 
-/** One route result row: jeep code(s), estimated time, walking, and fare. */
+/** One trip option row: jeep code(s) in riding order, estimated time, walking, and fare. */
 export default function RouteCard({
   route,
   isSelected = false,
   onSelect,
 }: Readonly<RouteCardProps>) {
-  const isTransfer = 'isTransfer' in route && route.isTransfer;
-  const fare = isTransfer && route.totalFare ? route.totalFare : route.fare;
-  const rideMeters = route.distance ?? route.distanceMeters;
-  const hasWalk = route.boardingWalk != null && route.alightingWalk != null;
-  const totalWalk = hasWalk ? route.boardingWalk! + route.alightingWalk! : null;
+  const transfers = route.legs.length - 1;
+  const totalWalk =
+    route.boardingWalk + route.alightingWalk + route.transferWalks.reduce((sum, w) => sum + w, 0);
 
   return (
     <Pressable
@@ -47,45 +45,36 @@ export default function RouteCard({
     >
       <View style={styles.main}>
         <View style={styles.codes}>
-          {isTransfer ? (
-            <>
-              <RouteBadge code={route.firstRoute?.routeCode || route.firstRoute?.routeId || '?'} />
-              <Ionicons name="chevron-forward" size={14} color={colors.textTertiary} />
-              <RouteBadge
-                code={route.secondRoute?.routeCode || route.secondRoute?.routeId || '?'}
-              />
-            </>
-          ) : (
-            <RouteBadge code={route.routeCode || route.routeId} />
-          )}
-          {route.estimatedMinutes != null && (
-            <Text style={styles.minutes}>{route.estimatedMinutes} min</Text>
-          )}
+          {route.legs.map((leg, i) => (
+            <Fragment key={`${leg.routeId}-${i}`}>
+              {i > 0 && <Ionicons name="chevron-forward" size={14} color={colors.textTertiary} />}
+              <RouteBadge code={leg.routeCode} />
+            </Fragment>
+          ))}
+          <Text style={styles.minutes}>{route.estimatedMinutes} min</Text>
         </View>
 
         <View style={styles.meta}>
-          {totalWalk != null && (
-            <View style={styles.metaItem}>
-              <Ionicons name="walk" size={13} color={colors.textSecondary} />
-              <Text style={type.caption}>{formatMeters(totalWalk)}</Text>
-            </View>
+          <View style={styles.metaItem}>
+            <Ionicons name="walk" size={13} color={colors.textSecondary} />
+            <Text style={type.caption}>{formatMeters(totalWalk)}</Text>
+          </View>
+          <View style={styles.metaItem}>
+            <Ionicons name="bus-outline" size={13} color={colors.textSecondary} />
+            <Text style={type.caption}>{formatMeters(route.distance)}</Text>
+          </View>
+          {transfers > 0 && (
+            <Text style={type.caption}>
+              {transfers} {transfers === 1 ? 'transfer' : 'transfers'}
+            </Text>
           )}
-          {rideMeters != null && (
-            <View style={styles.metaItem}>
-              <Ionicons name="bus-outline" size={13} color={colors.textSecondary} />
-              <Text style={type.caption}>{formatMeters(rideMeters)}</Text>
-            </View>
-          )}
-          {isTransfer && <Text style={type.caption}>1 transfer</Text>}
         </View>
       </View>
 
       <View style={styles.fareBlock}>
-        <Text style={styles.fare}>₱{fare}</Text>
-        {isTransfer && (
-          <Text style={type.caption}>
-            ₱{route.firstRoute?.fare} + ₱{route.secondRoute?.fare}
-          </Text>
+        <Text style={styles.fare}>₱{route.fare}</Text>
+        {transfers > 0 && (
+          <Text style={type.caption}>{route.legs.map((leg) => `₱${leg.fare}`).join(' + ')}</Text>
         )}
       </View>
     </Pressable>

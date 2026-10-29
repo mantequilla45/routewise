@@ -3,43 +3,36 @@ export interface LatLng {
   longitude: number;
 }
 
+/** One jeep ride within a trip. */
 export interface RouteSegmentInfo {
   routeId: string;
   routeCode: string;
   routeName: string;
   coordinates: LatLng[];
-  distance: number;
+  distance: number; // meters ridden
   fare: number;
-  startPosition?: number;
-  endPosition?: number;
+  boardAt?: LatLng;
+  alightAt?: LatLng;
 }
 
-export interface MappedGeoRouteResult {
+/** A trip option from POST /routes/calculate: one to three jeeps, fastest first. */
+export interface TripOption {
   routeId: string;
-  distanceMeters?: number;
-  distance?: number;
-  latLng?: LatLng[];
-  coordinates?: LatLng[];
+  routeCode: string; // "10H → 62B" for transfers
+  routeName: string;
+  legs: RouteSegmentInfo[];
+  isTransfer: boolean;
+  coordinates: LatLng[]; // all legs combined
+  distance: number; // meters ridden, all legs
   fare: number;
-  totalFare?: number;
-  startingPoint?: string;
-  endPoint?: string;
-  shouldCrossRoad?: boolean;
-  message?: string;
-
-  // Route calculation properties
-  routeCode?: string;
-  routeName?: string;
-  caseName?: string;
-  isTransfer?: boolean;
+  totalFare: number;
+  boardingWalk: number; // start pin -> first jeep, meters
+  alightingWalk: number; // last jeep -> destination pin, meters
+  transferWalks: number[]; // between jeeps, meters
+  /** Estimated door-to-door minutes (walk + ride + transfer waits). */
+  estimatedMinutes: number;
+  // Two-jeep trips also carry these (used when saving a route)
   firstRoute?: RouteSegmentInfo;
   secondRoute?: RouteSegmentInfo;
   transferPoint?: LatLng;
-  requiresLoop?: boolean;
-  optimized?: boolean;
-  boardingWalk?: number;
-  alightingWalk?: number;
-  /** Estimated door-to-door minutes (walk + ride), computed by the backend. */
-  estimatedMinutes?: number;
-  debugInfo?: Record<string, unknown>;
 }

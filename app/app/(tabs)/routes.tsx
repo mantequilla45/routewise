@@ -85,7 +85,7 @@ export default function RoutesScreen() {
           });
 
           // Navigate to the map screen
-          router.push('/');
+          router.push('/trip');
         }
       }
     } catch (error) {

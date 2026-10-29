@@ -1,12 +1,10 @@
 import DynamicBoxes from '@/components/SavedRoute/DynamicBoxes';
+import useOpenSavedRoute from '@/components/SavedRoute/useOpenSavedRoute';
 import { api, type SavedRouteRow, type TransferPoints } from '@/lib/api';
 import { useAuth } from '@/context/auth';
-import { MapPointsContext } from '@/context/map-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useContext, useEffect, useState, type ComponentProps } from 'react';
+import { useEffect, useState, type ComponentProps } from 'react';
 import { StyleSheet, Text, TextInput, View, Alert, ActivityIndicator } from 'react-native';
-import { router } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, spacing, type, ui } from '@/theme';
 
@@ -50,12 +48,6 @@ function toSavedRoute(route: UserSavedRoute): SavedRoute {
 
 export default function Saved() {
   const { user } = useAuth();
-  const {
-    setPointA,
-    setPointB,
-    setResults,
-    setRoutes: setMapRoutes,
-  } = useContext(MapPointsContext);
   const [searchQuery, setSearchQuery] = useState('');
   const [routes, setRoutes] = useState<SavedRoute[]>([]);
   const [loading, setLoading] = useState(true);
@@ -128,32 +120,7 @@ export default function Saved() {
     }
   };
 
-  const handleRouteSelect = async (route: SavedRoute) => {
-    // Clear existing routes first
-    setResults([]);
-    setMapRoutes([]);
-
-    // Set the start and end points
-    if (route.startLat && route.startLng) {
-      setPointA({
-        latitude: route.startLat,
-        longitude: route.startLng,
-      });
-    }
-
-    if (route.endLat && route.endLng) {
-      setPointB({
-        latitude: route.endLat,
-        longitude: route.endLng,
-      });
-    }
-
-    // Set a flag in AsyncStorage to trigger calculation in SelectorContent
-    await AsyncStorage.setItem('shouldCalculateRoute', 'true');
-
-    // Navigate to home tab (which contains the map)
-    router.replace('/');
-  };
+  const openSavedRoute = useOpenSavedRoute();
 
   // Signed out: show nothing, even if routes from a previous session are still in state.
   const filteredRoutes = (user ? routes : []).filter((route) => {
@@ -212,7 +179,7 @@ export default function Saved() {
           <DynamicBoxes
             routes={filteredRoutes}
             onToggleFavorite={toggleFavorite}
-            onRouteSelect={handleRouteSelect}
+            onRouteSelect={openSavedRoute}
             onDelete={handleDeleteRoute}
           />
         )}

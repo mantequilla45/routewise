@@ -32,7 +32,11 @@
       "predictiveBackGestureEnabled": false,
       "permissions": [
         "android.permission.ACCESS_COARSE_LOCATION",
-        "android.permission.ACCESS_FINE_LOCATION"
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_LOCATION",
+        "android.permission.POST_NOTIFICATIONS"
       ]
     },
     "web": {
@@ -40,6 +44,7 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      "./plugins/withIosBuildFixes",
       "expo-router",
       [
         "expo-splash-screen",
@@ -57,7 +62,7 @@
         "expo-maps",
         {
           "requestLocationPermission": true,
-          "locationPermission": "Allow $(PRODUCT_NAME) to use your location"
+          "locationPermission": "RouteWise uses your location to plan trips from where you are and to follow your ride."
         }
       ],
       [
@@ -78,7 +83,18 @@
       ],
       "expo-web-browser",
       "expo-secure-store",
-      "./plugins/withIosBuildFixes"
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "RouteWise uses your location to plan trips from where you are and to follow your ride.",
+          "locationAlwaysAndWhenInUsePermission": "RouteWise follows your ride in the background so it can tell you when to get off, even with your phone locked.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
+        }
+      ],
+      "expo-notifications",
+      "expo-task-manager"
     ],
     "experiments": {
       "typedRoutes": true,

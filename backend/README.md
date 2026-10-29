@@ -21,9 +21,10 @@ the app goes through here; the app itself holds no Supabase or Google credential
 | DELETE         | `/saved-routes/:id`                                        | Bearer | Delete one of the caller's saved routes                               |
 | GET            | `/routes`                                                  | –      | All jeepney routes (summary)                                          |
 | GET            | `/routes/:id`                                              | –      | One route with polyline coordinates                                   |
-| POST           | `/routes/nearest-point`                                    | –      | `{ latitude, longitude, maxDistance? }`                               |
-| POST           | `/routes/calculate`                                        | –      | `{ from, to }` → single and transfer route options                    |
-| POST           | `/routes/calculate-multi`                                  | –      | `{ from, to }` → two-jeep combinations                                |
+| POST           | `/routes/calculate`                                        | –      | `{ from, to }` → up to 5 trips (1-3 jeeps), fastest first             |
+| GET            | `/places/autocomplete?q=&session=&lat=&lng=`               | –      | Place suggestions (Google Places, biased to Cebu)                     |
+| GET            | `/places/popular`                                          | –      | Curated popular destinations (malls, schools, terminals…)             |
+| GET            | `/places/:id?session=`                                     | –      | Place name, address and coordinates                                   |
 | POST           | `/contributions`                                           | Bearer | Submit a route for review (any signed-in user)                        |
 | GET            | `/routes/catalog`                                          | –      | All routes with geometry (admin browse page)                          |
 | GET            | `/admin/routes`                                            | Admin  | Routes with geometry                                                  |
@@ -39,6 +40,15 @@ A session looks like `{ access_token, refresh_token, expires_in, expires_at, use
 `Authorization: Bearer <access_token>` on protected routes; `401` means refresh and retry.
 "Admin" routes additionally require `users.is_admin` for the caller (`403` otherwise). The admin
 dashboard sends its Supabase session token the same way.
+
+## Trip planning
+
+`src/services/routing/`: the network (`network.ts`) samples every route into points 75 m apart in
+its direction of travel and links points on different routes within 200 m as walking transfers.
+`planner.ts` runs a shortest-path search from the start pin to the destination (walk ~5 km/h,
+jeep ~15 km/h, +5 min per transfer, at most 3 jeeps) and returns up to 5 options, each boarding a
+different first jeep. The network is built in memory on first use (~0.7 s), rebuilt every 10
+minutes, and immediately after an admin edits a route.
 
 ## Run locally
 

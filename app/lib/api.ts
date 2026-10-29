@@ -1,6 +1,6 @@
 import * as SecureStore from 'expo-secure-store';
 import { API_URL } from '@/constants';
-import { LatLng, MappedGeoRouteResult, RouteSegmentInfo } from '@/types/GeoTypes';
+import { LatLng, TripOption, RouteSegmentInfo } from '@/types/GeoTypes';
 
 // ---------------------------------------------------------------------------
 // Types mirrored from backend/src
@@ -67,17 +67,21 @@ export type RouteSummary = {
   created_at: string;
 };
 
-export type NearestPointResult = {
-  found: boolean;
-  original: LatLng;
-  snapped?: boolean;
-  nearest?: LatLng & {
-    route_id: string;
-    route_code: string;
-    route_name: string;
-    distance: number;
-    position_on_route: number;
-  };
+export type PlaceSuggestion = {
+  placeId: string;
+  name: string;
+  address: string;
+};
+
+export type PlaceDetails = PlaceSuggestion & { location: LatLng };
+
+export type PlaceCategory = 'mall' | 'school' | 'terminal' | 'hospital' | 'landmark';
+
+export type PopularPlace = {
+  name: string;
+  area: string;
+  category: PlaceCategory;
+  location: LatLng;
 };
 
 export class ApiError extends Error {
@@ -259,24 +263,31 @@ export const api = {
     remove: (id: string) => apiFetch<void>(`/saved-routes/${id}`, { method: 'DELETE' }),
   },
 
+  places: {
+    popular: () => apiFetch<PopularPlace[]>('/places/popular', { auth: false }),
+    /** `session` groups one search (keystrokes + the final details call) for Google billing. */
+    autocomplete: (q: string, session: string, near?: LatLng | null) =>
+      apiFetch<PlaceSuggestion[]>(
+        `/places/autocomplete?${new URLSearchParams({
+          q,
+          session,
+          ...(near ? { lat: String(near.latitude), lng: String(near.longitude) } : {}),
+        }).toString()}`,
+        { auth: false },
+      ),
+    details: (placeId: string, session: string) =>
+      apiFetch<PlaceDetails>(
+        `/places/${encodeURIComponent(placeId)}?session=${encodeURIComponent(session)}`,
+        { auth: false },
+      ),
+  },
+
   routes: {
     list: () => apiFetch<RouteSummary[]>('/routes', { auth: false }),
     get: (id: string) =>
       apiFetch<RouteSummary & { coordinates: LatLng[] }>(`/routes/${id}`, { auth: false }),
-    nearestPoint: (point: LatLng, maxDistance: number) =>
-      apiFetch<NearestPointResult>('/routes/nearest-point', {
-        method: 'POST',
-        body: { ...point, maxDistance },
-        auth: false,
-      }),
     calculate: (from: LatLng, to: LatLng) =>
-      apiFetch<MappedGeoRouteResult[]>('/routes/calculate', {
-        method: 'POST',
-        body: { from, to },
-        auth: false,
-      }),
-    calculateMulti: (from: LatLng, to: LatLng) =>
-      apiFetch<MappedGeoRouteResult[]>('/routes/calculate-multi', {
+      apiFetch<TripOption[]>('/routes/calculate', {
         method: 'POST',
         body: { from, to },
         auth: false,

@@ -6,6 +6,7 @@ import { HttpError } from './lib/http';
 import { admin } from './routes/admin';
 import { auth } from './routes/auth';
 import { contributions } from './routes/contributions';
+import { places } from './routes/places';
 import { me } from './routes/me';
 import { routes } from './routes/routes';
 import { savedRoutes } from './routes/savedRoutes';
@@ -26,6 +27,7 @@ app.route('/me', me);
 app.route('/saved-routes', savedRoutes);
 app.route('/routes', routes);
 app.route('/contributions', contributions);
+app.route('/places', places);
 app.route('/admin', admin);
 
 app.notFound((c) => c.json({ error: 'Not found' }, 404));

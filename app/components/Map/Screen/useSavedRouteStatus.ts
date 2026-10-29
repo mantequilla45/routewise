@@ -1,10 +1,10 @@
-import { LatLng, MappedGeoRouteResult } from '@/types/GeoTypes';
+import { LatLng, TripOption } from '@/types/GeoTypes';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState } from 'react';
 
 /** Whether the currently selected calculated route is already saved; re-checked when it changes. */
 export function useSavedRouteStatus(
-  results: MappedGeoRouteResult[],
+  results: TripOption[],
   selectedRouteIndex: number | null,
   pointA: LatLng | null,
   pointB: LatLng | null,

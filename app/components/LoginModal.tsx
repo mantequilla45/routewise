@@ -22,17 +22,25 @@ const { height: screenHeight } = Dimensions.get('window');
 type Tab = 'login' | 'signup';
 
 const SEGMENTS: { key: Tab; label: string }[] = [
-  { key: 'login', label: 'Login' },
-  { key: 'signup', label: 'Signup' },
+  { key: 'login', label: 'Log in' },
+  { key: 'signup', label: 'Sign up' },
 ];
 
 type Props = PropsWithChildren<{
   isVisible: boolean;
   onClose: () => void;
+  /** Tab shown each time the modal opens. */
+  initialTab?: Tab;
 }>;
 
-export default function LoginModal({ isVisible, onClose }: Props) {
-  const [activeTab, setActiveTab] = useState<Tab>('login');
+export default function LoginModal({ isVisible, onClose, initialTab = 'login' }: Props) {
+  const [activeTab, setActiveTab] = useState<Tab>(initialTab);
+  // Reset to the requested tab whenever the modal opens (set during render, not in an effect)
+  const [wasVisible, setWasVisible] = useState(isVisible);
+  if (isVisible !== wasVisible) {
+    setWasVisible(isVisible);
+    if (isVisible) setActiveTab(initialTab);
+  }
   const translateY = useAnimatedValue(screenHeight);
   const overlayOpacity = useAnimatedValue(0);
 

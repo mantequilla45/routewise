@@ -1,13 +1,8 @@
 import { Hono } from 'hono';
 import { listRoutesWithGeometry } from '../services/admin/routes';
 import type { LatLng } from '../types/GeoTypes';
-import { calculateRoutes } from '../services/routing/calculateRoutes';
-import { calculateMultiRoutes } from '../services/routing/calculateMultiRoutes';
-import {
-  findNearestRoutePoint,
-  getRouteForDisplay,
-  listRoutes,
-} from '../services/routing/routeQueries';
+import { planTrips } from '../services/routing/planner';
+import { getRouteForDisplay, listRoutes } from '../services/routing/routeQueries';
 
 export const routes = new Hono();
 
@@ -38,23 +33,8 @@ routes.get('/:id', async (c) => {
   return c.json(await getRouteForDisplay(c.req.param('id')));
 });
 
-routes.post('/nearest-point', async (c) => {
-  const body = ((await c.req.json().catch(() => ({}))) ?? {}) as Record<string, unknown>;
-  const point = parseLatLng(body);
-  if (!point) return c.json({ error: 'Latitude and longitude are required' }, 400);
-
-  const maxDistance = typeof body.maxDistance === 'number' ? body.maxDistance : 50;
-  return c.json(await findNearestRoutePoint(point, maxDistance));
-});
-
 routes.post('/calculate', async (c) => {
   const coords = await parseFromTo(c);
   if (!coords) return c.json({ error: 'Missing coordinates' }, 400);
-  return c.json(await calculateRoutes(coords.from, coords.to));
-});
-
-routes.post('/calculate-multi', async (c) => {
-  const coords = await parseFromTo(c);
-  if (!coords) return c.json({ error: 'Missing coordinates' }, 400);
-  return c.json(await calculateMultiRoutes(coords.from, coords.to));
+  return c.json(await planTrips(coords.from, coords.to));
 });

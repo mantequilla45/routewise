@@ -1,45 +1,45 @@
-import { latLongStringifier } from '@/lib/util/latLngStringifier';
 import { colors, radius, spacing, type } from '@/theme';
-import { LatLng } from '@/types/GeoTypes';
+import type { PlaceLabel } from './usePlaceLabel';
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 function PointRow({
   placeholder,
-  point,
+  place,
   onPress,
-}: Readonly<{ placeholder: string; point: LatLng | null; onPress: () => void }>) {
+}: Readonly<{ placeholder: string; place: PlaceLabel | null; onPress: () => void }>) {
   return (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
       accessibilityRole="button"
-      accessibilityLabel={point ? `${placeholder}: pinned` : placeholder}
+      accessibilityLabel={place ? `${placeholder}: ${place.title}` : placeholder}
     >
       <View style={styles.rowText}>
-        <Text style={point ? type.bodyMedium : styles.placeholder} numberOfLines={1}>
-          {point ? 'Pinned on map' : placeholder}
+        <Text style={place ? type.bodyMedium : styles.placeholder} numberOfLines={1}>
+          {place ? place.title : placeholder}
         </Text>
-        {point && (
+        {!!place?.subtitle && (
           <Text style={type.caption} numberOfLines={1}>
-            {latLongStringifier(point)}
+            {place.subtitle}
           </Text>
         )}
       </View>
-      <Ionicons name="map-outline" size={18} color={colors.textTertiary} />
+      <Ionicons name="search" size={16} color={colors.textTertiary} />
     </Pressable>
   );
 }
 
-/** "From" and "To" fields joined by a route connector, each opening pin placement on the map. */
+/** "From" and "To" fields joined by a route connector; tapping one changes that point. */
 export default function PointPicker({
-  pointA,
-  pointB,
+  start,
+  destination,
   onSelectPointA,
   onSelectPointB,
 }: Readonly<{
-  pointA: LatLng | null;
-  pointB: LatLng | null;
+  /** Name (and area) of each point; null shows the placeholder. */
+  start: PlaceLabel | null;
+  destination: PlaceLabel | null;
   onSelectPointA: () => void;
   onSelectPointB: () => void;
 }>) {
@@ -51,9 +51,9 @@ export default function PointPicker({
         <Ionicons name="location-sharp" size={16} color={colors.destination} />
       </View>
       <View style={styles.fields}>
-        <PointRow placeholder="Choose starting point" point={pointA} onPress={onSelectPointA} />
+        <PointRow placeholder="Choose starting point" place={start} onPress={onSelectPointA} />
         <View style={styles.divider} />
-        <PointRow placeholder="Choose destination" point={pointB} onPress={onSelectPointB} />
+        <PointRow placeholder="Choose destination" place={destination} onPress={onSelectPointB} />
       </View>
     </View>
   );

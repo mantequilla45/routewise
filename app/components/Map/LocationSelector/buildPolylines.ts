@@ -1,64 +1,36 @@
-import { LatLng, MappedGeoRouteResult } from '@/types/GeoTypes';
 import type { GoogleMapsPolyline } from '@/context/map-context';
-import { Platform } from 'react-native';
 import { colors } from '@/theme';
+import { LatLng, TripOption } from '@/types/GeoTypes';
+import { Platform } from 'react-native';
 
 // Apple Maps measures line width in points, Google Maps in pixels (~3x denser on phones),
 // so the same number draws far thicker on iOS.
 export const POLYLINE_WIDTH = Platform.OS === 'ios' ? 5 : 12;
-const FIRST_SEGMENT_COLOR = colors.routePrimary;
-const SECOND_SEGMENT_COLOR = colors.routeSecondary;
-const DEFAULT_COLOR = colors.routePrimary;
+
+// One color per jeep in a trip, in riding order.
+const LEG_COLORS = [colors.routePrimary, colors.routeSecondary, colors.origin];
+
+/** Line color of a trip's nth jeep; the route bar's chips use it too. */
+export const legColor = (legIndex: number) => LEG_COLORS[legIndex % LEG_COLORS.length];
 
 function toPolyline(id: string, coordinates: LatLng[], color: string): GoogleMapsPolyline {
   return {
     id,
-    coordinates: coordinates.map((coord) => ({
-      latitude: coord.latitude,
-      longitude: coord.longitude,
-    })),
+    coordinates: coordinates.map(({ latitude, longitude }) => ({ latitude, longitude })),
     color,
     width: POLYLINE_WIDTH,
     geodesic: true,
   };
 }
 
-/**
- * Build one polyline per route (two for transfer routes), ids keyed on the result index so
- * `route_${index}` / `route_${index}_first|second` can be looked up later. Routes with no
- * coordinates still get an empty polyline so indices stay aligned with the results list.
- */
-export function buildPolylines(sortedRoutes: MappedGeoRouteResult[]): GoogleMapsPolyline[] {
-  const polylines: GoogleMapsPolyline[] = [];
+/** Polyline id prefix for every leg of the trip at `index` in the results list. */
+export const tripPolylinePrefix = (index: number) => `route_${index}_`;
 
-  sortedRoutes.forEach((r, resultIndex) => {
-    const isTransfer = 'isTransfer' in r && r.isTransfer === true;
-
-    if (isTransfer && r.firstRoute && r.secondRoute) {
-      if (r.firstRoute.coordinates && r.firstRoute.coordinates.length > 0) {
-        polylines.push(
-          toPolyline(`route_${resultIndex}_first`, r.firstRoute.coordinates, FIRST_SEGMENT_COLOR),
-        );
-      }
-
-      if (r.secondRoute.coordinates && r.secondRoute.coordinates.length > 0) {
-        polylines.push(
-          toPolyline(
-            `route_${resultIndex}_second`,
-            r.secondRoute.coordinates,
-            SECOND_SEGMENT_COLOR,
-          ),
-        );
-      }
-    } else if ((r.latLng && r.latLng.length > 0) || (r.coordinates && r.coordinates.length > 0)) {
-      // Single route polyline - handle both latLng and coordinates formats
-      const routeCoords = r.coordinates ?? r.latLng ?? [];
-      polylines.push(toPolyline(`route_${resultIndex}`, routeCoords, DEFAULT_COLOR));
-    } else {
-      // Push empty polyline to maintain index consistency
-      polylines.push(toPolyline(`route_${resultIndex}_empty`, [], DEFAULT_COLOR));
-    }
-  });
-
-  return polylines;
+/** One polyline per jeep ride, ids `route_<result index>_<leg index>`. */
+export function buildPolylines(trips: TripOption[]): GoogleMapsPolyline[] {
+  return trips.flatMap((trip, index) =>
+    trip.legs.map((leg, legIndex) =>
+      toPolyline(`${tripPolylinePrefix(index)}${legIndex}`, leg.coordinates, legColor(legIndex)),
+    ),
+  );
 }

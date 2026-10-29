@@ -1,5 +1,6 @@
 import { query } from '../../lib/db';
 import { badRequest, notFound } from '../../lib/http';
+import { invalidateNetwork } from '../routing/network';
 
 export type LngLatPair = [number, number];
 
@@ -90,6 +91,7 @@ export async function addRoute(input: RouteInput) {
       toLineString(input.coordinates_forward),
     ],
   );
+  invalidateNetwork(); // trip planning uses the new geometry
   return result[0];
 }
 
@@ -115,6 +117,7 @@ export async function updateRoute(id: string, input: RouteInput) {
     ],
   );
   if (result.length === 0) throw notFound('Route not found');
+  invalidateNetwork(); // trip planning uses the new geometry
   return result[0];
 }
 
@@ -123,5 +126,6 @@ export async function deleteRoute(id: string) {
     id,
   ]);
   if (result.length === 0) throw notFound('Route not found');
+  invalidateNetwork(); // trip planning uses the new geometry
   return result[0];
 }

@@ -3,7 +3,13 @@
 //   (AsyncStorage, SDWebImage) still declare iOS 9-13, which Xcode 27 rejects.
 // - Silences warnings inside pods, and the header warnings Expo/React Native headers raise
 //   when the app target imports them. Other warnings in the app target still show.
-const { withDangerousMod, withXcodeProject } = require('expo/config-plugins');
+// - Drops the push-notification entitlement that expo-notifications adds. Trip alerts are local
+//   notifications, which don't need it, and a Personal Team can't sign an app that has it.
+const {
+  withDangerousMod,
+  withEntitlementsPlist,
+  withXcodeProject,
+} = require('expo/config-plugins');
 const fs = require('fs');
 const path = require('path');
 
@@ -61,6 +67,13 @@ function withAppTargetWarningFlags(config) {
   });
 }
 
+function withoutPushEntitlement(config) {
+  return withEntitlementsPlist(config, (cfg) => {
+    delete cfg.modResults['aps-environment'];
+    return cfg;
+  });
+}
+
 module.exports = function withIosBuildFixes(config, { target = '15.1' } = {}) {
-  return withAppTargetWarningFlags(withPodSettings(config, target));
+  return withoutPushEntitlement(withAppTargetWarningFlags(withPodSettings(config, target)));
 };

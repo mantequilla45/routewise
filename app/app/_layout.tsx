@@ -16,6 +16,9 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { AuthProvider } from '@/context/auth';
 import { MapPointsProvider } from '@/context/map-context';
+import { OnboardingProvider, useOnboarding } from '@/context/onboarding';
+// Defines the background location task; must load before any location update is delivered
+import '@/lib/tripTracking/tracker';
 
 // Prevent splash screen from hiding automatically
 SplashScreen.preventAutoHideAsync();
@@ -33,24 +36,42 @@ export default function RootLayout() {
     Lexend_900Black,
   });
 
-  useEffect(() => {
-    if (loaded || error) {
-      SplashScreen.hideAsync();
-    }
-  }, [loaded, error]);
-
-  if (!loaded && !error) {
-    return null;
-  }
+  const fontsReady = loaded || !!error;
 
   return (
-    <AuthProvider>
-      <MapPointsProvider>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        </Stack>
-        <StatusBar style="dark" />
-      </MapPointsProvider>
-    </AuthProvider>
+    <OnboardingProvider>
+      <AuthProvider>
+        <MapPointsProvider>
+          <AppStack fontsReady={fontsReady} />
+          <StatusBar style="dark" />
+        </MapPointsProvider>
+      </AuthProvider>
+    </OnboardingProvider>
+  );
+}
+
+/** The welcome screen until it has been finished once, then the tabs. */
+function AppStack({ fontsReady }: { fontsReady: boolean }) {
+  const { hasSeenWelcome } = useOnboarding();
+  const ready = fontsReady && hasSeenWelcome !== null;
+
+  // Keep the splash up until fonts and the welcome flag are loaded, so nothing flashes
+  useEffect(() => {
+    if (ready) SplashScreen.hideAsync();
+  }, [ready]);
+
+  if (!ready) return null;
+
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Protected guard={!hasSeenWelcome}>
+        <Stack.Screen name="welcome" />
+      </Stack.Protected>
+      <Stack.Protected guard={!!hasSeenWelcome}>
+        <Stack.Screen name="(tabs)" />
+        {/* Full-screen trip map, pushed over the tabs */}
+        <Stack.Screen name="trip" />
+      </Stack.Protected>
+    </Stack>
   );
 }

@@ -1,4 +1,4 @@
-import { LatLng, MappedGeoRouteResult } from '@/types/GeoTypes';
+import { LatLng, TripOption } from '@/types/GeoTypes';
 import type { GoogleMaps } from 'expo-maps';
 import React, { createContext, ReactNode, useMemo, useState } from 'react';
 
@@ -18,8 +18,8 @@ type MapPointsContextType = {
   setRoutes: (p: GoogleMapsPolyline[]) => void;
   allRoutes: GoogleMapsPolyline[];
   setAllRoutes: (p: GoogleMapsPolyline[]) => void;
-  results: MappedGeoRouteResult[];
-  setResults: (r: MappedGeoRouteResult[]) => void;
+  results: TripOption[];
+  setResults: (r: TripOption[]) => void;
   selectedRouteIndex: number | null;
   setSelectedRouteIndex: (index: number | null) => void;
   isRouteFromList: boolean;
@@ -58,7 +58,7 @@ export const MapPointsProvider: React.FC<{ children: ReactNode }> = ({ children 
   const [isPinPlacementEnabled, setIsPinPlacementEnabled] = useState<boolean>(false);
   const [routes, setRoutes] = useState<GoogleMapsPolyline[]>([]);
   const [allRoutes, setAllRoutes] = useState<GoogleMapsPolyline[]>([]);
-  const [results, setResults] = useState<MappedGeoRouteResult[]>([]);
+  const [results, setResults] = useState<TripOption[]>([]);
   const [selectedRouteIndex, setSelectedRouteIndex] = useState<number | null>(null);
   const [isRouteFromList, setIsRouteFromList] = useState<boolean>(false);
   const [selectedRouteInfo, setSelectedRouteInfo] = useState<{ id: string; name: string } | null>(

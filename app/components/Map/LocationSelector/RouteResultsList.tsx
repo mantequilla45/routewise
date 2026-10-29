@@ -1,6 +1,8 @@
 import { colors, spacing, type } from '@/theme';
-import { MappedGeoRouteResult } from '@/types/GeoTypes';
+import { TripOption } from '@/types/GeoTypes';
 import { ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { motion } from '@/lib/motion';
+import Animated from 'react-native-reanimated';
 import RouteCard from './RouteCard';
 
 /** Scrollable list of route results, fastest first. Renders nothing when there are no results. */
@@ -9,7 +11,7 @@ export default function RouteResultsList({
   selectedRouteIndex,
   onSelect,
 }: Readonly<{
-  results: MappedGeoRouteResult[];
+  results: TripOption[];
   selectedRouteIndex: number | null;
   onSelect: (index: number) => void;
 }>) {
@@ -21,12 +23,12 @@ export default function RouteResultsList({
   }
 
   return (
-    <View style={styles.container}>
+    <Animated.View entering={motion.enter} style={styles.container}>
       <Text style={[type.overline, styles.header]}>
         {results.length} {results.length === 1 ? 'route' : 'routes'} · fastest first
       </Text>
       <ScrollView
-        style={{ maxHeight: Math.round(height * 0.32) }}
+        style={[styles.scroll, { maxHeight: Math.round(height * 0.32) }]}
         showsVerticalScrollIndicator={false}
         nestedScrollEnabled
       >
@@ -41,12 +43,17 @@ export default function RouteResultsList({
           </View>
         ))}
       </ScrollView>
-    </View>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
+  scroll: {
+    flexShrink: 1,
+  },
+  // Both shrink so the list scrolls when the sheet hits its height limit
   container: {
+    flexShrink: 1,
     marginTop: spacing.lg,
   },
   header: {

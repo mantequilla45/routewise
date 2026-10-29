@@ -1,8 +1,9 @@
 import { MapPointsContext } from '@/context/map-context';
-import { colors, elevation, radius, spacing, type, ui } from '@/theme';
+import { colors, elevation, fonts, radius, spacing } from '@/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useContext } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, useColorScheme, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type Props = {
   onCancel: () => void;
@@ -10,13 +11,18 @@ type Props = {
 };
 
 const PIN_SIZE = 40;
+const CONTROL_HEIGHT = 44;
 
 /**
- * Full-screen overlay for pin placement: instruction bar, a pin fixed at the map's centre, and
- * a confirm button. Renders nothing unless pin placement is enabled.
+ * Pin placement over the map, in the same floating style as the route row: a round cancel
+ * button at the top, a pin fixed at the map's centre, and at the bottom a one-line instruction
+ * over a pill button that sets the point. Renders nothing unless pin placement is enabled.
  */
 export default function PinPlacementOverlay({ onCancel, onConfirm }: Props) {
   const { isPinPlacementEnabled, isPointAB } = useContext(MapPointsContext);
+  const insets = useSafeAreaInsets();
+  // The map follows the system theme; the bare instruction text follows the map
+  const onDarkMap = useColorScheme() === 'dark';
 
   if (!isPinPlacementEnabled) return null;
 
@@ -24,19 +30,15 @@ export default function PinPlacementOverlay({ onCancel, onConfirm }: Props) {
 
   return (
     <View style={styles.overlay}>
-      <View style={styles.banner}>
-        <View style={styles.bannerText}>
-          <Text style={type.heading}>{isPointAB ? 'Set starting point' : 'Set destination'}</Text>
-          <Text style={type.caption}>Move the map to place the pin</Text>
-        </View>
+      <View style={[styles.topRow, { top: insets.top + spacing.sm }]} pointerEvents="box-none">
         <Pressable
           onPress={onCancel}
-          hitSlop={8}
-          style={styles.closeButton}
+          hitSlop={6}
+          style={({ pressed }) => [styles.round, pressed && styles.roundPressed]}
           accessibilityRole="button"
           accessibilityLabel="Cancel"
         >
-          <Ionicons name="close" size={20} color={colors.textSecondary} />
+          <Ionicons name="close" size={20} color={colors.text} />
         </Pressable>
       </View>
 
@@ -46,19 +48,31 @@ export default function PinPlacementOverlay({ onCancel, onConfirm }: Props) {
         <View style={styles.pinShadow} />
       </View>
 
-      <Pressable
-        style={({ pressed }) => [
-          ui.primaryButton,
-          styles.confirmButton,
-          pressed && { backgroundColor: colors.accentPressed },
-        ]}
-        onPress={onConfirm}
-        accessibilityRole="button"
+      {/* Instruction right above the button that sets the point */}
+      <View
+        style={[styles.bottom, { bottom: insets.bottom + spacing.md }]}
+        pointerEvents="box-none"
       >
-        <Text style={ui.primaryButtonText}>
-          Confirm {isPointAB ? 'starting point' : 'destination'}
-        </Text>
-      </Pressable>
+        <View style={styles.hint}>
+          <View style={[styles.dot, { backgroundColor: pinColor }]} />
+          <Text
+            style={[styles.hintText, onDarkMap ? styles.hintOnDark : styles.hintOnLight]}
+            numberOfLines={1}
+          >
+            Move the map to place your {isPointAB ? 'start' : 'destination'}
+          </Text>
+        </View>
+        <Pressable
+          onPress={onConfirm}
+          style={({ pressed }) => [styles.confirm, pressed && styles.confirmPressed]}
+          accessibilityRole="button"
+        >
+          <Ionicons name="checkmark" size={20} color={colors.textOnAccent} />
+          <Text style={styles.confirmText}>
+            {isPointAB ? 'Set as start' : 'Set as destination'}
+          </Text>
+        </Pressable>
+      </View>
     </View>
   );
 }
@@ -67,33 +81,56 @@ const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFill,
     pointerEvents: 'box-none',
+    zIndex: 30,
   },
-  banner: {
+  topRow: {
     position: 'absolute',
-    top: 60,
     left: spacing.lg,
     right: spacing.lg,
-    backgroundColor: colors.background,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.md,
-    paddingLeft: spacing.lg,
-    paddingRight: spacing.sm,
-    borderRadius: radius.lg,
-    zIndex: 100,
-    ...elevation.floating,
+    gap: spacing.sm,
   },
-  bannerText: {
-    flex: 1,
-    gap: spacing.xxs,
-  },
-  closeButton: {
-    width: 36,
-    height: 36,
+  round: {
+    width: CONTROL_HEIGHT,
+    height: CONTROL_HEIGHT,
     borderRadius: radius.pill,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.background,
     alignItems: 'center',
     justifyContent: 'center',
+    ...elevation.floating,
+  },
+  roundPressed: {
+    backgroundColor: colors.surface,
+  },
+  // No background: the text sits right on the map, with a halo for contrast
+  hint: {
+    alignSelf: 'center',
+    maxWidth: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.xs,
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: radius.pill,
+  },
+  hintText: {
+    fontFamily: fonts.semibold,
+    fontSize: 15,
+    flexShrink: 1,
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 6,
+  },
+  hintOnDark: {
+    color: colors.textOnDark,
+    textShadowColor: 'rgba(0, 0, 0, 0.6)',
+  },
+  hintOnLight: {
+    color: colors.text,
+    textShadowColor: 'rgba(255, 255, 255, 0.9)',
   },
   pinContainer: {
     position: 'absolute',
@@ -113,11 +150,28 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     backgroundColor: 'rgba(0, 0, 0, 0.25)',
   },
-  confirmButton: {
+  bottom: {
     position: 'absolute',
-    bottom: spacing.xl,
     left: spacing.lg,
     right: spacing.lg,
+    gap: spacing.md,
+  },
+  confirm: {
+    height: 52,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    borderRadius: radius.pill,
+    backgroundColor: colors.accent,
     ...elevation.floating,
+  },
+  confirmPressed: {
+    backgroundColor: colors.accentPressed,
+  },
+  confirmText: {
+    fontFamily: fonts.semibold,
+    fontSize: 16,
+    color: colors.textOnAccent,
   },
 });

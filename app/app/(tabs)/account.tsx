@@ -1,26 +1,14 @@
 import AccountInfoSection from '@/components/Account/AccountInfoSection';
 import ProfileHeader from '@/components/Account/ProfileHeader';
-import LoginModal from '@/components/LoginModal';
-import { LOGO } from '@/constants';
+import SignedOutView from '@/components/Account/SignedOutView';
 import { useAuth } from '@/context/auth';
 import { colors, spacing, type, ui } from '@/theme';
-import { Image } from 'expo-image';
-import { useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function Account() {
   const { user, signOut, isLoading } = useAuth();
-  const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
   const insets = useSafeAreaInsets();
-
-  const openModal = () => {
-    setIsModalVisible(true);
-  };
-
-  const closeModal = () => {
-    setIsModalVisible(false);
-  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -50,26 +38,7 @@ export default function Account() {
     );
   }
 
-  // Not signed in: sign-up prompt
-  return (
-    <View style={[ui.screen, styles.centered, styles.signedOut]}>
-      <Image source={LOGO} style={styles.logo} contentFit="contain" />
-      <View style={styles.copy}>
-        <Text style={[type.title, styles.centerText]}>Sign up now!</Text>
-        <Text style={[type.caption, styles.centerText]}>
-          Create an account to save your routes, activities, and many more.
-        </Text>
-      </View>
-      <Pressable
-        onPress={openModal}
-        style={({ pressed }) => [ui.primaryButton, styles.cta, pressed && styles.ctaPressed]}
-        accessibilityRole="button"
-      >
-        <Text style={ui.primaryButtonText}>Sign Up</Text>
-      </Pressable>
-      <LoginModal isVisible={isModalVisible} onClose={closeModal}></LoginModal>
-    </View>
-  );
+  return <SignedOutView />;
 }
 
 const styles = StyleSheet.create({
@@ -79,26 +48,5 @@ const styles = StyleSheet.create({
   },
   title: {
     paddingHorizontal: spacing.lg,
-  },
-  signedOut: {
-    paddingHorizontal: spacing.xl,
-    gap: spacing.xl,
-  },
-  logo: {
-    width: '60%',
-    height: 64,
-  },
-  copy: {
-    gap: spacing.sm,
-    maxWidth: 320,
-  },
-  centerText: {
-    textAlign: 'center',
-  },
-  cta: {
-    alignSelf: 'stretch',
-  },
-  ctaPressed: {
-    backgroundColor: colors.accentPressed,
   },
 });

@@ -17,6 +17,8 @@ export const env = {
   databaseUrl: required('DATABASE_URL'),
   googleClientId: optional('GOOGLE_CLIENT_ID', ''),
   googleClientSecret: optional('GOOGLE_CLIENT_SECRET', ''),
+  // Server-side Google key for Places API (New): place search for the app.
+  googleMapsServerKey: optional('GMAPS_SERVER_KEY', ''),
   apiUrl: optional('API_URL', 'http://localhost:3000').replace(/\/$/, ''),
   allowedRedirectUris: optional('ALLOWED_REDIRECT_URIS', 'routewise://')
     .split(',')
