@@ -79,7 +79,7 @@
       ],
       "expo-web-browser",
       "expo-secure-store",
-      "./plugins/withPodDeploymentTarget"
+      "./plugins/withIosBuildFixes"
     ],
     "experiments": {
       "typedRoutes": true,
