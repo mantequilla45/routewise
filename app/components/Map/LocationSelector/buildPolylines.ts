@@ -1,7 +1,10 @@
 import { LatLng, MappedGeoRouteResult } from '@/types/GeoTypes';
 import type { GoogleMapsPolyline } from '@/context/map-context';
+import { Platform } from 'react-native';
 
-const POLYLINE_WIDTH = 16;
+// Apple Maps measures line width in points, Google Maps in pixels (~3x denser on phones),
+// so the same number draws far thicker on iOS.
+export const POLYLINE_WIDTH = Platform.OS === 'ios' ? 5 : 12;
 const FIRST_SEGMENT_COLOR = '#4CAF50'; // Green for first segment
 const SECOND_SEGMENT_COLOR = '#FF6B6B'; // Red for second segment
 const DEFAULT_COLOR = '#33ff00'; // Default green

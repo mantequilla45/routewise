@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { POLYLINE_WIDTH } from '@/components/Map/LocationSelector/buildPolylines';
 import { useContext, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -68,7 +69,7 @@ export default function RoutesScreen() {
             id: `route_${route.route_id}`,
             coordinates: fullRoute.coordinates,
             color: route.route_color || '#33ff00',
-            width: 16,
+            width: POLYLINE_WIDTH,
             geodesic: true,
           };
 
