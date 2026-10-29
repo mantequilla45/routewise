@@ -2,9 +2,26 @@ import { legColor } from '@/components/Map/LocationSelector/buildPolylines';
 import { MapPointsContext } from '@/context/map-context';
 import { colors, elevation, fonts, radius, spacing, type } from '@/theme';
 import { Ionicons } from '@expo/vector-icons';
-import { Fragment, useContext } from 'react';
+import { Fragment, useContext, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, { Easing, withDelay, withSpring, withTiming } from 'react-native-reanimated';
+import Animated, {
+  Easing,
+  FadeIn,
+  FadeOut,
+  withDelay,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
+
+// How long the full route name stays up after tapping the short one
+const FULL_NAME_MS = 2000;
+
+/** "Busay, Cebu City - Carbon Public Market" → "Busay - Carbon Public Market" */
+const shortRouteName = (name: string) =>
+  name
+    .split(' - ')
+    .map((end) => end.split(',')[0].trim())
+    .join(' - ');
 
 // Each route piece pops on its own, in place: it shrinks and fades out when the route closes and
 // springs back in when one is shown. `delay` staggers them so they never move as one block.
@@ -64,7 +81,8 @@ function RoundButton({
  * Top of the trip map, floating straight on the map with no card behind it: back, the jeeps to
  * ride (dark pill, dots in each jeep's line color), the time and fare (white pill), and close.
  * Closing a calculated trip hands back to the caller, which reopens the results; tapping the
- * trip's pills reopens them too, keeping the trip on the map.
+ * trip's pills reopens them too, keeping the trip on the map. A route opened from the Routes tab
+ * has no close (back leaves the map), and its name stays beside its code.
  */
 export default function RouteInfoHeader({
   onBack,
@@ -88,7 +106,6 @@ export default function RouteInfoHeader({
     setSelectedRouteInfo,
     setSelectedRouteIndex,
     isRouteFromList,
-    setIsRouteFromList,
   } = useContext(MapPointsContext);
 
   const trip =
@@ -96,16 +113,23 @@ export default function RouteInfoHeader({
   const listRoute = isRouteFromList ? selectedRouteInfo : null;
   const isShown = routes.length > 0 && (!!trip || !!listRoute);
 
+  // Only a calculated trip can be closed, back to its results
   const close = () => {
     setRoutes([]);
     setSelectedRouteInfo(null);
-    if (isRouteFromList) {
-      setIsRouteFromList(false);
-    } else {
-      setSelectedRouteIndex(null);
-      onCloseResult();
-    }
+    setSelectedRouteIndex(null);
+    onCloseResult();
   };
+
+  // A route's short name; tapping it shows the full one for a moment
+  const [showFullName, setShowFullName] = useState(false);
+  useEffect(() => {
+    if (!showFullName) return;
+    const timer = setTimeout(() => setShowFullName(false), FULL_NAME_MS);
+    return () => clearTimeout(timer);
+  }, [showFullName]);
+  const fullName = listRoute?.name ?? '';
+  const hasLongerName = shortRouteName(fullName) !== fullName;
 
   const codes = trip ? trip.legs.map((leg) => leg.routeCode) : [listRoute?.id ?? ''];
 
@@ -115,7 +139,7 @@ export default function RouteInfoHeader({
 
       {/* Always mounted, so the pills inside can play their exit when the route closes. The
           time pill wraps under the jeeps when long codes leave no room beside them. */}
-      <View style={styles.middle} pointerEvents="box-none">
+      <View style={[styles.middle, listRoute && styles.oneLine]} pointerEvents="box-none">
         {isShown && (
           <>
             <Animated.View {...pop(0, 3)}>
@@ -142,11 +166,11 @@ export default function RouteInfoHeader({
 
             <Animated.View {...pop(1, 3)} style={styles.infoSlot}>
               <Pressable
-                onPress={onOpenResults}
-                disabled={!trip || !onOpenResults}
+                onPress={trip ? onOpenResults : () => setShowFullName((shown) => !shown)}
+                disabled={trip ? !onOpenResults : !hasLongerName}
                 style={({ pressed }) => [styles.info, pressed && styles.pillPressed]}
-                accessibilityRole={trip ? 'button' : undefined}
-                accessibilityLabel={trip ? 'Show route options' : undefined}
+                accessibilityRole="button"
+                accessibilityLabel={trip ? 'Show route options' : fullName}
               >
                 {trip ? (
                   <Text style={styles.infoText} numberOfLines={1}>
@@ -154,22 +178,32 @@ export default function RouteInfoHeader({
                   </Text>
                 ) : (
                   <Text style={[styles.infoText, styles.infoMuted]} numberOfLines={1}>
-                    {listRoute?.name}
+                    {shortRouteName(fullName)}
                   </Text>
                 )}
               </Pressable>
             </Animated.View>
           </>
         )}
+
+        {listRoute && showFullName && (
+          <Animated.View
+            entering={FadeIn.duration(140)}
+            exiting={FadeOut.duration(140)}
+            style={styles.fullName}
+            pointerEvents="none"
+          >
+            <View style={styles.fullNameBubble}>
+              <Text style={styles.fullNameText}>{fullName}</Text>
+            </View>
+          </Animated.View>
+        )}
       </View>
 
-      {isShown && canClose && (
+      {/* A route from the Routes tab has nothing to go back to here: back leaves the map */}
+      {isShown && canClose && !isRouteFromList && (
         <Animated.View {...pop(2, 3)}>
-          <RoundButton
-            icon="close"
-            label={isRouteFromList ? 'Close route' : 'Back to results'}
-            onPress={close}
-          />
+          <RoundButton icon="close" label="Back to results" onPress={close} />
         </Animated.View>
       )}
     </>
@@ -204,6 +238,10 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     maxWidth: '100%',
   },
+  // A route's name stays beside its code, cut short if it doesn't fit
+  oneLine: {
+    flexWrap: 'nowrap',
+  },
   pillPressed: {
     opacity: 0.7,
   },
@@ -234,6 +272,26 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     backgroundColor: colors.background,
     ...elevation.floating,
+  },
+  // Under the pills, spanning the row
+  fullName: {
+    position: 'absolute',
+    top: PILL_HEIGHT + spacing.sm,
+    left: 0,
+    right: 0,
+    alignItems: 'flex-start',
+  },
+  fullNameBubble: {
+    backgroundColor: colors.background,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.md,
+    ...elevation.floating,
+  },
+  fullNameText: {
+    fontFamily: fonts.regular,
+    fontSize: 14,
+    color: colors.text,
   },
   infoText: {
     fontFamily: fonts.semibold,

@@ -37,6 +37,7 @@ export default function RoutesScreen() {
     setAllRoutes,
     setIsRouteFromList,
     setSelectedRouteInfo,
+    resetTrip,
   } = useContext(MapPointsContext);
 
   const fetchRoutes = () =>
@@ -75,7 +76,8 @@ export default function RoutesScreen() {
             geodesic: true,
           };
 
-          // Set the route on the map context
+          // Show only this route: no pins or results left from a trip calculated earlier
+          resetTrip();
           setMapRoutes([polyline]);
           setAllRoutes([polyline]);
           setIsRouteFromList(true); // Mark that this route came from the list

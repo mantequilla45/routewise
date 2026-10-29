@@ -78,11 +78,17 @@ export type PlaceDetails = PlaceSuggestion & { location: LatLng };
 export type PlaceCategory = 'mall' | 'school' | 'terminal' | 'hospital' | 'landmark';
 
 export type PopularPlace = {
+  placeId: string;
   name: string;
   area: string;
   category: PlaceCategory;
   location: LatLng;
+  /** Absent when Google has no photo or the lookup failed. */
+  photo: { path: string; attribution: string } | null;
 };
+
+/** Full URL for a backend-relative path such as a place photo. */
+export const backendUrl = (path: string) => `${API_URL}${path}`;
 
 export class ApiError extends Error {
   constructor(

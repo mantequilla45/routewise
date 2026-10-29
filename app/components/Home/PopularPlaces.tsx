@@ -1,13 +1,34 @@
-import type { PlaceCategory } from '@/lib/api';
+import { backendUrl, type PlaceCategory, type PopularPlace } from '@/lib/api';
 import { motion } from '@/lib/motion';
 import { colors, fonts, radius, spacing, type } from '@/theme';
 import { LatLng } from '@/types/GeoTypes';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { CATEGORIES, iconForCategory } from './placeCategories';
 import usePopularPlaces from './usePopularPlaces';
+
+/** The place's photo, or its category icon while loading or when there is no photo. */
+function Thumbnail({ place }: Readonly<{ place: PopularPlace }>) {
+  return (
+    <View style={styles.thumb}>
+      <Ionicons name={iconForCategory(place.category)} size={20} color={colors.textTertiary} />
+      {place.photo && (
+        <Image
+          source={{ uri: backendUrl(place.photo.path) }}
+          style={StyleSheet.absoluteFill}
+          contentFit="cover"
+          transition={200}
+          cachePolicy="disk"
+          recyclingKey={place.placeId}
+          accessibilityIgnoresInvertColors
+        />
+      )}
+    </View>
+  );
+}
 
 /**
  * Well-known destinations, filterable by category; tapping one starts a trip there. Fills the
@@ -69,9 +90,7 @@ export default function PopularPlaces({
               style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
               accessibilityRole="button"
             >
-              <View style={styles.icon}>
-                <Ionicons name={iconForCategory(place.category)} size={18} color={colors.text} />
-              </View>
+              <Thumbnail place={place} />
               <View style={styles.rowText}>
                 <Text style={type.bodyMedium} numberOfLines={1}>
                   {place.name}
@@ -79,6 +98,12 @@ export default function PopularPlaces({
                 <Text style={type.caption} numberOfLines={1}>
                   {place.area}
                 </Text>
+                {place.photo && (
+                  // Google requires the photo's author to be shown with it
+                  <Text style={styles.credit} numberOfLines={1}>
+                    Photo: {place.photo.attribution}
+                  </Text>
+                )}
               </View>
               <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
             </Pressable>
@@ -138,20 +163,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    minHeight: 60,
+    minHeight: 76,
+    paddingVertical: spacing.sm,
     paddingHorizontal: spacing.xs,
     borderRadius: radius.md,
   },
   rowPressed: {
     backgroundColor: colors.surface,
   },
-  icon: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.pill,
+  thumb: {
+    width: 56,
+    height: 56,
+    borderRadius: radius.md,
     backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  credit: {
+    fontFamily: fonts.regular,
+    fontSize: 11,
+    lineHeight: 14,
+    color: colors.textTertiary,
   },
   rowText: {
     flex: 1,
@@ -160,6 +193,6 @@ const styles = StyleSheet.create({
   divider: {
     height: StyleSheet.hairlineWidth,
     backgroundColor: colors.border,
-    marginLeft: 52,
+    marginLeft: 72,
   },
 });

@@ -46,7 +46,7 @@ dashboard sends its Supabase session token the same way.
 `src/services/routing/`: the network (`network.ts`) samples every route into points 75 m apart in
 its direction of travel and links points on different routes within 200 m as walking transfers.
 `planner.ts` runs a shortest-path search from the start pin to the destination (walk ~5 km/h,
-jeep ~15 km/h, +5 min per transfer, at most 3 jeeps) and returns up to 5 options, each boarding a
+jeep ~15 km/h, +5 min per transfer, at most 3 jeeps, at least 400 m on each jeep) and returns up to 5 options, each boarding a
 different first jeep. The network is built in memory on first use (~0.7 s), rebuilt every 10
 minutes, and immediately after an admin edits a route.
 

@@ -26,6 +26,8 @@ type MapPointsContextType = {
   setIsRouteFromList: (value: boolean) => void;
   selectedRouteInfo: { id: string; name: string } | null;
   setSelectedRouteInfo: (info: { id: string; name: string } | null) => void;
+  /** Clear points, results and drawn routes, so the next trip or route starts clean. */
+  resetTrip: () => void;
 };
 
 export const MapPointsContext = createContext<MapPointsContextType>({
@@ -49,6 +51,7 @@ export const MapPointsContext = createContext<MapPointsContextType>({
   setIsRouteFromList: () => {},
   selectedRouteInfo: null,
   setSelectedRouteInfo: () => {},
+  resetTrip: () => {},
 });
 
 export const MapPointsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -65,8 +68,19 @@ export const MapPointsProvider: React.FC<{ children: ReactNode }> = ({ children 
     null,
   );
 
-  const memoizedValue = useMemo(
-    () => ({
+  const memoizedValue = useMemo(() => {
+    const resetTrip = () => {
+      setResults([]);
+      setRoutes([]);
+      setAllRoutes([]);
+      setSelectedRouteIndex(null);
+      setSelectedRouteInfo(null);
+      setIsRouteFromList(false);
+      setIsPinPlacementEnabled(false);
+      setPointA(null);
+      setPointB(null);
+    };
+    return {
       pointA,
       pointB,
       setPointA,
@@ -87,20 +101,20 @@ export const MapPointsProvider: React.FC<{ children: ReactNode }> = ({ children 
       setIsRouteFromList,
       selectedRouteInfo,
       setSelectedRouteInfo,
-    }),
-    [
-      pointA,
-      pointB,
-      isPointAB,
-      isPinPlacementEnabled,
-      routes,
-      allRoutes,
-      results,
-      selectedRouteIndex,
-      isRouteFromList,
-      selectedRouteInfo,
-    ],
-  );
+      resetTrip,
+    };
+  }, [
+    pointA,
+    pointB,
+    isPointAB,
+    isPinPlacementEnabled,
+    routes,
+    allRoutes,
+    results,
+    selectedRouteIndex,
+    isRouteFromList,
+    selectedRouteInfo,
+  ]);
 
   return <MapPointsContext.Provider value={memoizedValue}>{children}</MapPointsContext.Provider>;
 };

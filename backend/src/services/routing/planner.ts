@@ -1,7 +1,7 @@
 import { notFound } from '../../lib/http';
 import type { LatLng } from '../../types/GeoTypes';
 import { MinHeap, sliceLine } from './geometry';
-import { getNetwork, NODE_SPACING_M, type Network, type Node } from './network';
+import { getNetwork, type Network, type Node } from './network';
 
 /**
  * Trip planner: shortest path over the jeepney network (see network.ts), scored in minutes.
@@ -17,7 +17,22 @@ const TRANSFER_PENALTY_MIN = 5;
 // Farthest walk from a pin to where a jeep can be boarded or left.
 const ACCESS_RADIUS_M = 500;
 const MAX_TRANSFERS = 2;
+// Shortest ride worth taking before getting off (to transfer or at the destination). Without
+// it, a one-stop hop can stand in for a longer walk: ride 100 m for ₱13 just to get within
+// transfer range of another jeep.
+const MIN_RIDE_M = 400;
 const MAX_OPTIONS = 5;
+// Searches allowed to fill MAX_OPTIONS, since padded trips (below) are thrown away.
+const MAX_SEARCHES = 10;
+
+/**
+ * True when `trip` is `other` with extra jeeps added: every jeep of the shorter `other` is in
+ * `trip`. E.g. "07B → 06H" when you can walk to 06H directly: more fare and a transfer for
+ * nothing, so it isn't a real alternative.
+ */
+const isPadded = (trip: TripOption, other: TripOption) =>
+  other.legs.length < trip.legs.length &&
+  other.legs.every((leg) => trip.legs.some((l) => l.routeId === leg.routeId));
 
 // Fare per jeep: ₱13 minimum, otherwise ₱2.20 per km, rounded up.
 const MINIMUM_FARE = 13;
@@ -73,6 +88,7 @@ function search(
 ): { node: number; cost: number; steps: (Step | undefined)[] } | null {
   const cost = new Float64Array(net.nodes.length).fill(Infinity);
   const transfersUsed = new Uint8Array(net.nodes.length);
+  const ridden = new Float64Array(net.nodes.length); // meters on the current jeep so far
   const steps: (Step | undefined)[] = new Array(net.nodes.length);
   const heap = new MinHeap<number>();
   let bestDestination = { node: -1, cost: Infinity };
@@ -82,6 +98,7 @@ function search(
     const c = distance / WALK_M_PER_MIN;
     if (c < cost[item.id]) {
       cost[item.id] = c;
+      ridden[item.id] = 0;
       steps[item.id] = { kind: 'board', walk: distance };
       heap.push(c, item.id);
     }
@@ -94,7 +111,7 @@ function search(
     if (key >= bestDestination.cost) break;
 
     const walkOut = egress.get(id);
-    if (walkOut !== undefined) {
+    if (walkOut !== undefined && ridden[id] >= MIN_RIDE_M) {
       const total = key + walkOut / WALK_M_PER_MIN;
       if (total < bestDestination.cost) {
         bestDestination = { node: id, cost: total };
@@ -110,18 +127,20 @@ function search(
       if (c < cost[next.id]) {
         cost[next.id] = c;
         transfersUsed[next.id] = transfersUsed[id];
+        ridden[next.id] = ridden[id] + ride;
         steps[next.id] = { kind: 'ride', from: id };
         heap.push(c, next.id);
       }
     }
 
-    // Transfer only after riding: never straight after boarding or another transfer
-    if (transfersUsed[id] < MAX_TRANSFERS && steps[id]?.kind === 'ride') {
+    // Transfer only after a real ride: never straight after boarding or after a short hop
+    if (transfersUsed[id] < MAX_TRANSFERS && ridden[id] >= MIN_RIDE_M) {
       for (const t of net.transfers[id]) {
         const c = key + t.walk / WALK_M_PER_MIN + TRANSFER_PENALTY_MIN;
         if (c < cost[t.to]) {
           cost[t.to] = c;
           transfersUsed[t.to] = transfersUsed[id] + 1;
+          ridden[t.to] = 0;
           steps[t.to] = { kind: 'transfer', from: id, walk: t.walk };
           heap.push(c, t.to);
         }
@@ -221,13 +240,11 @@ export async function planTrips(from: LatLng, to: LatLng): Promise<TripOption[]>
   const options: TripOption[] = [];
   const seen = new Set<string>();
   const bannedFirst = new Set<number>();
-  for (let i = 0; i < MAX_OPTIONS; i++) {
+  for (let i = 0; i < MAX_SEARCHES && options.length < MAX_OPTIONS; i++) {
     const found = search(net, from, egress, bannedFirst);
     if (!found) break;
     const trip = toTrip(net, found.node, found.steps, egress.get(found.node)!, found.cost);
-    // A "ride" shorter than one node gap is really a walk; not worth offering
-    const rides = trip.legs.every((leg) => leg.distance >= NODE_SPACING_M);
-    if (rides && !seen.has(trip.routeId)) {
+    if (!seen.has(trip.routeId) && !options.some((o) => isPadded(trip, o))) {
       seen.add(trip.routeId);
       options.push(trip);
     }
@@ -240,6 +257,9 @@ export async function planTrips(from: LatLng, to: LatLng): Promise<TripOption[]>
       debugInfo: { reason: 'no path with up to 3 jeeps' },
     });
   }
-  // Searches run cheapest-first, but the first-jeep bans can surface a faster later option
-  return options.sort((a, b) => a.estimatedMinutes - b.estimatedMinutes);
+  // A shorter trip found later can pad out one found earlier. Searches run cheapest-first, but
+  // the first-jeep bans can surface a faster later option.
+  return options
+    .filter((trip) => !options.some((o) => isPadded(trip, o)))
+    .sort((a, b) => a.estimatedMinutes - b.estimatedMinutes);
 }

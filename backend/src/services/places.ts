@@ -123,3 +123,45 @@ export async function placeDetails(
     location: { latitude: data.location.latitude, longitude: data.location.longitude },
   };
 }
+
+export interface PlacePhoto {
+  /** Google's photo resource name. Must not be stored long term; fetch it fresh. */
+  name: string;
+  /** Who took it. Google requires this to be shown with the photo. */
+  attribution: string;
+}
+
+type PhotosResponse = {
+  photos?: { name: string; authorAttributions?: { displayName?: string }[] }[];
+};
+
+/** The first photo of a place and its author, or null when it has none. */
+export async function placePhoto(placeId: string): Promise<PlacePhoto | null> {
+  const data = await placesFetch<PhotosResponse>(
+    `/places/${encodeURIComponent(placeId)}`,
+    { method: 'GET' },
+    'photos',
+  );
+  const photo = data.photos?.[0];
+  if (!photo) return null;
+  return {
+    name: photo.name,
+    attribution: photo.authorAttributions?.[0]?.displayName ?? 'Google Maps contributor',
+  };
+}
+
+/** A photo resource name: `places/{placeId}/photos/{photoId}`. */
+export const PHOTO_NAME = /^places\/[\w-]+\/photos\/[\w-]+$/;
+
+/**
+ * A short-lived image URL for a photo, sized to `maxWidthPx`. The URL carries no API key, so the
+ * app can load it directly.
+ */
+export async function photoUrl(photoName: string, maxWidthPx: number): Promise<string> {
+  const data = await placesFetch<{ photoUri?: string }>(
+    `/${photoName}/media?maxWidthPx=${maxWidthPx}&skipHttpRedirect=true`,
+    { method: 'GET' },
+  );
+  if (!data.photoUri) throw notFound('Photo not found');
+  return data.photoUri;
+}

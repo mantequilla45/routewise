@@ -28,34 +28,11 @@ export default function Home() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuth();
-  const {
-    setPointA,
-    setPointB,
-    setResults,
-    setRoutes,
-    setAllRoutes,
-    setSelectedRouteIndex,
-    setSelectedRouteInfo,
-    setIsRouteFromList,
-    setIsPinPlacementEnabled,
-  } = useContext(MapPointsContext);
+  const { setPointB, resetTrip } = useContext(MapPointsContext);
   // While searching, only the field and its suggestions show
   const [isSearching, setIsSearching] = useState(false);
 
   const firstName = user?.name?.trim().split(/\s+/)[0];
-
-  // Every trip started here begins clean: no points, results or drawn routes from before.
-  const resetTrip = () => {
-    setResults([]);
-    setRoutes([]);
-    setAllRoutes([]);
-    setSelectedRouteIndex(null);
-    setSelectedRouteInfo(null);
-    setIsRouteFromList(false);
-    setIsPinPlacementEnabled(false);
-    setPointA(null);
-    setPointB(null);
-  };
 
   const goTo = (point: LatLng, name: string) => {
     addRecentPlace({ name, location: point });
