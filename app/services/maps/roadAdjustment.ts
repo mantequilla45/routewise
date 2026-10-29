@@ -7,8 +7,8 @@ import { api } from '@/lib/api';
  */
 export async function adjustToNearestRoad(point: LatLng): Promise<LatLng> {
   try {
-    // 200 meters max distance to snap
-    const data = await api.routes.nearestPoint(point, 0.2);
+    // Search radius in meters (the backend's unit). The backend only snaps if within 15 m.
+    const data = await api.routes.nearestPoint(point, 200);
 
     if (data.found && data.snapped && data.nearest) {
       return {
