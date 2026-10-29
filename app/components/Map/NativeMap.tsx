@@ -11,6 +11,7 @@ import {
   useContext,
   useEffect,
   useImperativeHandle,
+  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -37,11 +38,16 @@ const FIT_PADDING = { top: 120, bottom: 110, left: 32, right: 32 };
 // Street-level zoom for focusing on a single point.
 const FOCUS_ZOOM = 16;
 
-// Landmarks stay visible for orientation, but tapping them must not open Apple's place card:
-// taps on the map are for placing trip pins. While a trip is tracked, the rider's location dot
-// shows too. Stable objects, so re-renders don't reconfigure the map.
-const APPLE_MAP_PROPERTIES = { selectionEnabled: false };
-const APPLE_MAP_PROPERTIES_TRACKING = { selectionEnabled: false, isMyLocationEnabled: true };
+// Place names (shops, landmarks) are hidden unless `showPlaces`; streets and areas always show.
+// Tapping a place must never open Apple's place card: taps on the map are for trip pins.
+const APPLE_HIDE_PLACES = { including: [] };
+const APPLE_SHOW_PLACES = { excluding: [] };
+const GOOGLE_HIDE_PLACES = {
+  json: JSON.stringify([
+    { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+    { featureType: 'transit', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
+  ]),
+};
 
 // Default camera: Cebu City. A stable object, so re-renders never reset the camera.
 const INITIAL_CAMERA = {
@@ -52,9 +58,14 @@ const INITIAL_CAMERA = {
 type NativeMapProps = {
   /** Tap on the map itself (not a marker or landmark). */
   onMapPress?: () => void;
+  /** Show shop and landmark names and icons (off by default to keep the route readable). */
+  showPlaces?: boolean;
 };
 
-const NativeMap = forwardRef<NativeMapRef, NativeMapProps>(function NativeMap({ onMapPress }, ref) {
+const NativeMap = forwardRef<NativeMapRef, NativeMapProps>(function NativeMap(
+  { onMapPress, showPlaces = false },
+  ref,
+) {
   const googleMapRef = useRef<GoogleMaps.MapView>(null);
   const appleMapRef = useRef<AppleMaps.MapView>(null);
   const {
@@ -71,6 +82,15 @@ const NativeMap = forwardRef<NativeMapRef, NativeMapProps>(function NativeMap({ 
     routes,
   } = useContext(MapPointsContext);
   const isTracking = useActiveTrip() !== null;
+  // Rebuilt only when a setting changes, so re-renders don't reconfigure the map
+  const appleProperties = useMemo(
+    () => ({
+      selectionEnabled: false,
+      isMyLocationEnabled: isTracking, // Rider's dot while a trip is tracked
+      pointsOfInterest: showPlaces ? APPLE_SHOW_PLACES : APPLE_HIDE_PLACES,
+    }),
+    [isTracking, showPlaces],
+  );
   const insets = useSafeAreaInsets();
   const [lastSelectedPoint, setLastSelectedPoint] = useState<'A' | 'B' | null>(null);
   const [currentCenter, setCurrentCenter] = useState<LatLng>({
@@ -218,6 +238,7 @@ const NativeMap = forwardRef<NativeMapRef, NativeMapProps>(function NativeMap({ 
         properties={{
           isMyLocationEnabled: isTracking, // Rider's dot while a trip is tracked
           isTrafficEnabled: false,
+          mapStyleOptions: showPlaces ? undefined : GOOGLE_HIDE_PLACES,
         }}
         onCameraMove={handleCameraChange}
         onMapClick={() => onMapPress?.()}
@@ -230,7 +251,7 @@ const NativeMap = forwardRef<NativeMapRef, NativeMapProps>(function NativeMap({ 
       <AppleMaps.View
         ref={appleMapRef}
         style={styles.map}
-        properties={isTracking ? APPLE_MAP_PROPERTIES_TRACKING : APPLE_MAP_PROPERTIES}
+        properties={appleProperties}
         // The route bar spans the top of the screen where this button sits
         uiSettings={{ myLocationButtonEnabled: routes.length === 0 }}
         cameraPosition={initialCamera}

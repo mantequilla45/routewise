@@ -46,6 +46,8 @@ export default function MapScreen({
     isPinPlacementEnabled,
   } = useContext(MapPointsContext);
   const activeTrip = useActiveTrip();
+  // Shop and landmark names on the map: off by default so the route stands out
+  const [showPlaces, setShowPlaces] = useState(false);
   const { isCalculating, onCalculate } = useRouteCalculation();
   const mapRef = useRef<NativeMapRef>(null);
   const insets = useSafeAreaInsets();
@@ -166,10 +168,48 @@ export default function MapScreen({
   // Leaving the map ends a tracked trip, after asking
   const goBack = () => (activeTrip ? confirmEndTrip(leave) : leave());
 
+  // Map buttons over the map once the sheet is tucked away: place names on/off, and with a
+  // route on the map, save and recenter/locate
+  const showControls = !isModalVisible && !isPinPlacementEnabled;
+  const mapControls = (
+    <>
+      <Pressable
+        onPress={() => setShowPlaces((s) => !s)}
+        style={({ pressed }) => [
+          styles.mapButton,
+          showPlaces && styles.mapButtonOn,
+          pressed && styles.mapButtonPressed,
+        ]}
+        hitSlop={8}
+        accessibilityRole="switch"
+        accessibilityState={{ checked: showPlaces }}
+        accessibilityLabel="Show places"
+      >
+        <Ionicons
+          name={showPlaces ? 'storefront' : 'storefront-outline'}
+          size={20}
+          color={showPlaces ? colors.textOnDark : colors.text}
+        />
+      </Pressable>
+      {routes.length > 0 && <SaveRouteButton />}
+      {routes.length > 0 && (
+        <Pressable
+          onPress={recenter}
+          style={({ pressed }) => [styles.mapButton, pressed && styles.mapButtonPressed]}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={activeTrip ? 'Show my location' : 'Show the whole route'}
+        >
+          <Ionicons name={activeTrip ? 'locate' : 'scan-outline'} size={20} color={colors.text} />
+        </Pressable>
+      )}
+    </>
+  );
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.mapContainer}>
-        <NativeMap ref={mapRef} onMapPress={minimizeSheet} />
+        <NativeMap ref={mapRef} onMapPress={minimizeSheet} showPlaces={showPlaces} />
       </View>
 
       <View style={[styles.topBar, { top: insets.top + spacing.sm }]} pointerEvents="box-none">
@@ -203,27 +243,19 @@ export default function MapScreen({
         style={[styles.bottomStack, { bottom: insets.bottom + spacing.sm }]}
         pointerEvents="box-none"
       >
-        {!isModalVisible && !isPinPlacementEnabled && routes.length > 0 && (
+        {/* While tracking, the trip panel stacks these in its own column above its arrow */}
+        {!activeTrip && showControls && (
           <View style={styles.controls} pointerEvents="box-none">
-            <SaveRouteButton />
-            <Pressable
-              onPress={recenter}
-              style={({ pressed }) => [styles.mapButton, pressed && styles.mapButtonPressed]}
-              hitSlop={8}
-              accessibilityRole="button"
-              accessibilityLabel={activeTrip ? 'Show my location' : 'Show the whole route'}
-            >
-              <Ionicons
-                name={activeTrip ? 'locate' : 'scan-outline'}
-                size={20}
-                color={colors.text}
-              />
-            </Pressable>
+            {mapControls}
           </View>
         )}
 
         {activeTrip ? (
-          <TripProgressBar activeTrip={activeTrip} onEnd={() => confirmEndTrip()} />
+          <TripProgressBar
+            activeTrip={activeTrip}
+            onEnd={() => confirmEndTrip()}
+            controls={showControls ? mapControls : null}
+          />
         ) : (
           <SwipeUpIndicator
             opacity={indicatorOpacity}
@@ -273,6 +305,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     ...elevation.floating,
+  },
+  mapButtonOn: {
+    backgroundColor: colors.text,
   },
   mapButtonPressed: {
     backgroundColor: colors.surface,

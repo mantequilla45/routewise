@@ -12,8 +12,12 @@ export const ALERT_BEFORE_M = 200;
 const ON_ROUTE_M = 60;
 // Within this of the next jeep's line, near the end of the current ride: the transfer happened.
 const NEXT_LEG_M = 60;
-// Within this of the destination pin: arrived.
-const ARRIVED_M = 60;
+// Within this of the destination pin: arrived, whichever step the tracker thinks they're on.
+const ARRIVED_M = 75;
+// A missed transfer: this far off the current jeep's line, on a later jeep's line and this far
+// into its ride. Routes share roads, so being near another line alone proves nothing.
+const LEFT_ROUTE_M = 150;
+const INTO_LATER_RIDE_M = 100;
 
 const M_PER_DEG = 111320;
 const toRad = (deg: number) => (deg * Math.PI) / 180;
@@ -86,11 +90,24 @@ export function advance(
   const alerted = [...progress.alerted];
   const lastLeg = trip.legs.length - 1;
 
-  if (legIndex === lastLeg && metersBetween(position, destination) <= ARRIVED_M) {
+  // Arrival finishes the trip from any step, so a missed transfer can't keep it running
+  if (metersBetween(position, destination) <= ARRIVED_M) {
     return {
       progress: { ...progress, alerted, remaining: 0, arrived: true },
       alerts: [{ title: "You've arrived", body: 'You are at your destination. Trip ended.' }],
     };
+  }
+
+  // Catch up after a missed transfer: clearly off this jeep's line and riding a later one
+  if (projectOnLine(trip.legs[legIndex].coordinates, position).away > LEFT_ROUTE_M) {
+    for (let j = lastLeg; j > legIndex; j--) {
+      const later = projectOnLine(trip.legs[j].coordinates, position);
+      if (later.away <= ON_ROUTE_M && later.along >= INTO_LATER_RIDE_M) {
+        for (let k = legIndex; k < j; k++) alerted[k] = true; // rides behind: no alerts
+        legIndex = j;
+        break;
+      }
+    }
   }
 
   const leg = trip.legs[legIndex];
