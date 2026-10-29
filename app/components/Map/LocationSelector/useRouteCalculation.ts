@@ -1,4 +1,4 @@
-import calculatePossibleRoutes from '@/app/services/routes/calculatePossibleRoutes';
+import calculatePossibleRoutes from '@/services/routes/calculatePossibleRoutes';
 import { MapPointsContext } from '@/context/map-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useContext, useEffect, useState } from 'react';

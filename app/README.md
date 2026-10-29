@@ -29,7 +29,7 @@ live in this app.
 - `components/` — UI components
 - `context/auth.tsx` — sign-in state. Tokens are kept in SecureStore; `lib/api.ts` refreshes them.
 - `lib/api.ts` — the only place that talks to the backend. Add new endpoints there.
-- `app/services/` — route calculation helpers that call `lib/api.ts`
+- `services/` — route calculation helpers that call `lib/api.ts` (kept outside `app/`, which expo-router treats as screens)
 
 ## Sign-in flow
 

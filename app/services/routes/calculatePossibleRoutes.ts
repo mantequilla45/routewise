@@ -1,6 +1,6 @@
 import { LatLng, MappedGeoRouteResult } from '@/types/GeoTypes';
 import { api, ApiError } from '@/lib/api';
-import { adjustToNearestRoad } from '../maps/roadAdjustment';
+import { adjustToNearestRoad } from '@/services/maps/roadAdjustment';
 
 export default async function calculatePossibleRoutes(
   from: LatLng | null,

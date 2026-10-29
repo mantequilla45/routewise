@@ -1,7 +1,7 @@
 import { MappedGeoRouteResult } from '@/types/GeoTypes';
 import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { MultiRouteResult } from '@/app/services/routes/calculateMultiRoutes';
+import { MultiRouteResult } from '@/services/routes/calculateMultiRoutes';
 
 type RouteCardProps = {
   route: MappedGeoRouteResult | MultiRouteResult;
