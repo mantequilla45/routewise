@@ -93,18 +93,6 @@ export default function EditableField({
   );
 }
 
-/** A read-only label/value row with the same look as EditableField. */
-export function InfoRow({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.row}>
-      <Text style={type.body}>{label}</Text>
-      <Text style={styles.value} numberOfLines={1}>
-        {value}
-      </Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',

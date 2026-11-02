@@ -2,7 +2,7 @@ import { MapPointsContext } from '@/context/map-context';
 import { colors, spacing, type } from '@/theme';
 import { LatLng } from '@/types/GeoTypes';
 import { Ionicons } from '@expo/vector-icons';
-import { useContext, useState } from 'react';
+import { useContext, useEffect, useEffectEvent, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { motion } from '@/lib/motion';
 import Animated from 'react-native-reanimated';
@@ -60,6 +60,8 @@ export default function MapModalContent({
     selectedRouteIndex,
     setSelectedRouteIndex,
     setSelectedRouteInfo,
+    preferredCodes,
+    setPreferredCodes,
   } = useContext(MapPointsContext);
   const { isLocating, locate } = useCurrentLocation();
   // Trip step: which point is being changed (shows the search instead of the results)
@@ -165,6 +167,20 @@ export default function MapModalContent({
 
     hideModal();
   };
+
+  // A saved trip just opened: select the result riding its jeeps (else the one starting on its
+  // first jeep), straight onto the map. Without a match the results stay up to choose from.
+  const selectPreferred = useEffectEvent(() => {
+    if (!preferredCodes || results.length === 0) return;
+    const codes = (i: number) => results[i].legs.map((leg) => leg.routeCode);
+    const indexes = results.map((_, i) => i);
+    const exact = indexes.find((i) => codes(i).join('>') === preferredCodes.join('>'));
+    const sameFirst = indexes.find((i) => codes(i)[0] === preferredCodes[0]);
+    setPreferredCodes(null);
+    const index = exact ?? sameFirst;
+    if (index !== undefined) handleRouteSelect(index);
+  });
+  useEffect(() => selectPreferred(), [results]);
 
   const clearTrip = () => {
     setResults([]);

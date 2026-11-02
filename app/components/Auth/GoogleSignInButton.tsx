@@ -1,8 +1,9 @@
 import React from 'react';
 import { Text, Pressable } from 'react-native';
-import { AntDesign } from '@expo/vector-icons';
+import { Image } from 'expo-image';
+import { GOOGLE_ICON } from '@/constants';
 import { authFormStyles as styles } from '@/components/Auth/authFormStyles';
-import { colors, ui } from '@/theme';
+import { ui } from '@/theme';
 
 type Props = {
   onPress: () => void;
@@ -16,7 +17,7 @@ export default function GoogleSignInButton({ onPress }: Props) {
       onPress={onPress}
       accessibilityRole="button"
     >
-      <AntDesign name="google" size={18} color={colors.google} />
+      <Image source={GOOGLE_ICON} style={{ width: 18, height: 18 }} contentFit="contain" />
       <Text style={ui.secondaryButtonText}>Continue with Google</Text>
     </Pressable>
   );

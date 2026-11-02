@@ -7,7 +7,7 @@ import { AndroidImportance } from 'expo-notifications';
 import * as TaskManager from 'expo-task-manager';
 import { Platform } from 'react-native';
 import { useSyncExternalStore } from 'react';
-import { advance, initialProgress, type TripProgress } from './progress';
+import { advance, type Fix, initialProgress, type TripProgress } from './progress';
 
 /**
  * Live tracking of the trip the rider confirmed. Location updates run as a background task, so
@@ -23,7 +23,11 @@ const CHANNEL_ID = 'trip-alerts';
 
 export interface ActiveTrip {
   trip: TripOption;
+  /** Where the trip was planned from, to redraw it when the journey is reopened. */
+  start: LatLng | null;
   destination: LatLng;
+  /** When tracking started (ms since epoch), for the elapsed time. */
+  startedAt: number;
   progress: TripProgress;
   /** Latest known position of the rider. */
   position?: LatLng;
@@ -46,11 +50,21 @@ function setActive(next: ActiveTrip | null) {
   write.catch((e) => console.warn('Could not save the active trip', e));
 }
 
+/** A trip saved by an older version: fill in fields added since, so a ride in progress survives. */
+function upgrade(saved: ActiveTrip): ActiveTrip {
+  return {
+    ...saved,
+    start: saved.start ?? null,
+    startedAt: saved.startedAt ?? Date.now(),
+    progress: { ...initialProgress(saved.trip), ...saved.progress },
+  };
+}
+
 async function load(): Promise<ActiveTrip | null> {
   if (hydrated) return active;
   try {
     const raw = await AsyncStorage.getItem(STORAGE_KEY);
-    if (!hydrated) active = raw ? (JSON.parse(raw) as ActiveTrip) : null;
+    if (!hydrated) active = raw ? upgrade(JSON.parse(raw) as ActiveTrip) : null;
   } catch {
     active = null;
   }
@@ -59,6 +73,9 @@ async function load(): Promise<ActiveTrip | null> {
   return active;
 }
 load();
+
+/** The trip being tracked right now, outside React (e.g. in event handlers). */
+export const getActiveTrip = () => active;
 
 /** The trip being tracked, or null. */
 export function useActiveTrip(): ActiveTrip | null {
@@ -99,16 +116,18 @@ async function notify(title: string, body: string) {
 
 let foregroundWatch: Location.LocationSubscription | null = null;
 
-async function onPositions(positions: LatLng[]) {
+const toFix = (l: Location.LocationObject): Fix => ({
+  position: { latitude: l.coords.latitude, longitude: l.coords.longitude },
+  time: l.timestamp,
+  speed: l.coords.speed,
+});
+
+async function onPositions(fixes: Fix[]) {
   let current = await load();
-  for (const position of positions) {
+  for (const fix of fixes) {
     if (!current) return;
-    const { progress, alerts } = advance(
-      current.trip,
-      current.destination,
-      current.progress,
-      position,
-    );
+    const { position } = fix;
+    const { progress, alerts } = advance(current.trip, current.destination, current.progress, fix);
     for (const alert of alerts) await notify(alert.title, alert.body);
     current = {
       ...current,
@@ -130,7 +149,7 @@ TaskManager.defineTask<{ locations: Location.LocationObject[] }>(TASK, async ({ 
     await Location.stopLocationUpdatesAsync(TASK).catch(() => {});
     return;
   }
-  await onPositions(data.locations.map((l) => l.coords));
+  await onPositions(data.locations.map(toFix));
 });
 
 export type StartResult =
@@ -140,7 +159,11 @@ export type StartResult =
  * Start tracking `trip`. Asks for location (and "Always", for alerts with the phone locked) and
  * notification permission. Without "Always" it still tracks while the app is open.
  */
-export async function startTrip(trip: TripOption, destination: LatLng): Promise<StartResult> {
+export async function startTrip(
+  trip: TripOption,
+  start: LatLng | null,
+  destination: LatLng,
+): Promise<StartResult> {
   const foreground = await Location.requestForegroundPermissionsAsync();
   if (!foreground.granted) return { ok: false, reason: 'location-denied' };
   const backgroundPermission = await Location.requestBackgroundPermissionsAsync().catch(() => null);
@@ -156,7 +179,14 @@ export async function startTrip(trip: TripOption, destination: LatLng): Promise<
   await stopUpdates();
   const background = !!backgroundPermission?.granted;
   hydrated = true;
-  setActive({ trip, destination, progress: initialProgress(trip), background });
+  setActive({
+    trip,
+    start,
+    destination,
+    startedAt: Date.now(),
+    progress: initialProgress(trip),
+    background,
+  });
 
   if (background) {
     await Location.startLocationUpdatesAsync(TASK, {
@@ -175,7 +205,7 @@ export async function startTrip(trip: TripOption, destination: LatLng): Promise<
   } else {
     foregroundWatch = await Location.watchPositionAsync(
       { accuracy: Location.Accuracy.High, distanceInterval: 15, timeInterval: 5000 },
-      (l) => onPositions([l.coords]),
+      (l) => onPositions([toFix(l)]),
     );
   }
   return { ok: true, background };

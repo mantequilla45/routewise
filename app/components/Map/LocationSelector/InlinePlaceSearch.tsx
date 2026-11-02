@@ -21,7 +21,8 @@ type Props = {
   placeholder: string;
   near?: LatLng | null;
   onSelectPlace: (point: LatLng, name: string) => void;
-  onChooseOnMap: () => void;
+  /** Adds a "Choose on map" row under the suggestions; omit when the screen offers its own. */
+  onChooseOnMap?: () => void;
   /** Shown under the field while nothing is typed (e.g. current location, choose on map). */
   children?: ReactNode;
   /** Called when the field gains or loses focus, e.g. to hide other content while searching. */
@@ -168,16 +169,20 @@ export default function InlinePlaceSearch({
               </Text>
             )}
 
-            <View style={styles.divider} />
-            <OptionRow
-              icon="map-outline"
-              iconColor={colors.textSecondary}
-              label="Choose on map"
-              onPress={() => {
-                cancel();
-                onChooseOnMap();
-              }}
-            />
+            {onChooseOnMap && (
+              <>
+                <View style={styles.divider} />
+                <OptionRow
+                  icon="map-outline"
+                  iconColor={colors.textSecondary}
+                  label="Choose on map"
+                  onPress={() => {
+                    cancel();
+                    onChooseOnMap();
+                  }}
+                />
+              </>
+            )}
           </Animated.View>
         )}
       </Body>

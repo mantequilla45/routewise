@@ -3,7 +3,6 @@ import { useRouter } from 'expo-router';
 import { POLYLINE_WIDTH } from '@/components/Map/LocationSelector/buildPolylines';
 import { useContext, useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
   FlatList,
   RefreshControl,
   Pressable,
@@ -13,9 +12,13 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import RouteSortMenu, { type RouteSort, sortRoutes } from '@/components/Routes/RouteSortMenu';
+import RoutesSkeleton from '@/components/Routes/RoutesSkeleton';
+import Skeleton from '@/components/Skeleton';
 import { MapPointsContext } from '@/context/map-context';
 import { api } from '@/lib/api';
 import { colors, hairline, radius, spacing, type, ui } from '@/theme';
+import useNewTripGuard from '@/lib/tripTracking/useNewTripGuard';
 
 interface Route {
   id: string;
@@ -30,6 +33,7 @@ export default function RoutesScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [sort, setSort] = useState<RouteSort>('code');
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const {
@@ -60,7 +64,9 @@ export default function RoutesScreen() {
     fetchRoutes();
   };
 
-  const handleRouteSelect = async (route: Route) => {
+  const guard = useNewTripGuard();
+  const handleRouteSelect = (route: Route) => guard(() => openRoute(route));
+  const openRoute = async (route: Route) => {
     try {
       // Fetch the full route details including coordinates
       const fullRoute = await api.routes.get(route.id);
@@ -95,17 +101,16 @@ export default function RoutesScreen() {
     }
   };
 
-  const filteredRoutes = routes.filter((route) => {
-    const query = searchQuery.toLowerCase();
-    return (
-      route.route_id.toLowerCase().includes(query) || route.route_code.toLowerCase().includes(query)
-    );
-  });
-
-  const sortAlphabetically = () => {
-    const sorted = [...routes].sort((a, b) => a.route_id.localeCompare(b.route_id));
-    setRoutes(sorted);
-  };
+  // Sorted here rather than in state, so the order survives a refresh
+  const query = searchQuery.toLowerCase();
+  const filteredRoutes = sortRoutes(
+    routes.filter(
+      (route) =>
+        route.route_id.toLowerCase().includes(query) ||
+        route.route_code.toLowerCase().includes(query),
+    ),
+    sort,
+  );
 
   const renderRoute = ({ item }: { item: Route }) => (
     <Pressable
@@ -122,15 +127,6 @@ export default function RoutesScreen() {
       <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
     </Pressable>
   );
-
-  if (loading) {
-    return (
-      <View style={[ui.screen, styles.center]}>
-        <ActivityIndicator size="large" color={colors.textSecondary} />
-        <Text style={type.caption}>Loading routes…</Text>
-      </View>
-    );
-  }
 
   return (
     <View style={[ui.screen, { paddingTop: insets.top + spacing.lg }]}>
@@ -155,40 +151,42 @@ export default function RoutesScreen() {
           />
         </View>
         <View style={styles.toolbar}>
-          <Text style={type.caption}>{filteredRoutes.length} routes</Text>
-          <Pressable
-            onPress={sortAlphabetically}
-            style={({ pressed }) => [styles.chip, pressed && styles.chipPressed]}
-            accessibilityRole="button"
-          >
-            <Text style={type.label}>Sort A–Z</Text>
-          </Pressable>
+          {loading ? (
+            <Skeleton width={56} height={12} />
+          ) : (
+            <Text style={type.caption}>{filteredRoutes.length} routes</Text>
+          )}
+          <RouteSortMenu value={sort} onChange={setSort} />
         </View>
       </View>
       <View style={ui.divider} />
 
-      <FlatList
-        data={filteredRoutes}
-        renderItem={renderRoute}
-        keyExtractor={(item) => item.id}
-        ItemSeparatorComponent={RowDivider}
-        contentContainerStyle={styles.listContent}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={[colors.textSecondary]}
-            tintColor={colors.textSecondary}
-          />
-        }
-        ListEmptyComponent={
-          <View style={styles.empty}>
-            <Ionicons name="bus-outline" size={40} color={colors.textTertiary} />
-            <Text style={type.heading}>No routes found</Text>
-            <Text style={[type.caption, styles.emptyCaption]}>Try a different route code.</Text>
-          </View>
-        }
-      />
+      {loading ? (
+        <RoutesSkeleton />
+      ) : (
+        <FlatList
+          data={filteredRoutes}
+          renderItem={renderRoute}
+          keyExtractor={(item) => item.id}
+          ItemSeparatorComponent={RowDivider}
+          contentContainerStyle={styles.listContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[colors.textSecondary]}
+              tintColor={colors.textSecondary}
+            />
+          }
+          ListEmptyComponent={
+            <View style={styles.empty}>
+              <Ionicons name="bus-outline" size={40} color={colors.textTertiary} />
+              <Text style={type.heading}>No routes found</Text>
+              <Text style={[type.caption, styles.emptyCaption]}>Try a different route code.</Text>
+            </View>
+          }
+        />
+      )}
     </View>
   );
 }
@@ -200,11 +198,6 @@ function RowDivider() {
 const SEARCH_ICON_SIZE = 18;
 
 const styles = StyleSheet.create({
-  center: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
   header: {
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.sm,
@@ -223,15 +216,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-  },
-  chip: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.pill,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs + 2,
-  },
-  chipPressed: {
-    backgroundColor: colors.surfacePressed,
   },
   listContent: {
     paddingBottom: spacing.xxl,

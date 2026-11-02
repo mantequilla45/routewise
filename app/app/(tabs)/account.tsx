@@ -2,8 +2,9 @@ import AccountInfoSection from '@/components/Account/AccountInfoSection';
 import ProfileHeader from '@/components/Account/ProfileHeader';
 import SignedOutView from '@/components/Account/SignedOutView';
 import { useAuth } from '@/context/auth';
-import { colors, spacing, type, ui } from '@/theme';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { colors, spacing, ui } from '@/theme';
+import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+import { useBottomTabBarHeight } from 'expo-router/js-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function Account() {
@@ -14,9 +15,13 @@ export default function Account() {
     await signOut();
   };
 
+  // This screen ends at the tab bar; padding the top by the bar's height puts the spinner at the
+  // middle of the whole phone screen rather than of the area above the tabs
+  const tabBarHeight = useBottomTabBarHeight();
+
   if (isLoading) {
     return (
-      <View style={[ui.screen, styles.centered]}>
+      <View style={[ui.screen, styles.centered, { paddingTop: tabBarHeight }]}>
         <ActivityIndicator size="large" color={colors.textSecondary} />
       </View>
     );
@@ -27,13 +32,12 @@ export default function Account() {
       <ScrollView
         style={ui.screen}
         contentContainerStyle={{
-          paddingTop: insets.top + spacing.lg,
+          paddingTop: insets.top + spacing.xxl,
           paddingBottom: spacing.xxl,
         }}
       >
-        <Text style={[type.title, styles.title]}>Account</Text>
         <ProfileHeader user={user} />
-        <AccountInfoSection user={user} onSignOut={handleSignOut} />
+        <AccountInfoSection onSignOut={handleSignOut} />
       </ScrollView>
     );
   }
@@ -45,8 +49,5 @@ const styles = StyleSheet.create({
   centered: {
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  title: {
-    paddingHorizontal: spacing.lg,
   },
 });

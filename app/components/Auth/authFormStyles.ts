@@ -1,22 +1,26 @@
 import { colors, spacing, type, ui } from '@/theme';
 import { StyleSheet } from 'react-native';
 
+// Fields and the submit button: a little shorter than the app's default 48–50pt, for a compact
+// sign-in sheet.
+const FIELD_HEIGHT = 46;
+
 /** Styles shared by LoginForm and SignupForm and the pieces under components/Auth. */
 export const authFormStyles = StyleSheet.create({
   container: {
-    flex: 1,
-    gap: spacing.lg,
+    gap: spacing.sm,
   },
   field: {
     gap: spacing.xs,
   },
   input: {
     ...ui.input,
+    height: FIELD_HEIGHT,
   },
   inputWithIcon: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: ui.input.height,
+    height: FIELD_HEIGHT,
     borderRadius: ui.input.borderRadius,
     backgroundColor: colors.surface,
     paddingLeft: spacing.lg,
@@ -36,6 +40,10 @@ export const authFormStyles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingVertical: spacing.xs,
+  },
+  compactButton: {
+    height: FIELD_HEIGHT,
   },
   checkboxRow: {
     flexDirection: 'row',
@@ -49,27 +57,6 @@ export const authFormStyles = StyleSheet.create({
   linkText: {
     ...type.label,
     color: colors.text,
-  },
-  dividerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  dividerLine: {
-    ...ui.divider,
-    flex: 1,
-  },
-  dividerText: {
-    ...type.caption,
-    color: colors.textTertiary,
-  },
-  terms: {
-    ...type.caption,
-    textAlign: 'center',
-  },
-  termsLink: {
-    color: colors.text,
-    textDecorationLine: 'underline',
   },
   pressed: {
     opacity: 0.7,

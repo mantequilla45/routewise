@@ -4,12 +4,11 @@ import { useEffect, useRef, useState } from 'react';
 import type { TextInputInstance } from 'react-native';
 
 /**
- * State for the editable "Account Information" section: local copies of the name and commuter
- * type, which field is being edited, and the saves that push changes to the backend.
+ * State for the editable profile rows: local copies of the name and commuter type, whether the
+ * name is being typed, and the saves that push each change to the backend as soon as it's made.
  */
 export function useProfileEditor() {
   const { user, updateUser } = useAuth();
-  const [isEditingSection, setIsEditingSection] = useState<boolean>(false);
   const [isEditingName, setIsEditingName] = useState<boolean>(false);
   const [nameValue, setNameValue] = useState<string>(user?.name || '');
   const [isSavingName, setIsSavingName] = useState<boolean>(false);
@@ -73,27 +72,7 @@ export function useProfileEditor() {
     saveName(nameValue);
   };
 
-  const saveAll = async () => {
-    const originalName = user?.name || '';
-    const originalCommuter = user?.commuter || '';
-
-    if (nameValue !== originalName) {
-      await saveName(nameValue);
-    }
-    if (commuterValue !== originalCommuter) {
-      await saveCommuter(commuterValue);
-    }
-
-    setIsEditingName(false);
-    setIsEditingSection(false);
-  };
-
-  // The header button: "Edit" enters section editing, "Save" persists and leaves it
-  const toggleEditing = () => (isEditingSection ? saveAll() : setIsEditingSection(true));
-
   return {
-    isEditingSection,
-    toggleEditing,
     name: {
       value: nameValue,
       setValue: setNameValue,
@@ -105,7 +84,12 @@ export function useProfileEditor() {
     },
     commuter: {
       value: commuterValue,
-      setValue: setCommuterValue,
+      // Picking a commuter type saves it right away
+      select: (option: string) => {
+        setCommuterValue(option);
+        setIsCommuterPickerVisible(false);
+        saveCommuter(option);
+      },
       isSaving: isSavingCommuter,
       isPickerVisible: isCommuterPickerVisible,
       openPicker: () => setIsCommuterPickerVisible(true),

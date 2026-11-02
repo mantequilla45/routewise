@@ -3,16 +3,15 @@ import { lineLength, metersBetween } from '@/lib/tripTracking/progress';
 import type { ActiveTrip } from '@/lib/tripTracking/tracker';
 import { colors, elevation, fonts, radius, spacing, type, ui } from '@/theme';
 import { Ionicons } from '@expo/vector-icons';
-import { Fragment, type ReactNode, useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, { Easing, SlideInDown } from 'react-native-reanimated';
+import { Fragment, type ReactNode, useEffect, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import BottomSheet from '@/components/BottomSheet';
+import LiveDot from '@/components/Map/Screen/LiveDot';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // The dark fade under the instruction: clear over the map, near-black (the text color) below.
 const FADE_CLEAR = 'rgba(17, 19, 23, 0)';
 const FADE_SOLID = 'rgba(17, 19, 23, 0.92)';
-
-const SHEET_IN = SlideInDown.duration(280).easing(Easing.out(Easing.cubic));
 
 const formatDistance = (m: number) =>
   m >= 1000 ? `${(m / 1000).toFixed(1)} km` : `${Math.max(10, Math.round(m / 10) * 10)} m`;
@@ -67,9 +66,15 @@ function now({ trip, progress, position, destination }: ActiveTrip): Now {
     };
   }
   const boarding = gotOff ? i + 1 : i;
+  // Reached the jeep's route but not riding yet: waiting at the roadside
+  const waiting = !gotOff && progress.onLineFrom !== null;
+  const stop = legs[boarding].boardAt;
+  const toStop = position && stop ? ` · ${formatDistance(metersBetween(position, stop))}` : '';
   return {
     index: 2 * boarding,
-    title: ['Walk to the ', b(legs[boarding].routeCode), ' stop'],
+    title: waiting
+      ? ['Wait for ', b(legs[boarding].routeCode), ' here']
+      : ['Walk to the ', b(legs[boarding].routeCode), ' stop', toStop],
     soon: false,
     done: null,
     color: colors.textSecondary,
@@ -141,6 +146,23 @@ function Node({ step, state }: Readonly<{ step: TimelineStep; state: StepState }
 
 type StepState = 'done' | 'now' | 'next';
 
+/** Minutes since `startedAt`, refreshed every 15 seconds. */
+function useElapsedMinutes(startedAt: number): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 15_000);
+    return () => clearInterval(id);
+  }, []);
+  return Math.max(0, Math.floor((now - startedAt) / 60_000));
+}
+
+const elapsedLabel = (minutes: number) =>
+  minutes < 1
+    ? 'Just started'
+    : minutes < 60
+      ? `${minutes} min elapsed`
+      : `${Math.floor(minutes / 60)} h ${minutes % 60} min elapsed`;
+
 function RichText({ parts, soon }: Readonly<{ parts: Rich; soon: boolean }>) {
   return (
     <Text style={styles.instruction} numberOfLines={2}>
@@ -173,15 +195,20 @@ export default function TripProgressBar({
   controls?: ReactNode;
 }>) {
   const [open, setOpen] = useState(false);
+
+  const openDetails = () => setOpen(true);
   const insets = useSafeAreaInsets();
   const { trip } = activeTrip;
   const current = now(activeTrip);
+  const elapsed = useElapsedMinutes(activeTrip.startedAt);
   const steps = allSteps(activeTrip);
 
   return (
     <>
-      {/* Full-width dark fade from the map, reaching the screen's bottom edge */}
+      {/* Full-width dark fade from the map, reaching the screen's bottom edge. Touches pass
+          through it to the map; only the instruction and the buttons take them. */}
       <View
+        pointerEvents="box-none"
         style={[
           styles.fade,
           {
@@ -191,18 +218,27 @@ export default function TripProgressBar({
         ]}
       >
         <View style={styles.row} pointerEvents="box-none">
-          <Pressable
-            onPress={() => setOpen(true)}
-            style={styles.instructionButton}
-            accessibilityRole="button"
-            accessibilityHint="Shows the trip details"
-          >
-            <RichText parts={current.title} soon={current.soon} />
-          </Pressable>
+          <View style={styles.instructionSlot} pointerEvents="box-none">
+            <Pressable
+              onPress={openDetails}
+              style={styles.instructionButton}
+              accessibilityRole="button"
+              accessibilityHint="Shows the trip details"
+            >
+              <RichText parts={current.title} soon={current.soon} />
+              {/* Live once GPS has a fix; the instruction and distances update with it */}
+              <View style={styles.status}>
+                <LiveDot live={!!activeTrip.position} />
+                <Text style={styles.elapsed}>
+                  {activeTrip.position ? 'Live' : 'Locating…'} · {elapsedLabel(elapsed)}
+                </Text>
+              </View>
+            </Pressable>
+          </View>
           <View style={styles.column} pointerEvents="box-none">
             {controls}
             <Pressable
-              onPress={() => setOpen(true)}
+              onPress={openDetails}
               style={({ pressed }) => [styles.round, pressed && styles.roundPressed]}
               hitSlop={6}
               accessibilityRole="button"
@@ -214,124 +250,109 @@ export default function TripProgressBar({
         </View>
       </View>
 
-      {/* The backdrop fades in place; only the sheet slides up */}
-      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-        <View style={styles.modalRoot}>
-          {/* Full-screen behind the sheet, so it also dims around the sheet's rounded corners */}
-          <Pressable
-            style={styles.scrim}
-            onPress={() => setOpen(false)}
-            accessibilityLabel="Close"
-          />
-          <Animated.View
-            entering={SHEET_IN}
-            style={[styles.sheet, { paddingBottom: insets.bottom + spacing.lg }]}
-          >
-            <View style={ui.handle} />
-
-            <View style={styles.header}>
-              <View style={styles.headerText}>
-                <Text style={styles.total}>{trip.estimatedMinutes} min</Text>
-                <Text style={type.caption}>
-                  <Text style={styles.strong}>₱{trip.fare}</Text> fare ·{' '}
-                  {trip.legs.length === 1 ? '1 jeep' : `${trip.legs.length} jeeps`}
-                </Text>
-              </View>
-              <View style={styles.pills}>
-                {trip.legs.map((leg, i) => (
-                  <Fragment key={`${leg.routeId}-${i}`}>
-                    {i > 0 && (
-                      <Ionicons name="chevron-forward" size={12} color={colors.textTertiary} />
-                    )}
-                    <View style={styles.pill}>
-                      <View style={[styles.dot, { backgroundColor: legColor(i) }]} />
-                      <Text style={styles.pillText}>{leg.routeCode}</Text>
-                    </View>
-                  </Fragment>
-                ))}
-              </View>
+      <BottomSheet visible={open} onClose={() => setOpen(false)}>
+        <View style={styles.details}>
+          <View style={styles.header}>
+            <View style={styles.headerText}>
+              <Text style={styles.total}>{trip.estimatedMinutes} min</Text>
+              <Text style={type.caption}>
+                <Text style={styles.strong}>₱{trip.fare}</Text> fare ·{' '}
+                {trip.legs.length === 1 ? '1 jeep' : `${trip.legs.length} jeeps`} ·{' '}
+                {elapsedLabel(elapsed)}
+              </Text>
             </View>
+            <View style={styles.pills}>
+              {trip.legs.map((leg, i) => (
+                <Fragment key={`${leg.routeId}-${i}`}>
+                  {i > 0 && (
+                    <Ionicons name="chevron-forward" size={12} color={colors.textTertiary} />
+                  )}
+                  <View style={styles.pill}>
+                    <View style={[styles.dot, { backgroundColor: legColor(i) }]} />
+                    <Text style={styles.pillText}>{leg.routeCode}</Text>
+                  </View>
+                </Fragment>
+              ))}
+            </View>
+          </View>
 
-            <View style={styles.divider} />
+          <View style={styles.divider} />
 
-            <View>
-              {steps.map((step, i) => {
-                const state: StepState =
-                  i < current.index ? 'done' : i === current.index ? 'now' : 'next';
-                const last = i === steps.length - 1;
-                return (
-                  <View key={i} style={styles.tlRow}>
-                    <View style={styles.rail}>
-                      <Node step={step} state={state} />
-                      {!last && (
-                        <View
-                          style={[
-                            styles.line,
-                            step.kind === 'ride' ? styles.rideLine : styles.walkLine,
-                            { backgroundColor: step.color },
-                          ]}
-                        />
-                      )}
-                    </View>
-                    <View style={[styles.tlBody, !last && styles.tlBodySpaced]}>
-                      <View style={styles.tlTitleRow}>
-                        <Text
-                          style={[
-                            styles.stepTitle,
-                            state === 'now' && styles.stepNow,
-                            state === 'done' && styles.stepDone,
-                          ]}
-                          numberOfLines={1}
-                        >
-                          {step.title}
-                        </Text>
-                        {state === 'now' && (
-                          <View style={styles.nowBadge}>
-                            <Text style={styles.nowText}>NOW</Text>
-                          </View>
-                        )}
-                        {step.fare !== undefined && (
-                          <Text style={[styles.fare, state === 'done' && styles.stepDone]}>
-                            ₱{step.fare}
-                          </Text>
-                        )}
-                      </View>
-                      <Text style={type.caption}>{step.detail}</Text>
-                      {state === 'now' && current.done !== null && (
-                        <View style={styles.track}>
-                          <View
-                            style={[
-                              styles.fill,
-                              { width: `${current.done * 100}%`, backgroundColor: step.color },
-                            ]}
-                          />
+          <View>
+            {steps.map((step, i) => {
+              const state: StepState =
+                i < current.index ? 'done' : i === current.index ? 'now' : 'next';
+              const last = i === steps.length - 1;
+              return (
+                <View key={i} style={styles.tlRow}>
+                  <View style={styles.rail}>
+                    <Node step={step} state={state} />
+                    {!last && (
+                      <View
+                        style={[
+                          styles.line,
+                          step.kind === 'ride' ? styles.rideLine : styles.walkLine,
+                          { backgroundColor: step.color },
+                        ]}
+                      />
+                    )}
+                  </View>
+                  <View style={[styles.tlBody, !last && styles.tlBodySpaced]}>
+                    <View style={styles.tlTitleRow}>
+                      <Text
+                        style={[
+                          styles.stepTitle,
+                          state === 'now' && styles.stepNow,
+                          state === 'done' && styles.stepDone,
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {step.title}
+                      </Text>
+                      {state === 'now' && (
+                        <View style={styles.nowBadge}>
+                          <Text style={styles.nowText}>NOW</Text>
                         </View>
                       )}
+                      {step.fare !== undefined && (
+                        <Text style={[styles.fare, state === 'done' && styles.stepDone]}>
+                          ₱{step.fare}
+                        </Text>
+                      )}
                     </View>
+                    <Text style={type.caption}>{step.detail}</Text>
+                    {state === 'now' && current.done !== null && (
+                      <View style={styles.track}>
+                        <View
+                          style={[
+                            styles.fill,
+                            { width: `${current.done * 100}%`, backgroundColor: step.color },
+                          ]}
+                        />
+                      </View>
+                    )}
                   </View>
-                );
-              })}
-            </View>
+                </View>
+              );
+            })}
+          </View>
 
-            {!activeTrip.background && (
-              <Text style={styles.note}>
-                Keep RouteWise open to get the alert before your stop.
-              </Text>
-            )}
+          {!activeTrip.background && (
+            <Text style={styles.note}>Keep RouteWise open to get the alert before your stop.</Text>
+          )}
 
-            <Pressable
-              onPress={() => {
-                setOpen(false);
-                onEnd();
-              }}
-              style={({ pressed }) => [ui.secondaryButton, pressed && styles.endPressed]}
-              accessibilityRole="button"
-            >
-              <Text style={[ui.secondaryButtonText, styles.endText]}>End trip</Text>
-            </Pressable>
-          </Animated.View>
+          <Pressable
+            onPress={() => {
+              setOpen(false);
+              onEnd();
+            }}
+            style={({ pressed }) => [ui.secondaryButton, pressed && styles.endPressed]}
+            accessibilityRole="button"
+          >
+            <Text style={[ui.secondaryButtonText, styles.endText]}>End trip</Text>
+          </Pressable>
         </View>
-      </Modal>
+      </BottomSheet>
     </>
   );
 }
@@ -360,8 +381,26 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     gap: spacing.md,
   },
-  instructionButton: {
+  status: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xxs,
+    marginTop: spacing.xxs,
+    marginLeft: -4, // the dot's box is wider than the dot: line the dot up with the text above
+  },
+  elapsed: {
+    fontFamily: fonts.medium,
+    fontSize: 13,
+    lineHeight: 18,
+    color: 'rgba(255, 255, 255, 0.6)',
+  },
+  // Takes the row's free width without catching touches, so drags beside the text pan the map
+  instructionSlot: {
     flex: 1,
+    alignItems: 'flex-start',
+  },
+  // Only as wide as its text
+  instructionButton: {
     minHeight: 44,
     justifyContent: 'center',
   },
@@ -383,20 +422,8 @@ const styles = StyleSheet.create({
   soon: {
     color: colors.destination,
   },
-  modalRoot: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  scrim: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: colors.scrim,
-  },
-  sheet: {
-    backgroundColor: colors.background,
-    borderTopLeftRadius: radius.sheet,
-    borderTopRightRadius: radius.sheet,
-    paddingTop: spacing.sm,
-    paddingHorizontal: spacing.lg,
+  // The details sheet's content (the sheet itself is the shared BottomSheet)
+  details: {
     gap: spacing.lg,
   },
   header: {

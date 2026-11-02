@@ -19,7 +19,8 @@ export async function listRoutes(): Promise<RouteSummary[]> {
             '#33ff00' as route_color,
             created_at
         FROM jeepney_routes
-        ORDER BY route_code ASC;
+        -- The table's code, not the "start - end" output column also named route_code
+        ORDER BY jeepney_routes.route_code ASC;
     `;
   return query<RouteSummary>(sql);
 }

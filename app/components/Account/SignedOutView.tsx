@@ -1,73 +1,68 @@
 import LoginModal from '@/components/LoginModal';
-import { colors, radius, spacing, type, ui } from '@/theme';
+import { LOGO_ICON } from '@/constants';
+import { colors, fonts, radius, spacing, type, ui } from '@/theme';
 import { Ionicons } from '@expo/vector-icons';
-import { ComponentProps, useState } from 'react';
+import { Image } from 'expo-image';
+import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-type IconName = ComponentProps<typeof Ionicons>['name'];
-
-const BENEFITS: { icon: IconName; title: string; detail: string }[] = [
-  {
-    icon: 'bookmark-outline',
-    title: 'Save your routes',
-    detail: 'Keep the trips you take often in one place.',
-  },
-  {
-    icon: 'phone-portrait-outline',
-    title: 'On any device',
-    detail: 'Your saved routes follow your account.',
-  },
-  {
-    icon: 'person-outline',
-    title: 'Your commuter type',
-    detail: 'Keep Student, Senior or PWD on your profile.',
-  },
+// What an account actually adds today; keep this list honest
+const BENEFITS = [
+  'Save the routes you ride often',
+  'Plan them again from Home in one tap',
+  'Keep them on any phone you sign in to',
 ];
 
-/** Account tab when signed out: what an account adds, then sign up or log in. */
+/** Account tab when signed out: why to sign up, in a few lines, then sign up or log in. */
 export default function SignedOutView() {
   const insets = useSafeAreaInsets();
   const [modalTab, setModalTab] = useState<'login' | 'signup' | null>(null);
 
   return (
-    <View style={[ui.screen, styles.container, { paddingTop: insets.top + spacing.lg }]}>
-      <Text style={type.title}>Account</Text>
+    <View style={[ui.screen, styles.container, { paddingTop: insets.top + spacing.xxl }]}>
+      <Image source={LOGO_ICON} style={styles.logo} contentFit="contain" />
 
-      <View style={styles.intro}>
-        <Text style={type.heading}>Get more out of RouteWise</Text>
-        <Text style={type.caption}>Planning trips works without an account. Sign in to:</Text>
+      <View style={styles.hero}>
+        <Text style={styles.headline}>Your everyday routes, saved</Text>
+        <Text style={styles.lead}>
+          Create a free account and the jeeps you ride are always one tap away.
+        </Text>
       </View>
 
       <View style={styles.benefits}>
         {BENEFITS.map((benefit) => (
-          <View key={benefit.title} style={styles.benefit}>
-            <View style={styles.benefitIcon}>
-              <Ionicons name={benefit.icon} size={18} color={colors.text} />
+          <View key={benefit} style={styles.benefit}>
+            <View style={styles.check}>
+              <Ionicons name="checkmark" size={14} color={colors.textOnAccent} />
             </View>
-            <View style={styles.benefitText}>
-              <Text style={type.bodyMedium}>{benefit.title}</Text>
-              <Text style={type.caption}>{benefit.detail}</Text>
-            </View>
+            <Text style={styles.benefitText}>{benefit}</Text>
           </View>
         ))}
       </View>
 
+      {/* Within thumb reach */}
       <View style={styles.actions}>
         <Pressable
           onPress={() => setModalTab('signup')}
           style={({ pressed }) => [ui.primaryButton, pressed && styles.primaryPressed]}
           accessibilityRole="button"
         >
-          <Text style={ui.primaryButtonText}>Create account</Text>
+          <Text style={ui.primaryButtonText}>Create free account</Text>
         </Pressable>
+
         <Pressable
           onPress={() => setModalTab('login')}
-          style={({ pressed }) => [ui.secondaryButton, pressed && styles.secondaryPressed]}
+          hitSlop={8}
+          style={styles.loginRow}
           accessibilityRole="button"
         >
-          <Text style={ui.secondaryButtonText}>Log in</Text>
+          <Text style={type.caption}>
+            Already have an account? <Text style={styles.loginLink}>Log in</Text>
+          </Text>
         </Pressable>
+
+        <Text style={styles.note}>You can plan trips without an account.</Text>
       </View>
 
       <LoginModal
@@ -81,43 +76,67 @@ export default function SignedOutView() {
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.xl,
   },
-  intro: {
+  logo: {
+    width: 48,
+    height: 48,
+  },
+  hero: {
     marginTop: spacing.xl,
-    gap: spacing.xs,
+    gap: spacing.sm,
+  },
+  headline: {
+    fontFamily: fonts.bold,
+    fontSize: 30,
+    lineHeight: 36,
+    color: colors.text,
+  },
+  lead: {
+    ...type.body,
+    fontSize: 16,
+    lineHeight: 23,
+    color: colors.textSecondary,
   },
   benefits: {
-    marginTop: spacing.lg,
-    gap: spacing.lg,
+    marginTop: spacing.xl,
+    gap: spacing.md,
   },
   benefit: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
   },
-  benefitIcon: {
-    width: 40,
-    height: 40,
+  check: {
+    width: 22,
+    height: 22,
     borderRadius: radius.pill,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
   },
   benefitText: {
+    ...type.bodyMedium,
     flex: 1,
-    gap: spacing.xxs,
   },
-  // Buttons sit at the bottom, within thumb reach
   actions: {
     marginTop: 'auto',
     marginBottom: spacing.xl,
-    gap: spacing.sm,
+    gap: spacing.md,
   },
   primaryPressed: {
     backgroundColor: colors.accentPressed,
   },
-  secondaryPressed: {
-    backgroundColor: colors.surfacePressed,
+  loginRow: {
+    alignItems: 'center',
+  },
+  loginLink: {
+    fontFamily: fonts.semibold,
+    color: colors.text,
+  },
+  note: {
+    ...type.caption,
+    textAlign: 'center',
+    color: colors.textTertiary,
   },
 });

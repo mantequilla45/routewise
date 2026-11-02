@@ -1,7 +1,8 @@
+import ActiveTripBanner from '@/components/Home/ActiveTripBanner';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Tabs } from 'expo-router';
+import { BottomTabBar, Tabs } from 'expo-router/js-tabs';
 import type { ComponentProps } from 'react';
-import type { ColorValue } from 'react-native';
+import { type ColorValue, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, hairline, spacing, type } from '@/theme';
 
@@ -16,6 +17,13 @@ export default function TabLayout() {
   const insets = useSafeAreaInsets();
   return (
     <Tabs
+      // A trip being tracked sits just above the tabs, on every tab
+      tabBar={(props) => (
+        <View style={{ backgroundColor: colors.tabBar }}>
+          <ActiveTripBanner />
+          <BottomTabBar {...props} />
+        </View>
+      )}
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.text,

@@ -1,11 +1,12 @@
-import DynamicBoxes from '@/components/SavedRoute/DynamicBoxes';
+import SavedRouteList from '@/components/SavedRoute/SavedRouteList';
 import useOpenSavedRoute from '@/components/SavedRoute/useOpenSavedRoute';
 import { api, type SavedRouteRow, type TransferPoints } from '@/lib/api';
 import { useAuth } from '@/context/auth';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useEffect, useState, type ComponentProps } from 'react';
-import { StyleSheet, Text, TextInput, View, Alert, ActivityIndicator } from 'react-native';
+import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useBottomTabBarHeight } from 'expo-router/js-tabs';
 import { colors, spacing, type, ui } from '@/theme';
 
 export interface SavedRoute {
@@ -13,7 +14,6 @@ export interface SavedRoute {
   jeepCode: string;
   start: string;
   destination: string;
-  favorite: boolean;
   totalFare?: number;
   createdAt?: string;
   // Additional data for displaying on map
@@ -22,6 +22,8 @@ export interface SavedRoute {
   endLat?: number;
   endLng?: number;
   transferPoints?: TransferPoints | null;
+  /** The jeeps it was saved with, in riding order. */
+  jeepCodes?: string[] | null;
   routeData?: UserSavedRoute;
 }
 
@@ -33,7 +35,6 @@ function toSavedRoute(route: UserSavedRoute): SavedRoute {
     jeepCode: route.jeepney_codes ? route.jeepney_codes.join(' → ') : 'Direct',
     start: route.start_location,
     destination: route.end_location,
-    favorite: false,
     totalFare: route.total_fare,
     createdAt: route.created_at,
     // Include additional data for map display
@@ -42,6 +43,7 @@ function toSavedRoute(route: UserSavedRoute): SavedRoute {
     endLat: route.end_lat,
     endLng: route.end_lng,
     transferPoints: route.transfer_points,
+    jeepCodes: route.jeepney_codes,
     routeData: route,
   };
 }
@@ -52,6 +54,7 @@ export default function Saved() {
   const [routes, setRoutes] = useState<SavedRoute[]>([]);
   const [loading, setLoading] = useState(true);
   const insets = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight();
 
   // Show the spinner again whenever the signed-in user changes (set during render, not in
   // the effect, so the fetch below doesn't trigger an extra render).
@@ -82,17 +85,9 @@ export default function Saved() {
     };
   }, [user]);
 
-  const toggleFavorite = (id: string) => {
-    setRoutes((prevRoutes) =>
-      prevRoutes.map((route) =>
-        route.id === id ? { ...route, favorite: !route.favorite } : route,
-      ),
-    );
-  };
-
   const handleDeleteRoute = async (id: string) => {
     try {
-      Alert.alert('Delete Route', 'Are you sure you want to delete this saved route?', [
+      Alert.alert('Delete this route?', "It's removed from your saved routes.", [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Delete',
@@ -107,9 +102,7 @@ export default function Saved() {
               console.error('Error deleting route:', error);
               Alert.alert('Error', 'Failed to delete route');
             } else {
-              // Remove from local state
               setRoutes((prevRoutes) => prevRoutes.filter((route) => route.id !== id));
-              Alert.alert('Success', 'Route deleted successfully');
             }
           },
         },
@@ -132,58 +125,71 @@ export default function Saved() {
     );
   });
   return (
-    <View style={[ui.screen, { paddingTop: insets.top + spacing.lg }]}>
-      <View style={styles.header}>
-        <View>
-          <Text style={type.title}>Saved</Text>
-          <Text style={type.caption}>
-            {user ? `${filteredRoutes.length} saved routes` : 'Find your saved routes.'}
-          </Text>
-        </View>
-        <View>
-          <Ionicons
-            name="search"
-            size={SEARCH_ICON_SIZE}
-            color={colors.textTertiary}
-            style={styles.searchIcon}
-          />
-          <TextInput
-            placeholder="Find destination"
-            placeholderTextColor={colors.textTertiary}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            style={[ui.input, styles.searchInput]}
-          />
-        </View>
-      </View>
-      <View style={ui.divider} />
-      <View style={styles.body}>
-        {!user ? (
-          <EmptyState
-            icon="person-outline"
-            title="Please login"
-            caption="Login to see your saved routes"
-          />
-        ) : loading ? (
-          <View style={styles.center}>
-            <ActivityIndicator size="large" color={colors.textSecondary} />
-            <Text style={type.caption}>Loading saved routes…</Text>
+    <View style={ui.screen}>
+      <View style={[styles.content, { paddingTop: insets.top + spacing.lg }]}>
+        <View style={styles.header}>
+          <View>
+            <Text style={type.title}>Saved</Text>
+            {!!user && !loading && (
+              <Text style={type.caption}>
+                {routes.length === 1 ? '1 route' : `${routes.length} routes`}
+              </Text>
+            )}
           </View>
-        ) : filteredRoutes.length === 0 ? (
-          <EmptyState
-            icon="bookmark-outline"
-            title="No saved routes yet"
-            caption="Calculate a route and save it to see it here"
-          />
-        ) : (
-          <DynamicBoxes
-            routes={filteredRoutes}
-            onToggleFavorite={toggleFavorite}
-            onRouteSelect={openSavedRoute}
-            onDelete={handleDeleteRoute}
-          />
-        )}
+          {/* Search only once there's something to search */}
+          {!!user && routes.length > 1 && (
+            <View>
+              <Ionicons
+                name="search"
+                size={SEARCH_ICON_SIZE}
+                color={colors.textTertiary}
+                style={styles.searchIcon}
+              />
+              <TextInput
+                placeholder="Search saved routes"
+                placeholderTextColor={colors.textTertiary}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                style={[ui.input, styles.searchInput]}
+              />
+            </View>
+          )}
+        </View>
+        <View style={styles.body}>
+          {!user ? (
+            <EmptyState
+              icon="person-outline"
+              title="Log in to see saved routes"
+              caption="Saved routes are kept with your account."
+            />
+          ) : loading ? null : filteredRoutes.length === 0 ? (
+            <EmptyState
+              icon="bookmark-outline"
+              title={searchQuery ? 'No matches' : 'No saved routes yet'}
+              caption={
+                searchQuery
+                  ? 'Try another place or jeep code.'
+                  : 'Plan a trip and tap the bookmark to keep it here.'
+              }
+            />
+          ) : (
+            <SavedRouteList
+              routes={filteredRoutes}
+              onRouteSelect={openSavedRoute}
+              onDelete={handleDeleteRoute}
+            />
+          )}
+        </View>
       </View>
+
+      {/* Centered on the whole phone screen: no padding on this parent, and stretched down over
+          the tab bar so it sits mid-screen rather than mid-way above the tabs */}
+      {!!user && loading && (
+        <View style={[styles.loading, { bottom: -tabBarHeight }]} pointerEvents="none">
+          <ActivityIndicator size="large" color={colors.textSecondary} />
+          <Text style={type.caption}>Loading saved routes…</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -218,6 +224,15 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     paddingLeft: spacing.md + SEARCH_ICON_SIZE + spacing.sm,
+  },
+  content: {
+    flex: 1,
+  },
+  loading: {
+    ...StyleSheet.absoluteFill,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: spacing.md,
   },
   body: {
     flex: 1,

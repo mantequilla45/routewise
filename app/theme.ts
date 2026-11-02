@@ -24,7 +24,6 @@ export const colors = {
   accent: '#FFC94D',
   accentPressed: '#F2B92E',
   accentSubtle: '#FFF7E0', // selected row background
-  google: '#DB4437', // Google logo mark on the "Continue with Google" button only
 
   // Status / map
   origin: '#2563EB',

@@ -1,244 +1,151 @@
+import BottomSheet from '@/components/BottomSheet';
+import GoogleSignInButton from '@/components/Auth/GoogleSignInButton';
 import { useAuth } from '@/context/auth';
+import { colors, fonts, radius, spacing, type } from '@/theme';
+import { Ionicons } from '@expo/vector-icons';
 import { PropsWithChildren, useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  Animated,
-  Dimensions,
-  Modal,
-  PanResponder,
-  Pressable,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-  useAnimatedValue,
-} from 'react-native';
-import { colors, radius, spacing, type, ui } from '@/theme';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import LoginForm from './LoginForm';
 import SignupForm from './SignupForm';
 
-const { height: screenHeight } = Dimensions.get('window');
-
 type Tab = 'login' | 'signup';
 
-const SEGMENTS: { key: Tab; label: string }[] = [
-  { key: 'login', label: 'Log in' },
-  { key: 'signup', label: 'Sign up' },
-];
+const COPY: Record<Tab, { title: string; switchPrompt: string; switchAction: string }> = {
+  login: { title: 'Log in', switchPrompt: 'New to RouteWise?', switchAction: 'Sign up' },
+  signup: {
+    title: 'Create an account',
+    switchPrompt: 'Already have an account?',
+    switchAction: 'Log in',
+  },
+};
 
 type Props = PropsWithChildren<{
   isVisible: boolean;
   onClose: () => void;
-  /** Tab shown each time the modal opens. */
+  /** Log in or sign up, each time the sheet opens. */
   initialTab?: Tab;
 }>;
 
+/**
+ * Compact sign-in sheet (the shared BottomSheet): Google first, email one tap away, and a text
+ * link to switch between logging in and signing up.
+ */
 export default function LoginModal({ isVisible, onClose, initialTab = 'login' }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>(initialTab);
-  // Reset to the requested tab whenever the modal opens (set during render, not in an effect)
+  const [showEmail, setShowEmail] = useState(false);
+  // Reset to the requested tab, email folded away, whenever the sheet opens (during render)
   const [wasVisible, setWasVisible] = useState(isVisible);
   if (isVisible !== wasVisible) {
     setWasVisible(isVisible);
-    if (isVisible) setActiveTab(initialTab);
-  }
-  const translateY = useAnimatedValue(screenHeight);
-  const overlayOpacity = useAnimatedValue(0);
-
-  // Created once; it only touches the stable animated values and onClose.
-  const [panResponder] = useState(() =>
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: (_, gestureState) => {
-        return gestureState.dy > 0;
-      },
-      onPanResponderMove: (_, gestureState) => {
-        if (gestureState.dy > 0) {
-          translateY.setValue(gestureState.dy);
-        }
-      },
-      onPanResponderRelease: (_, gestureState) => {
-        if (gestureState.dy > 100) {
-          // Fade out overlay while sliding down
-          Animated.parallel([
-            Animated.timing(translateY, {
-              toValue: screenHeight,
-              duration: 300,
-              useNativeDriver: true,
-            }),
-            Animated.timing(overlayOpacity, {
-              toValue: 0,
-              duration: 300,
-              useNativeDriver: true,
-            }),
-          ]).start(() => {
-            onClose();
-          });
-        } else {
-          // Snap back
-          Animated.spring(translateY, {
-            toValue: 0,
-            useNativeDriver: true,
-          }).start();
-        }
-      },
-    }),
-  );
-
-  useEffect(() => {
     if (isVisible) {
-      overlayOpacity.setValue(0);
-      translateY.setValue(screenHeight);
-      Animated.parallel([
-        Animated.timing(overlayOpacity, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(translateY, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    } else {
-      overlayOpacity.setValue(0);
-      translateY.setValue(screenHeight);
+      setActiveTab(initialTab);
+      setShowEmail(false);
     }
-  }, [isVisible, overlayOpacity, translateY]);
+  }
+  const { user, isLoading, signIn } = useAuth();
 
-  const { user, isLoading } = useAuth();
-
-  // Close modal when user signs in successfully
+  // Close once signed in
   useEffect(() => {
-    if (user && isVisible) {
-      onClose();
-    }
+    if (user && isVisible) onClose();
   }, [user, isVisible, onClose]);
 
+  const copy = COPY[activeTab];
+
   return (
-    <View>
-      <Modal animationType="none" transparent={true} visible={isVisible}>
-        <Animated.View style={[styles.modalOverlay, { opacity: overlayOpacity }]}>
-          {/* Invisible overlay to detect taps */}
-          <TouchableOpacity
-            style={StyleSheet.absoluteFill}
-            activeOpacity={1}
-            onPress={() => {
-              // Same animation as your swipe dismiss
-              Animated.parallel([
-                Animated.timing(translateY, {
-                  toValue: screenHeight,
-                  duration: 300,
-                  useNativeDriver: true,
-                }),
-                Animated.timing(overlayOpacity, {
-                  toValue: 0,
-                  duration: 300,
-                  useNativeDriver: true,
-                }),
-              ]).start(() => {
-                onClose();
-              });
-            }}
-          />
+    <BottomSheet visible={isVisible} onClose={onClose}>
+      {isLoading ? (
+        <View style={styles.loading}>
+          <ActivityIndicator color={colors.textSecondary} />
+          <Text style={type.caption}>Signing in…</Text>
+        </View>
+      ) : (
+        <>
+          <View style={styles.header}>
+            <Text style={type.title}>{copy.title}</Text>
+            <Text style={type.caption}>Save routes and see them on any device.</Text>
+          </View>
 
-          {/* Modal content - NOT wrapped in TouchableOpacity */}
-          <Animated.View
-            style={[styles.loginModalContent, { transform: [{ translateY }] }]}
-            {...panResponder.panHandlers}
+          <GoogleSignInButton onPress={signIn} />
+
+          {showEmail ? (
+            activeTab === 'login' ? (
+              <LoginForm />
+            ) : (
+              <SignupForm />
+            )
+          ) : (
+            <Pressable
+              onPress={() => setShowEmail(true)}
+              style={({ pressed }) => [styles.emailButton, pressed && styles.pressed]}
+              accessibilityRole="button"
+            >
+              <Ionicons name="mail-outline" size={18} color={colors.text} />
+              <Text style={styles.emailText}>Continue with email</Text>
+            </Pressable>
+          )}
+
+          <Pressable
+            onPress={() => setActiveTab(activeTab === 'login' ? 'signup' : 'login')}
+            hitSlop={8}
+            style={styles.switchRow}
+            accessibilityRole="button"
           >
-            <View style={[ui.handle, styles.handle]} />
-            <View style={styles.segmented} accessibilityRole="tablist">
-              {SEGMENTS.map(({ key, label }) => {
-                const isActive = activeTab === key;
-                return (
-                  <Pressable
-                    key={key}
-                    style={[styles.segment, isActive && styles.segmentActive]}
-                    onPress={() => setActiveTab(key)}
-                    accessibilityRole="tab"
-                    accessibilityState={{ selected: isActive }}
-                  >
-                    <Text style={[styles.segmentText, isActive && styles.segmentTextActive]}>
-                      {label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
+            <Text style={type.caption}>
+              {copy.switchPrompt} <Text style={styles.switchAction}>{copy.switchAction}</Text>
+            </Text>
+          </Pressable>
 
-            <View style={styles.contentContainer}>
-              {isLoading ? (
-                <View style={styles.loadingContainer}>
-                  <ActivityIndicator size="large" color={colors.textSecondary} />
-                  <Text style={type.caption}>Signing in...</Text>
-                </View>
-              ) : activeTab === 'login' ? (
-                <LoginForm />
-              ) : (
-                <SignupForm />
-              )}
-            </View>
-          </Animated.View>
-        </Animated.View>
-      </Modal>
-    </View>
+          <Text style={styles.terms}>
+            By continuing, you agree to the Terms of Service and Data Processing Agreement.
+          </Text>
+        </>
+      )}
+    </BottomSheet>
   );
 }
 
 const styles = StyleSheet.create({
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: colors.scrim,
-    justifyContent: 'flex-end',
+  header: {
+    gap: spacing.xxs,
+    marginBottom: spacing.xs,
   },
-  loginModalContent: {
-    height: '70%',
-    width: '100%',
-    backgroundColor: colors.background,
-    borderTopLeftRadius: radius.sheet,
-    borderTopRightRadius: radius.sheet,
-    overflow: 'hidden',
-    position: 'absolute',
-    bottom: 0,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.xl,
-    paddingHorizontal: spacing.xl,
-  },
-  handle: {
-    marginBottom: spacing.lg,
-  },
-  segmented: {
+  emailButton: {
+    height: 48,
     flexDirection: 'row',
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    padding: spacing.xs,
-  },
-  segment: {
-    flex: 1,
-    height: 36,
-    borderRadius: radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: spacing.sm,
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
   },
-  segmentActive: {
-    backgroundColor: colors.background,
-  },
-  segmentText: {
-    ...type.bodyMedium,
-    color: colors.textSecondary,
-  },
-  segmentTextActive: {
+  emailText: {
+    fontFamily: fonts.medium,
+    fontSize: 15,
     color: colors.text,
   },
-  contentContainer: {
-    flex: 1,
-    marginTop: spacing.xl,
+  pressed: {
+    backgroundColor: colors.surface,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
+  switchRow: {
     alignItems: 'center',
+    marginTop: spacing.xs,
+  },
+  switchAction: {
+    fontFamily: fonts.semibold,
+    color: colors.text,
+  },
+  terms: {
+    ...type.caption,
+    fontSize: 11,
+    lineHeight: 15,
+    textAlign: 'center',
+    color: colors.textTertiary,
+  },
+  loading: {
+    height: 160,
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: spacing.md,
   },
 });

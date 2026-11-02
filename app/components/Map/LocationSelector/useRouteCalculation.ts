@@ -1,7 +1,6 @@
 import calculatePossibleRoutes from '@/services/routes/calculatePossibleRoutes';
 import { MapPointsContext } from '@/context/map-context';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useCallback, useContext, useEffect, useState } from 'react';
+import { useCallback, useContext, useState } from 'react';
 import { Alert } from 'react-native';
 import { LatLng } from '@/types/GeoTypes';
 import { buildPolylines } from './buildPolylines';
@@ -9,8 +8,8 @@ import { buildPolylines } from './buildPolylines';
 /**
  * Runs the A→B route calculation and stores the ranked results and their polylines in the map
  * context. `onCalculate(from, to)` takes the points explicitly so a caller can search right
- * after setting a point, before context state has updated. Also auto-runs when the
- * `shouldCalculateRoute` AsyncStorage flag is set (used by the saved-routes screen).
+ * after setting a point, before context state has updated. A saved trip's jeeps
+ * (`preferredCodes`) go along, so that trip is among the results.
  */
 export default function useRouteCalculation() {
   const {
@@ -21,6 +20,7 @@ export default function useRouteCalculation() {
     setResults,
     setSelectedRouteIndex,
     setSelectedRouteInfo,
+    preferredCodes,
   } = useContext(MapPointsContext);
   const [isCalculating, setIsCalculating] = useState(false);
 
@@ -40,7 +40,7 @@ export default function useRouteCalculation() {
         setSelectedRouteInfo(null);
 
         setIsCalculating(true);
-        const routes = await calculatePossibleRoutes(from, to);
+        const routes = await calculatePossibleRoutes(from, to, preferredCodes ?? undefined);
 
         if (Array.isArray(routes) && routes.length > 0) {
           // The backend returns results already ranked.
@@ -83,36 +83,9 @@ export default function useRouteCalculation() {
       setAllRoutes,
       setSelectedRouteIndex,
       setSelectedRouteInfo,
+      preferredCodes,
     ],
   );
-
-  // Check if we should auto-calculate (from saved route)
-  const checkForAutoCalculate = useCallback(async () => {
-    try {
-      const shouldCalculate = await AsyncStorage.getItem('shouldCalculateRoute');
-
-      if (shouldCalculate === 'true' && pointA && pointB) {
-        await AsyncStorage.removeItem('shouldCalculateRoute'); // Clear flag
-        setTimeout(() => {
-          onCalculate(); // Trigger calculation
-        }, 500); // Small delay to ensure UI is ready
-      }
-    } catch (error) {
-      console.error('Error checking auto-calculate:', error);
-    }
-  }, [pointA, pointB, onCalculate]);
-
-  // Check on mount
-  useEffect(() => {
-    checkForAutoCalculate();
-  }, [checkForAutoCalculate]);
-
-  // Check if we should auto-calculate when points change
-  useEffect(() => {
-    if (pointA && pointB) {
-      checkForAutoCalculate();
-    }
-  }, [pointA, pointB, checkForAutoCalculate]);
 
   return { isCalculating, onCalculate };
 }

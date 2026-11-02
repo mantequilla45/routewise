@@ -79,12 +79,16 @@ type Step =
 
 const DESTINATION = -1;
 
-/** One shortest-path search; `bannedFirst` routes can't be boarded at the start. */
+/**
+ * One shortest-path search; `bannedFirst` routes can't be boarded at the start. With `only`, no
+ * other routes can be boarded at all, at the start or at a transfer.
+ */
 function search(
   net: Network,
   from: LatLng,
   egress: Map<number, number>,
   bannedFirst: Set<number>,
+  only?: Set<number>,
 ): { node: number; cost: number; steps: (Step | undefined)[] } | null {
   const cost = new Float64Array(net.nodes.length).fill(Infinity);
   const transfersUsed = new Uint8Array(net.nodes.length);
@@ -94,7 +98,7 @@ function search(
   let bestDestination = { node: -1, cost: Infinity };
 
   for (const { item, distance } of net.index.within(from, ACCESS_RADIUS_M)) {
-    if (bannedFirst.has(item.route)) continue;
+    if (bannedFirst.has(item.route) || (only && !only.has(item.route))) continue;
     const c = distance / WALK_M_PER_MIN;
     if (c < cost[item.id]) {
       cost[item.id] = c;
@@ -136,6 +140,7 @@ function search(
     // Transfer only after a real ride: never straight after boarding or after a short hop
     if (transfersUsed[id] < MAX_TRANSFERS && ridden[id] >= MIN_RIDE_M) {
       for (const t of net.transfers[id]) {
+        if (only && !only.has(net.nodes[t.to].route)) continue;
         const c = key + t.walk / WALK_M_PER_MIN + TRANSFER_PENALTY_MIN;
         if (c < cost[t.to]) {
           cost[t.to] = c;
@@ -219,11 +224,21 @@ function toTrip(
   };
 }
 
+/** Whether `trip` rides exactly these jeeps (route codes, in order). */
+const ridesCodes = (trip: TripOption, codes: string[]) =>
+  trip.legs.length === codes.length && trip.legs.every((leg, i) => leg.routeCode === codes[i]);
+
 /**
  * Up to MAX_OPTIONS trips from `from` to `to`, fastest first. Each further option boards a
  * different first jeep, so the list offers real alternatives rather than tiny variations.
+ * `prefer` (a saved trip's jeeps, in order) adds the best trip on those jeeps when it didn't
+ * make the list on its own, so the app can show the trip that was saved.
  */
-export async function planTrips(from: LatLng, to: LatLng): Promise<TripOption[]> {
+export async function planTrips(
+  from: LatLng,
+  to: LatLng,
+  prefer?: string[],
+): Promise<TripOption[]> {
   const net = await getNetwork();
 
   const egress = new Map<number, number>();
@@ -259,7 +274,18 @@ export async function planTrips(from: LatLng, to: LatLng): Promise<TripOption[]>
   }
   // A shorter trip found later can pad out one found earlier. Searches run cheapest-first, but
   // the first-jeep bans can surface a faster later option.
-  return options
+  const trips = options
     .filter((trip) => !options.some((o) => isPadded(trip, o)))
     .sort((a, b) => a.estimatedMinutes - b.estimatedMinutes);
+
+  if (prefer?.length && !trips.some((trip) => ridesCodes(trip, prefer))) {
+    // One more search that may only ride the saved trip's jeeps
+    const only = new Set(
+      net.routes.flatMap((route, i) => (prefer.includes(route.code) ? [i] : [])),
+    );
+    const found = search(net, from, egress, new Set(), only);
+    const trip = found && toTrip(net, found.node, found.steps, egress.get(found.node)!, found.cost);
+    if (trip && ridesCodes(trip, prefer)) trips.push(trip);
+  }
+  return trips;
 }

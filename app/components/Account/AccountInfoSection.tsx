@@ -1,40 +1,32 @@
 import CommuterPicker from '@/components/Account/CommuterPicker';
-import EditableField, { InfoRow } from '@/components/Account/EditableField';
+import EditableField from '@/components/Account/EditableField';
 import { useProfileEditor } from '@/components/Account/useProfileEditor';
-import type { AuthUser } from '@/context/auth';
-import { colors, spacing, type, ui } from '@/theme';
+import { colors, radius, spacing, type, ui } from '@/theme';
 import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
+import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 type Props = {
-  user: AuthUser;
   onSignOut: () => void;
 };
 
-/** Settings-style list: editable name and commuter type, email details, sign out. */
-export default function AccountInfoSection({ user, onSignOut }: Props) {
-  const { isEditingSection, toggleEditing, name, commuter } = useProfileEditor();
-  const isVerified = !!user.email_verified;
+/**
+ * The signed-in settings: one rounded group with the editable profile (tap a row to change it,
+ * saved right away) and a shortcut to saved routes, then sign out and the app version.
+ */
+export default function AccountInfoSection({ onSignOut }: Props) {
+  const router = useRouter();
+  const { name, commuter } = useProfileEditor();
+  const version = Constants.expoConfig?.version;
 
   return (
-    <View>
-      <View style={styles.sectionHeader}>
-        <Text style={type.overline}>Account information</Text>
-        <Pressable
-          onPress={toggleEditing}
-          style={({ pressed }) => pressed && styles.pressed}
-          hitSlop={12}
-          accessibilityRole="button"
-        >
-          <Text style={styles.editText}>{isEditingSection ? 'Save' : 'Edit'}</Text>
-        </Pressable>
-      </View>
-
+    <View style={styles.container}>
       <View style={styles.group}>
         <EditableField
-          label="Full Name"
+          label="Name"
           value={name.value}
-          isEditing={isEditingSection}
+          isEditing
           isSaving={name.isSaving}
           onPress={name.startEdit}
           textInput={{
@@ -46,36 +38,38 @@ export default function AccountInfoSection({ user, onSignOut }: Props) {
         />
         <View style={styles.divider} />
         <EditableField
-          label="Commuter Type"
+          label="Commuter type"
           value={commuter.value}
-          isEditing={isEditingSection}
+          isEditing
           isSaving={commuter.isSaving}
           onPress={commuter.openPicker}
         />
         <View style={styles.divider} />
-        <InfoRow label="Email" value={user.email} />
-        <View style={styles.divider} />
-        <InfoRow label="Email Verified" value={isVerified ? 'Yes' : 'No'} />
-      </View>
-
-      <View style={[styles.group, styles.signOutGroup]}>
         <Pressable
-          onPress={onSignOut}
-          style={({ pressed }) => [styles.signOutRow, pressed && styles.rowPressed]}
+          onPress={() => router.push('/saved')}
+          style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
           accessibilityRole="button"
         >
-          <Ionicons name="log-out-outline" size={20} color={colors.danger} />
-          <Text style={styles.signOutText}>Sign Out</Text>
+          <Text style={type.body}>Saved routes</Text>
+          <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
         </Pressable>
       </View>
+
+      <Pressable
+        onPress={onSignOut}
+        hitSlop={8}
+        style={({ pressed }) => [styles.signOut, pressed && styles.signOutPressed]}
+        accessibilityRole="button"
+      >
+        <Text style={styles.signOutText}>Sign out</Text>
+      </Pressable>
+
+      {!!version && <Text style={styles.version}>RouteWise {version}</Text>}
 
       <CommuterPicker
         visible={commuter.isPickerVisible}
         value={commuter.value}
-        onSelect={(option) => {
-          commuter.setValue(option);
-          commuter.closePicker();
-        }}
+        onSelect={commuter.select}
         onClose={commuter.closePicker}
       />
     </View>
@@ -83,45 +77,46 @@ export default function AccountInfoSection({ user, onSignOut }: Props) {
 }
 
 const styles = StyleSheet.create({
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  container: {
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xl,
-    paddingBottom: spacing.sm,
   },
-  editText: {
-    ...type.bodyMedium,
-    color: colors.text,
-  },
-  pressed: {
-    opacity: 0.6,
-  },
+  // One inset group, like iOS Settings
   group: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+    overflow: 'hidden',
   },
   divider: {
     ...ui.divider,
     marginLeft: spacing.lg,
   },
-  signOutGroup: {
-    marginTop: spacing.xxl,
-  },
-  signOutRow: {
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    justifyContent: 'space-between',
     minHeight: 52,
     paddingHorizontal: spacing.lg,
   },
   rowPressed: {
     backgroundColor: colors.surfacePressed,
   },
+  signOut: {
+    alignSelf: 'center',
+    marginTop: spacing.xxl,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+  signOutPressed: {
+    opacity: 0.6,
+  },
   signOutText: {
     ...type.bodyMedium,
     color: colors.danger,
+  },
+  version: {
+    ...type.caption,
+    marginTop: spacing.sm,
+    textAlign: 'center',
+    color: colors.textTertiary,
   },
 });

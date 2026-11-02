@@ -26,6 +26,12 @@ type MapPointsContextType = {
   setIsRouteFromList: (value: boolean) => void;
   selectedRouteInfo: { id: string; name: string } | null;
   setSelectedRouteInfo: (info: { id: string; name: string } | null) => void;
+  /**
+   * A saved route being opened: its jeeps (codes, riding order; may be empty), to select the
+   * matching result once it's found. Null otherwise.
+   */
+  preferredCodes: string[] | null;
+  setPreferredCodes: (codes: string[] | null) => void;
   /** Clear points, results and drawn routes, so the next trip or route starts clean. */
   resetTrip: () => void;
 };
@@ -51,6 +57,8 @@ export const MapPointsContext = createContext<MapPointsContextType>({
   setIsRouteFromList: () => {},
   selectedRouteInfo: null,
   setSelectedRouteInfo: () => {},
+  preferredCodes: null,
+  setPreferredCodes: () => {},
   resetTrip: () => {},
 });
 
@@ -64,6 +72,7 @@ export const MapPointsProvider: React.FC<{ children: ReactNode }> = ({ children 
   const [results, setResults] = useState<TripOption[]>([]);
   const [selectedRouteIndex, setSelectedRouteIndex] = useState<number | null>(null);
   const [isRouteFromList, setIsRouteFromList] = useState<boolean>(false);
+  const [preferredCodes, setPreferredCodes] = useState<string[] | null>(null);
   const [selectedRouteInfo, setSelectedRouteInfo] = useState<{ id: string; name: string } | null>(
     null,
   );
@@ -79,6 +88,7 @@ export const MapPointsProvider: React.FC<{ children: ReactNode }> = ({ children 
       setIsPinPlacementEnabled(false);
       setPointA(null);
       setPointB(null);
+      setPreferredCodes(null);
     };
     return {
       pointA,
@@ -101,6 +111,8 @@ export const MapPointsProvider: React.FC<{ children: ReactNode }> = ({ children 
       setIsRouteFromList,
       selectedRouteInfo,
       setSelectedRouteInfo,
+      preferredCodes,
+      setPreferredCodes,
       resetTrip,
     };
   }, [
@@ -114,6 +126,7 @@ export const MapPointsProvider: React.FC<{ children: ReactNode }> = ({ children 
     selectedRouteIndex,
     isRouteFromList,
     selectedRouteInfo,
+    preferredCodes,
   ]);
 
   return <MapPointsContext.Provider value={memoizedValue}>{children}</MapPointsContext.Provider>;

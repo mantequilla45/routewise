@@ -17,7 +17,12 @@ async function parseFromTo(c: { req: { json: () => Promise<unknown> } }) {
   const body = ((await c.req.json().catch(() => ({}))) ?? {}) as Record<string, unknown>;
   const from = parseLatLng(body.from);
   const to = parseLatLng(body.to);
-  return from && to ? { from, to } : null;
+  // Optional: the jeeps of a saved trip, in riding order, so it's among the options
+  const prefer =
+    Array.isArray(body.prefer) && body.prefer.every((code) => typeof code === 'string')
+      ? (body.prefer as string[]).slice(0, 3)
+      : undefined;
+  return from && to ? { from, to, prefer } : null;
 }
 
 routes.get('/', async (c) => {
@@ -36,5 +41,5 @@ routes.get('/:id', async (c) => {
 routes.post('/calculate', async (c) => {
   const coords = await parseFromTo(c);
   if (!coords) return c.json({ error: 'Missing coordinates' }, 400);
-  return c.json(await planTrips(coords.from, coords.to));
+  return c.json(await planTrips(coords.from, coords.to, coords.prefer));
 });

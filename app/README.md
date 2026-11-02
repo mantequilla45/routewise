@@ -36,3 +36,11 @@ live in this app.
 - Email/password: `POST /auth/login` or `/auth/signup` on the backend.
 - Google: the app opens `/auth/google/authorize` in the system browser; the backend finishes
   OAuth and deep-links back to `routewise://` with tokens. The scheme is set in `app.json`.
+
+## Patched dependencies
+
+`expo-maps` is patched (`patches/expo-maps@58.0.11.patch`, registered in `pnpm-workspace.yaml`) so
+the iOS camera accepts a `bearing`: the trip map rotates to the direction of travel while
+following the rider. Because the patch changes Swift, `package.json` sets
+`expo.autolinking.ios.buildFromSource: ["expo-maps"]`; without it, iOS uses Expo's precompiled
+binary and the patch has no effect. After upgrading `expo-maps`, re-create or drop the patch.

@@ -5,10 +5,10 @@ import { Animated, PanResponder, useAnimatedValue } from 'react-native';
  * Drives the bottom sheet on the map screen: one translateY value (0 = visible, 800 = hidden),
  * the opacity of the "tap to open" indicator that replaces it, and the swipe-down gesture.
  */
-export function useModalAnimation(isRouteFromList: boolean) {
-  const [isModalVisible, setIsModalVisible] = useState(!isRouteFromList);
-  const modalPosition = useAnimatedValue(isRouteFromList ? 800 : 0);
-  const indicatorOpacity = useAnimatedValue(isRouteFromList ? 1 : 0);
+export function useModalAnimation(isRouteFromList: boolean, startHidden = isRouteFromList) {
+  const [isModalVisible, setIsModalVisible] = useState(!startHidden);
+  const modalPosition = useAnimatedValue(startHidden ? 800 : 0);
+  const indicatorOpacity = useAnimatedValue(startHidden ? 1 : 0);
 
   const animateIn = useCallback(
     (callback?: () => void) => {

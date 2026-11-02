@@ -7,10 +7,9 @@ import { authFormStyles as styles } from '@/components/Auth/authFormStyles';
 import { useSavedCredentials } from '@/components/Auth/useSavedCredentials';
 import EmailPasswordFields from '@/components/Auth/EmailPasswordFields';
 import RememberMeCheckbox from '@/components/Auth/RememberMeCheckbox';
-import GoogleSignInButton from '@/components/Auth/GoogleSignInButton';
 
 export default function LoginForm() {
-  const { signIn, signInWithEmail } = useAuth();
+  const { signInWithEmail } = useAuth();
   const { email, setEmail, password, setPassword, rememberMe, setRememberMe, persistCredentials } =
     useSavedCredentials();
   const [loading, setLoading] = useState(false);
@@ -49,12 +48,13 @@ export default function LoginForm() {
       <View style={styles.optionsRow}>
         <RememberMeCheckbox checked={rememberMe} onToggle={() => setRememberMe(!rememberMe)} />
 
-        <Text style={styles.linkText}>Forgot Password?</Text>
+        <Text style={styles.linkText}>Forgot password?</Text>
       </View>
 
       <Pressable
         style={({ pressed }) => [
           ui.primaryButton,
+          styles.compactButton,
           pressed && styles.primaryPressed,
           loading && styles.disabled,
         ]}
@@ -62,21 +62,8 @@ export default function LoginForm() {
         disabled={loading}
         accessibilityRole="button"
       >
-        <Text style={ui.primaryButtonText}>{loading ? 'Loading...' : 'Log In'}</Text>
+        <Text style={ui.primaryButtonText}>{loading ? 'Logging in…' : 'Log in'}</Text>
       </Pressable>
-
-      <View style={styles.dividerRow}>
-        <View style={styles.dividerLine} />
-        <Text style={styles.dividerText}>or</Text>
-        <View style={styles.dividerLine} />
-      </View>
-
-      <GoogleSignInButton onPress={signIn} />
-
-      <Text style={styles.terms}>
-        By signing in, you agree to the <Text style={styles.termsLink}>Terms of Service</Text> and{' '}
-        <Text style={styles.termsLink}>Data Processing Agreement</Text>
-      </Text>
     </View>
   );
 }

@@ -165,3 +165,150 @@ export async function photoUrl(photoName: string, maxWidthPx: number): Promise<s
   if (!data.photoUri) throw notFound('Photo not found');
   return data.photoUri;
 }
+
+type SearchPhotosResponse = {
+  places?: {
+    displayName?: { text: string };
+    location?: { latitude: number; longitude: number };
+    types?: string[];
+    photos?: { name: string; authorAttributions?: { displayName?: string }[] }[];
+  }[];
+};
+
+// A result must be this close to the saved point to be the same place
+const SAME_PLACE_RADIUS_M = 200;
+// Results that are only a road or an address: their "photos" are of whatever stands nearby
+const NOT_A_PLACE = new Set(['route', 'street_address', 'intersection', 'premise', 'plus_code']);
+
+const words = (s: string) =>
+  s
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .split(/[^a-z0-9]+/)
+    .filter((w) => w.length > 2);
+
+/** True when two place names share most of their words ("Ayala Center" vs "Ayala Center Cebu"). */
+function sameName(a: string, b: string): boolean {
+  const wa = words(a);
+  const wb = new Set(words(b));
+  if (wa.length === 0 || wb.size === 0) return false;
+  const shared = wa.filter((w) => wb.has(w)).length;
+  return shared / Math.min(wa.length, wb.size) >= 0.6;
+}
+
+function metersBetween(a: LatLng, b: LatLng): number {
+  const k = 111320;
+  const dx = (b.longitude - a.longitude) * k * Math.cos((a.latitude * Math.PI) / 180);
+  const dy = (b.latitude - a.latitude) * k;
+  return Math.hypot(dx, dy);
+}
+
+/**
+ * A photo of the place named `name` at `point` (e.g. a saved route's destination, stored as
+ * coordinates and a name only). Only a result with a matching name, close to the point, and that
+ * is a real place rather than a road or address counts; otherwise null, so the app shows its
+ * placeholder instead of a photo of whatever happens to be nearby.
+ */
+export async function photoOfPlace(name: string, point: LatLng): Promise<PlacePhoto | null> {
+  const data = await placesFetch<SearchPhotosResponse>(
+    '/places:searchText',
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        textQuery: name,
+        locationBias: {
+          circle: {
+            center: { latitude: point.latitude, longitude: point.longitude },
+            radius: SAME_PLACE_RADIUS_M,
+          },
+        },
+        maxResultCount: 3,
+      }),
+    },
+    'places.displayName,places.location,places.types,places.photos',
+  );
+  const match = data.places?.find(
+    (p) =>
+      p.photos?.length &&
+      p.location &&
+      metersBetween(point, p.location) <= SAME_PLACE_RADIUS_M &&
+      !p.types?.some((t) => NOT_A_PLACE.has(t)) &&
+      sameName(name, p.displayName?.text ?? ''),
+  );
+  const photo = match?.photos?.[0];
+  if (!photo) return null;
+  return {
+    name: photo.name,
+    attribution: photo.authorAttributions?.[0]?.displayName ?? 'Google Maps contributor',
+  };
+}
+
+type SearchPageResponse = {
+  places?: {
+    id: string;
+    displayName?: { text: string };
+    shortFormattedAddress?: string;
+    location?: { latitude: number; longitude: number };
+    photos?: { name: string; authorAttributions?: { displayName?: string }[] }[];
+  }[];
+  nextPageToken?: string;
+};
+
+/** One page (up to 20) of a text search around Metro Cebu, with each place's first photo. */
+export async function searchPlacesPage(
+  query: string,
+  pageToken: string | undefined,
+): Promise<{
+  places: {
+    placeId: string;
+    name: string;
+    area: string;
+    location: LatLng;
+    photo: PlacePhoto | null;
+  }[];
+  nextPageToken: string | null;
+}> {
+  const data = await placesFetch<SearchPageResponse>(
+    '/places:searchText',
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        textQuery: query,
+        pageSize: 20,
+        ...(pageToken && { pageToken }),
+        locationBias: {
+          circle: {
+            center: { latitude: CEBU.latitude, longitude: CEBU.longitude },
+            radius: BIAS_RADIUS_M,
+          },
+        },
+      }),
+    },
+    'places.id,places.displayName,places.shortFormattedAddress,places.location,places.photos,nextPageToken',
+  );
+  return {
+    places: (data.places ?? []).flatMap((p) => {
+      if (!p.location || !p.displayName?.text) return [];
+      const photo = p.photos?.[0];
+      // The area: the address minus the street, e.g. "Mabolo, Cebu City"
+      const parts = (p.shortFormattedAddress ?? '').split(',').map((s) => s.trim());
+      return [
+        {
+          placeId: p.id,
+          name: p.displayName.text,
+          area: parts.slice(-2).join(', ') || 'Cebu',
+          location: { latitude: p.location.latitude, longitude: p.location.longitude },
+          photo: photo
+            ? {
+                name: photo.name,
+                attribution:
+                  photo.authorAttributions?.[0]?.displayName ?? 'Google Maps contributor',
+              }
+            : null,
+        },
+      ];
+    }),
+    nextPageToken: data.nextPageToken ?? null,
+  };
+}

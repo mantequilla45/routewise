@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable } from 'react-native';
+import { View, TextInput, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { authFormStyles as styles } from '@/components/Auth/authFormStyles';
-import { colors, type } from '@/theme';
+import { colors } from '@/theme';
 
 type Props = {
   email: string;
@@ -11,7 +11,7 @@ type Props = {
   onPasswordChange: (value: string) => void;
 };
 
-/** Labelled email and password inputs; the password field has a show/hide toggle. */
+/** Email and password inputs (placeholders as labels); the password field has a show/hide toggle. */
 export default function EmailPasswordFields({
   email,
   onEmailChange,
@@ -23,10 +23,11 @@ export default function EmailPasswordFields({
   return (
     <>
       <View style={styles.field}>
-        <Text style={type.label}>Email</Text>
         <TextInput
           style={styles.input}
-          placeholder="email@example.com"
+          placeholder="Email"
+          textContentType="emailAddress"
+          autoComplete="email"
           placeholderTextColor={colors.textTertiary}
           value={email}
           onChangeText={onEmailChange}
@@ -36,7 +37,6 @@ export default function EmailPasswordFields({
       </View>
 
       <View style={styles.field}>
-        <Text style={type.label}>Password</Text>
         <View style={styles.inputWithIcon}>
           <TextInput
             style={styles.inputInner}

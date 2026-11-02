@@ -13,5 +13,5 @@ export const CATEGORIES: { key: PlaceCategory | 'all'; label: string; icon: Icon
   { key: 'landmark', label: 'Landmarks', icon: 'flag-outline' },
 ];
 
-export const iconForCategory = (category: PlaceCategory): IconName =>
+export const iconForCategory = (category: PlaceCategory | null): IconName =>
   CATEGORIES.find((c) => c.key === category)?.icon ?? 'location-outline';

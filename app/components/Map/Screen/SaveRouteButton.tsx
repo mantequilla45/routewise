@@ -1,3 +1,4 @@
+import usePlaceLabel from '@/components/Map/LocationSelector/usePlaceLabel';
 import { useSavedRouteStatus } from '@/components/Map/Screen/useSavedRouteStatus';
 import { useAuth } from '@/context/auth';
 import { MapPointsContext } from '@/context/map-context';
@@ -21,6 +22,9 @@ export default function SaveRouteButton() {
     pointA,
     pointB,
   );
+  // Place names for the saved trip's ends (reverse geocoded, cached with the trip sheet's)
+  const startLabel = usePlaceLabel(pointA);
+  const endLabel = usePlaceLabel(pointB);
   const route =
     !isRouteFromList && selectedRouteIndex !== null ? results[selectedRouteIndex] : undefined;
   if (!route) return null;
@@ -43,8 +47,8 @@ export default function SaveRouteButton() {
 
       const routeData = {
         route_name: jeepneyCodes.join(' → '),
-        start_location: `Pin A`, // You can geocode these later
-        end_location: `Pin B`,
+        start_location: startLabel?.title ?? 'Starting point',
+        end_location: endLabel?.title ?? 'Destination',
         start_lat: pointA?.latitude,
         start_lng: pointA?.longitude,
         end_lat: pointB?.latitude,

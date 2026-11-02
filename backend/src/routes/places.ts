@@ -1,6 +1,15 @@
 import { Hono } from 'hono';
 import { POPULAR_PLACES } from '../data/popularPlaces';
-import { autocomplete, PHOTO_NAME, photoUrl, placeDetails, placePhoto } from '../services/places';
+import {
+  autocomplete,
+  PHOTO_NAME,
+  photoOfPlace,
+  photoUrl,
+  placeDetails,
+  placePhoto,
+} from '../services/places';
+import { explorePlaces } from '../services/explorePlaces';
+import type { PlaceCategory } from '../data/popularPlaces';
 import type { LatLng } from '../types/GeoTypes';
 
 // Place search for the app's start/destination pickers. Public: works before sign-in.
@@ -54,6 +63,57 @@ places.get('/popular', async (c) => {
   });
   c.header('Cache-Control', EDGE_CACHE_DAY);
   return c.json(withPhotos);
+});
+
+const CATEGORIES = new Set(['all', 'mall', 'school', 'terminal', 'hospital', 'landmark']);
+
+// More places for Home's list once the curated ones run out, a page at a time; only places a
+// jeepney route reaches. Each page is edge-cached for a day like the popular list.
+places.get('/explore', async (c) => {
+  const category = c.req.query('category') ?? 'all';
+  if (!CATEGORIES.has(category)) return c.json({ error: 'Unknown category' }, 400);
+  const { places: found, nextPageToken } = await explorePlaces(
+    category as PlaceCategory | 'all',
+    c.req.query('page') || undefined,
+  );
+  c.header('Cache-Control', EDGE_CACHE_DAY);
+  return c.json({
+    places: found.map((p) => ({
+      ...p,
+      photo: p.photo
+        ? {
+            path: `/places/photo?name=${encodeURIComponent(p.photo.name)}`,
+            attribution: p.photo.attribution,
+          }
+        : null,
+    })),
+    nextPageToken,
+  });
+});
+
+// A photo of a named place at a point (a saved route's destination has a name and coordinates,
+// not a place id); null unless Google has that same place there. Coordinates are rounded to
+// ~10 m so repeat requests share one edge-cached answer.
+places.get('/photo-near', async (c) => {
+  const near = parseNear(c.req.query('lat'), c.req.query('lng'));
+  const name = (c.req.query('name') ?? '').trim();
+  if (!near || !name || name.length > 120) {
+    return c.json({ error: 'lat, lng and name are required' }, 400);
+  }
+  const round = (n: number) => Math.round(n * 1e4) / 1e4;
+  const photo = await photoOfPlace(name, {
+    latitude: round(near.latitude),
+    longitude: round(near.longitude),
+  });
+  c.header('Cache-Control', EDGE_CACHE_DAY);
+  return c.json({
+    photo: photo
+      ? {
+          path: `/places/photo?name=${encodeURIComponent(photo.name)}`,
+          attribution: photo.attribution,
+        }
+      : null,
+  });
 });
 
 // The image itself: a redirect to Google's keyless image URL, so the server key stays here.

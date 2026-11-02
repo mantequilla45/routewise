@@ -1,5 +1,5 @@
 import * as SecureStore from 'expo-secure-store';
-import { API_URL } from '@/constants';
+import { API_URL, AUTH_URL } from '@/constants';
 import { LatLng, TripOption, RouteSegmentInfo } from '@/types/GeoTypes';
 
 // ---------------------------------------------------------------------------
@@ -77,6 +77,9 @@ export type PlaceDetails = PlaceSuggestion & { location: LatLng };
 
 export type PlaceCategory = 'mall' | 'school' | 'terminal' | 'hospital' | 'landmark';
 
+/** A place photo: backend path to the image, and its author (Google requires showing it). */
+export type PlacePhoto = { path: string; attribution: string };
+
 export type PopularPlace = {
   placeId: string;
   name: string;
@@ -84,8 +87,11 @@ export type PopularPlace = {
   category: PlaceCategory;
   location: LatLng;
   /** Absent when Google has no photo or the lookup failed. */
-  photo: { path: string; attribution: string } | null;
+  photo: PlacePhoto | null;
 };
+
+/** A place beyond the curated list (Home's "load more"); its category can be unknown. */
+export type ExplorePlace = Omit<PopularPlace, 'category'> & { category: PlaceCategory | null };
 
 /** Full URL for a backend-relative path such as a place photo. */
 export const backendUrl = (path: string) => `${API_URL}${path}`;
@@ -245,9 +251,10 @@ export const api = {
 
     logout: () => apiFetch<void>('/auth/logout', { method: 'POST' }),
 
-    // Opened in the system browser; the backend redirects to `redirectUri` with tokens.
+    // Opened in the system browser; the backend redirects to `redirectUri` with tokens. Runs on
+    // AUTH_URL, which can differ from API_URL in development (see constants.ts).
     googleAuthorizeUrl: (redirectUri: string, state: string) =>
-      `${API_URL}/auth/google/authorize?` +
+      `${AUTH_URL}/auth/google/authorize?` +
       new URLSearchParams({
         redirect_uri: redirectUri,
         state,
@@ -271,6 +278,23 @@ export const api = {
 
   places: {
     popular: () => apiFetch<PopularPlace[]>('/places/popular', { auth: false }),
+    /** One page of more places a jeepney reaches, past the curated ones; `page` continues. */
+    explore: (category: PlaceCategory | 'all', page?: string) =>
+      apiFetch<{ places: ExplorePlace[]; nextPageToken: string | null }>(
+        '/places/explore?' + new URLSearchParams({ category, ...(page && { page }) }).toString(),
+        { auth: false },
+      ),
+    /** A photo of the place called `name` at a point, or null unless Google has that place. */
+    photoNear: (point: LatLng, name: string) =>
+      apiFetch<{ photo: PlacePhoto | null }>(
+        `/places/photo-near?` +
+          new URLSearchParams({
+            lat: point.latitude.toFixed(4),
+            lng: point.longitude.toFixed(4),
+            name,
+          }).toString(),
+        { auth: false },
+      ),
     /** `session` groups one search (keystrokes + the final details call) for Google billing. */
     autocomplete: (q: string, session: string, near?: LatLng | null) =>
       apiFetch<PlaceSuggestion[]>(
@@ -292,10 +316,11 @@ export const api = {
     list: () => apiFetch<RouteSummary[]>('/routes', { auth: false }),
     get: (id: string) =>
       apiFetch<RouteSummary & { coordinates: LatLng[] }>(`/routes/${id}`, { auth: false }),
-    calculate: (from: LatLng, to: LatLng) =>
+    /** `prefer`: a saved trip's jeeps (codes, riding order), so that trip is among the options. */
+    calculate: (from: LatLng, to: LatLng, prefer?: string[]) =>
       apiFetch<TripOption[]>('/routes/calculate', {
         method: 'POST',
-        body: { from, to },
+        body: { from, to, prefer },
         auth: false,
       }),
   },

@@ -6,13 +6,10 @@ import { ApiError } from '@/lib/api';
 import { authFormStyles as styles } from '@/components/Auth/authFormStyles';
 import { useSavedCredentials } from '@/components/Auth/useSavedCredentials';
 import EmailPasswordFields from '@/components/Auth/EmailPasswordFields';
-import RememberMeCheckbox from '@/components/Auth/RememberMeCheckbox';
-import GoogleSignInButton from '@/components/Auth/GoogleSignInButton';
 
 export default function SignupForm() {
-  const { signIn, signUpWithEmail } = useAuth();
-  const { email, setEmail, password, setPassword, rememberMe, setRememberMe, persistCredentials } =
-    useSavedCredentials();
+  const { signUpWithEmail } = useAuth();
+  const { email, setEmail, password, setPassword, persistCredentials } = useSavedCredentials();
   const [loading, setLoading] = useState(false);
 
   const handleSignUp = async () => {
@@ -55,24 +52,10 @@ export default function SignupForm() {
         onPasswordChange={setPassword}
       />
 
-      {/* Remember me + forgot password */}
-      <View style={styles.optionsRow}>
-        <RememberMeCheckbox checked={rememberMe} onToggle={() => setRememberMe(!rememberMe)} />
-
-        <Pressable
-          onPress={() =>
-            Alert.alert('Forgot password', 'Use the login screen to reset your password.')
-          }
-          style={({ pressed }) => pressed && styles.pressed}
-          hitSlop={8}
-        >
-          <Text style={styles.linkText}>Forgot?</Text>
-        </Pressable>
-      </View>
-
       <Pressable
         style={({ pressed }) => [
           ui.primaryButton,
+          styles.compactButton,
           pressed && styles.primaryPressed,
           loading && styles.disabled,
         ]}
@@ -80,21 +63,8 @@ export default function SignupForm() {
         disabled={loading}
         accessibilityRole="button"
       >
-        <Text style={ui.primaryButtonText}>Sign Up</Text>
+        <Text style={ui.primaryButtonText}>{loading ? 'Creating account…' : 'Create account'}</Text>
       </Pressable>
-
-      <View style={styles.dividerRow}>
-        <View style={styles.dividerLine} />
-        <Text style={styles.dividerText}>or</Text>
-        <View style={styles.dividerLine} />
-      </View>
-
-      <GoogleSignInButton onPress={signIn} />
-
-      <Text style={styles.terms}>
-        By signing up, you agree to the <Text style={styles.termsLink}>Terms of Service</Text> and{' '}
-        <Text style={styles.termsLink}>Data Processing Agreement</Text>
-      </Text>
     </View>
   );
 }
