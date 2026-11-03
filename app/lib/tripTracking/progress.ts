@@ -104,7 +104,7 @@ const BOARD_FIXES = 2;
 const BOARD_DISTANCE_M = 600;
 
 /** Speed for this fix: the device's own if valid, else distance over time since the last one. */
-function speedOf(fix: Fix, last: TripProgress['last']): number | null {
+export function speedOf(fix: Fix, last: TripProgress['last']): number | null {
   if (fix.speed != null && fix.speed >= 0) return fix.speed;
   if (!last) return null;
   const seconds = (fix.time - last.time) / 1000;

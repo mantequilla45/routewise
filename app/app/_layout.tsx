@@ -71,6 +71,7 @@ function AppStack({ fontsReady }: { fontsReady: boolean }) {
         <Stack.Screen name="(tabs)" />
         {/* Full-screen trip map, pushed over the tabs */}
         <Stack.Screen name="trip" />
+        <Stack.Screen name="settings" />
       </Stack.Protected>
     </Stack>
   );

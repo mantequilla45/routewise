@@ -10,6 +10,7 @@ import { places } from './routes/places';
 import { me } from './routes/me';
 import { routes } from './routes/routes';
 import { savedRoutes } from './routes/savedRoutes';
+import { trips } from './routes/trips';
 
 export const app = new Hono();
 
@@ -28,6 +29,7 @@ app.route('/saved-routes', savedRoutes);
 app.route('/routes', routes);
 app.route('/contributions', contributions);
 app.route('/places', places);
+app.route('/trips', trips);
 app.route('/admin', admin);
 
 app.notFound((c) => c.json({ error: 'Not found' }, 404));

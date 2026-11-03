@@ -1,8 +1,8 @@
 diff --git a/build/shared.types.d.ts b/build/shared.types.d.ts
-index 3b4ef1afec8bc3e096a2f62ea0023002ea415976..6ddff9a32372a5d5ab26429e6e4300f5d9283dbc 100644
+index 3b4ef1afec8bc3e096a2f62ea0023002ea415976..351fad550834645d292b1c36836b95fc5aca330c 100644
 --- a/build/shared.types.d.ts
 +++ b/build/shared.types.d.ts
-@@ -19,6 +19,10 @@ export type CameraPosition = {
+@@ -19,6 +19,14 @@ export type CameraPosition = {
       * For some view sizes, lower zoom levels might not be available.
       */
      zoom?: number;
@@ -10,14 +10,36 @@ index 3b4ef1afec8bc3e096a2f62ea0023002ea415976..6ddff9a32372a5d5ab26429e6e4300f5
 +     * RouteWise patch (iOS): rotation in degrees clockwise from north. Omit for north up.
 +     */
 +    bearing?: number;
++    /**
++     * RouteWise patch (iOS): animate a camera move at constant speed over this many ms.
++     */
++    duration?: number;
  };
  /**
   * The event payload for the `onCameraMove` callback on `AppleMaps.View` and `GoogleMaps.View`.
 diff --git a/ios/AppleMapsViewiOS17.swift b/ios/AppleMapsViewiOS17.swift
-index 64fccc3c67d87d717d01424d54519ab7bb204cee..4e2ad87277e5d9643922d0fdcb3d769b246228f3 100644
+index 64fccc3c67d87d717d01424d54519ab7bb204cee..763ea1ef488971950b4affe63042f2efc13bc286 100644
 --- a/ios/AppleMapsViewiOS17.swift
 +++ b/ios/AppleMapsViewiOS17.swift
-@@ -83,9 +83,14 @@ struct AppleMapsViewiOS17: View, AppleMapsViewProtocol {
+@@ -8,9 +8,16 @@ struct AppleMapsViewiOS17: View, AppleMapsViewProtocol {
+   @ObservedObject private var state = AppleMapsViewiOS17State()
+ 
+   func setCameraPosition(config: CameraPosition?) {
+-    withAnimation {
++    let move = {
+       state.mapCameraPosition = config.map(convertToMapCamera) ?? .userLocation(fallback: state.mapCameraPosition)
+     }
++    // RouteWise patch: a `duration` (ms) moves at constant speed over that long, for a camera
++    // that follows the rider from one location fix to the next
++    if let duration = config?.duration {
++      withAnimation(.linear(duration: duration / 1000), move)
++    } else {
++      withAnimation(move)
++    }
+   }
+ 
+   func openLookAround(coordinate: Coordinate) async throws {
+@@ -83,9 +90,14 @@ struct AppleMapsViewiOS17: View, AppleMapsViewProtocol {
            ) {
              ZStack {
                if let icon = annotation.icon {
@@ -34,10 +56,28 @@ index 64fccc3c67d87d717d01424d54519ab7bb204cee..4e2ad87277e5d9643922d0fdcb3d769b
                  RoundedRectangle(cornerRadius: 5)
                    .fill(annotation.backgroundColor)
 diff --git a/ios/AppleMapsViewiOS18.swift b/ios/AppleMapsViewiOS18.swift
-index 031713e0326bcf7c5e75883114c54f959dacdf12..0f85b2e6f3ee59248e460728d45efccf8e663b51 100644
+index 031713e0326bcf7c5e75883114c54f959dacdf12..748cfea2f3e1165602dac168b0d00080907baf85 100644
 --- a/ios/AppleMapsViewiOS18.swift
 +++ b/ios/AppleMapsViewiOS18.swift
-@@ -169,9 +169,14 @@ struct AppleMapsViewiOS18: View, AppleMapsViewProtocol {
+@@ -64,9 +64,16 @@ struct AppleMapsViewiOS18: View, AppleMapsViewProtocol {
+   @ObservedObject private var state = AppleMapsViewiOS18State()
+ 
+   func setCameraPosition(config: CameraPosition?) {
+-    withAnimation {
++    let move = {
+       state.mapCameraPosition = config.map(convertToMapCamera) ?? .userLocation(fallback: state.mapCameraPosition)
+     }
++    // RouteWise patch: a `duration` (ms) moves at constant speed over that long, for a camera
++    // that follows the rider from one location fix to the next
++    if let duration = config?.duration {
++      withAnimation(.linear(duration: duration / 1000), move)
++    } else {
++      withAnimation(move)
++    }
+   }
+ 
+   func openLookAround(coordinate: Coordinate) async throws {
+@@ -169,9 +176,14 @@ struct AppleMapsViewiOS18: View, AppleMapsViewProtocol {
            ) {
              ZStack {
                if let icon = annotation.icon {
@@ -54,15 +94,17 @@ index 031713e0326bcf7c5e75883114c54f959dacdf12..0f85b2e6f3ee59248e460728d45efccf
                  RoundedRectangle(cornerRadius: 5)
                    .fill(annotation.backgroundColor)
 diff --git a/ios/MapRecords.swift b/ios/MapRecords.swift
-index 5089ee79974544e6d8370520a87eb3a55e16c7d9..b479e558a3908dc4a86fa9b30077636876532f9d 100644
+index 5089ee79974544e6d8370520a87eb3a55e16c7d9..0bc1f5595e246c2f18dacdf45ffe0c9c857bfbc5 100644
 --- a/ios/MapRecords.swift
 +++ b/ios/MapRecords.swift
-@@ -41,10 +41,13 @@ struct MapMarker: Identifiable, Record {
+@@ -41,10 +41,15 @@ struct MapMarker: Identifiable, Record {
  struct CameraPosition: Record, Equatable {
    @Field var coordinates: Coordinate
    @Field var zoom: Double = 1
 +  // RouteWise patch: optional rotation, degrees clockwise from north
 +  @Field var bearing: Double?
++  // RouteWise patch: animation length in ms, linear; omit for the default animation
++  @Field var duration: Double?
  
    static func == (lhs: CameraPosition, rhs: CameraPosition) -> Bool {
      return lhs.coordinates.latitude == rhs.coordinates.latitude

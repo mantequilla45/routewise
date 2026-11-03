@@ -7,7 +7,15 @@ import { AndroidImportance } from 'expo-notifications';
 import * as TaskManager from 'expo-task-manager';
 import { Platform } from 'react-native';
 import { useSyncExternalStore } from 'react';
-import { advance, type Fix, initialProgress, type TripProgress } from './progress';
+import { advance, type Fix, initialProgress, speedOf, type TripProgress } from './progress';
+import {
+  flushTripLog,
+  logTripEnd,
+  logTripEvent,
+  logTripStart,
+  newId,
+  progressEvents,
+} from './tripLog';
 
 /**
  * Live tracking of the trip the rider confirmed. Location updates run as a background task, so
@@ -20,8 +28,15 @@ import { advance, type Fix, initialProgress, type TripProgress } from './progres
 const TASK = 'routewise-trip-tracking';
 const STORAGE_KEY = 'activeTrip';
 const CHANNEL_ID = 'trip-alerts';
+// How often a tracked trip gets a location: every few meters (iOS), or every couple of seconds
+// (Android), so the rider's marker, the camera and the progress bars move smoothly. Costs some
+// battery while a trip runs.
+const UPDATE_EVERY_M = 5;
+const UPDATE_EVERY_MS = 2000;
 
 export interface ActiveTrip {
+  /** Made on the phone at the start, for the trip log (see tripLog.ts). */
+  id: string;
   trip: TripOption;
   /** Where the trip was planned from, to redraw it when the journey is reopened. */
   start: LatLng | null;
@@ -31,6 +46,8 @@ export interface ActiveTrip {
   progress: TripProgress;
   /** Latest known position of the rider. */
   position?: LatLng;
+  /** Speed at that position in m/s, for the speed readout; null when unknown. */
+  speed?: number | null;
   /** False when only foreground tracking was allowed: alerts need the app open. */
   background: boolean;
 }
@@ -54,6 +71,7 @@ function setActive(next: ActiveTrip | null) {
 function upgrade(saved: ActiveTrip): ActiveTrip {
   return {
     ...saved,
+    id: saved.id ?? newId(),
     start: saved.start ?? null,
     startedAt: saved.startedAt ?? Date.now(),
     progress: { ...initialProgress(saved.trip), ...saved.progress },
@@ -73,6 +91,8 @@ async function load(): Promise<ActiveTrip | null> {
   return active;
 }
 load();
+// Trip data that couldn't be sent before (no signal, or the app was closed)
+void flushTripLog();
 
 /** The trip being tracked right now, outside React (e.g. in event handlers). */
 export const getActiveTrip = () => active;
@@ -127,12 +147,18 @@ async function onPositions(fixes: Fix[]) {
   for (const fix of fixes) {
     if (!current) return;
     const { position } = fix;
+    // From the previous fix, before `advance` replaces it
+    const speed = speedOf(fix, current.progress.last);
     const { progress, alerts } = advance(current.trip, current.destination, current.progress, fix);
+    for (const event of progressEvents(current.trip, current.progress, progress)) {
+      logTripEvent(current.id, { ...event, position, speed });
+    }
     for (const alert of alerts) await notify(alert.title, alert.body);
     current = {
       ...current,
       progress,
       position: { latitude: position.latitude, longitude: position.longitude },
+      speed,
     };
     setActive(current);
     if (progress.arrived) {
@@ -179,20 +205,23 @@ export async function startTrip(
   await stopUpdates();
   const background = !!backgroundPermission?.granted;
   hydrated = true;
-  setActive({
+  const started: ActiveTrip = {
+    id: newId(),
     trip,
     start,
     destination,
     startedAt: Date.now(),
     progress: initialProgress(trip),
     background,
-  });
+  };
+  setActive(started);
+  logTripStart(started);
 
   if (background) {
     await Location.startLocationUpdatesAsync(TASK, {
-      accuracy: Location.Accuracy.High,
-      distanceInterval: 15,
-      timeInterval: 5000,
+      accuracy: Location.Accuracy.BestForNavigation,
+      distanceInterval: UPDATE_EVERY_M,
+      timeInterval: UPDATE_EVERY_MS,
       activityType: Location.ActivityType.OtherNavigation,
       pausesUpdatesAutomatically: false,
       showsBackgroundLocationIndicator: true,
@@ -204,7 +233,11 @@ export async function startTrip(
     });
   } else {
     foregroundWatch = await Location.watchPositionAsync(
-      { accuracy: Location.Accuracy.High, distanceInterval: 15, timeInterval: 5000 },
+      {
+        accuracy: Location.Accuracy.BestForNavigation,
+        distanceInterval: UPDATE_EVERY_M,
+        timeInterval: UPDATE_EVERY_MS,
+      },
       (l) => onPositions([toFix(l)]),
     );
   }
@@ -221,6 +254,12 @@ async function stopUpdates() {
 
 /** Stop tracking and forget the trip. */
 export async function stopTrip() {
+  const ending = active;
+  if (ending) {
+    const arrived = ending.progress.arrived;
+    if (!arrived) logTripEvent(ending.id, { kind: 'ended', position: ending.position });
+    logTripEnd(ending.id, arrived ? 'arrived' : 'ended');
+  }
   hydrated = true;
   setActive(null);
   await stopUpdates();

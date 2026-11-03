@@ -12,7 +12,6 @@ import { useModalAnimation } from '@/components/Map/Screen/useModalAnimation';
 import { buildPolylines } from '@/components/Map/LocationSelector/buildPolylines';
 import useRouteCalculation from '@/components/Map/LocationSelector/useRouteCalculation';
 import { MapPointsContext } from '@/context/map-context';
-import { journeyCamera } from '@/lib/tripTracking/camera';
 import { startTrip, stopTrip, useActiveTrip } from '@/lib/tripTracking/tracker';
 import { colors, elevation, radius, spacing, type } from '@/theme';
 import { Ionicons } from '@expo/vector-icons';
@@ -166,17 +165,6 @@ export default function MapScreen({
     if (openedOnJourney) restoreJourney();
   }, [openedOnJourney]);
 
-  // Follow the rider on each new position, rotated to their direction of travel
-  const followNow = () => {
-    const camera = activeTrip && journeyCamera(activeTrip);
-    if (camera) mapRef.current?.follow(camera.center, camera.bearing);
-  };
-  const followRider = useEffectEvent(followNow);
-  const riderPosition = activeTrip?.position;
-  useEffect(() => {
-    if (following && riderPosition) followRider();
-  }, [following, riderPosition]);
-
   const handleStartTrip = async () => {
     if (!shownTrip || !pointB) return;
     const started = await startTrip(shownTrip, pointA, pointB);
@@ -212,12 +200,22 @@ export default function MapScreen({
       },
     ]);
 
-  // Zoom back out to the whole trip on the map: the drawn route plus both pins. While tracking,
-  // follow the rider again instead.
+  // While tracking: follow the rider again, centered and facing the way ahead (the map does it)
+  const resumeFollowing = () => setFollowing(true);
+
+  // Zoom out to the whole trip: the drawn route plus both pins (while tracking, the rider and
+  // the rest of the journey, which pauses following until Re-center)
   const recenter = () => {
     if (activeTrip) {
-      setFollowing(true);
-      followNow();
+      setFollowing(false);
+      const ahead = activeTrip.trip.legs
+        .slice(activeTrip.progress.legIndex)
+        .flatMap((leg) => leg.coordinates);
+      mapRef.current?.fitTo([
+        ...ahead,
+        ...(activeTrip.position ? [activeTrip.position] : []),
+        activeTrip.destination,
+      ]);
       return;
     }
     const points = routes
@@ -274,13 +272,9 @@ export default function MapScreen({
           style={({ pressed }) => [styles.roundButton, pressed && styles.buttonPressed]}
           hitSlop={4}
           accessibilityRole="button"
-          accessibilityLabel={activeTrip ? 'Follow my location' : 'Show the whole route'}
+          accessibilityLabel={activeTrip ? 'Show the whole trip' : 'Show the whole route'}
         >
-          <Ionicons
-            name={activeTrip ? (following ? 'navigate' : 'locate') : 'scan-outline'}
-            size={20}
-            color={colors.text}
-          />
+          <Ionicons name="scan-outline" size={20} color={colors.text} />
         </Pressable>
       )}
     </View>
@@ -306,6 +300,7 @@ export default function MapScreen({
           onMapPress={minimizeSheet}
           showPlaces={showPlaces}
           onArrowsShownChange={setArrowsShown}
+          following={!!activeTrip && following}
           onUserPan={() => {
             if (activeTrip && following) setFollowing(false);
           }}
@@ -375,6 +370,7 @@ export default function MapScreen({
             activeTrip={activeTrip}
             onEnd={() => confirmEndTrip()}
             controls={showControls ? mapControls : null}
+            onRecenter={following ? undefined : resumeFollowing}
           />
         ) : findingSavedTrip ? null : (
           // Never alongside "Finding your trip…": it goes in the same frame the bar comes in

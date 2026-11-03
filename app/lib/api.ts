@@ -59,6 +59,37 @@ export type SavedRouteRow = {
 
 export type NewSavedRoute = Omit<SavedRouteRow, 'id' | 'user_id' | 'created_at'>;
 
+/** A status change during a tracked trip, as stored for usage data. */
+export type TripEventKind =
+  'boarded' | 'get_off_soon' | 'transferred' | 'passed_place' | 'arrived' | 'ended';
+
+export type TripEventBody = {
+  id: string;
+  kind: TripEventKind;
+  legIndex: number | null;
+  routeCode: string | null;
+  placeId: string | null;
+  placeName: string | null;
+  lat: number | null;
+  lng: number | null;
+  speed: number | null;
+  at: string; // ISO time
+};
+
+/** A tracked trip and its events; sent again as it goes, the backend keeps it idempotent. */
+export type TripSyncBody = {
+  deviceId: string;
+  routeId: string;
+  routeCodes: string[];
+  start: { lat: number; lng: number } | null;
+  destination: { lat: number; lng: number };
+  fare: number | null;
+  startedAt: string;
+  endedAt: string | null;
+  outcome: 'arrived' | 'ended' | null;
+  events: TripEventBody[];
+};
+
 export type RouteSummary = {
   id: string;
   route_id: string;
@@ -145,7 +176,7 @@ export function setOnSessionExpired(handler: (() => void) | null) {
 // ---------------------------------------------------------------------------
 
 type RequestOptions = {
-  method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: unknown;
   auth?: boolean; // default true: attach the access token when we have one
 };
@@ -274,6 +305,12 @@ export const api = {
     create: (route: Partial<NewSavedRoute>) =>
       apiFetch<SavedRouteRow>('/saved-routes', { method: 'POST', body: route }),
     remove: (id: string) => apiFetch<void>(`/saved-routes/${id}`, { method: 'DELETE' }),
+  },
+
+  trips: {
+    // With the access token when signed in, so the trip is linked to the account
+    sync: (id: string, trip: TripSyncBody) =>
+      apiFetch<void>(`/trips/${id}`, { method: 'PUT', body: trip }),
   },
 
   places: {

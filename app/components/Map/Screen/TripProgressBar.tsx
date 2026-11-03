@@ -1,12 +1,21 @@
 import { legColor } from '@/components/Map/LocationSelector/buildPolylines';
-import { lineLength, metersBetween } from '@/lib/tripTracking/progress';
+import { lineLength, metersBetween, projectOnLine } from '@/lib/tripTracking/progress';
+import type { PopularPlace } from '@/lib/api';
 import type { ActiveTrip } from '@/lib/tripTracking/tracker';
 import { colors, elevation, fonts, radius, spacing, type, ui } from '@/theme';
 import { Ionicons } from '@expo/vector-icons';
-import { Fragment, type ReactNode, useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Fragment, type ReactNode, useEffect, useEffectEvent, useRef, useState } from 'react';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeIn, FadeInDown, FadeOut, LinearTransition } from 'react-native-reanimated';
+import usePopularPlaces from '@/components/Home/usePopularPlaces';
+import {
+  hidePassingPlacesForTrip,
+  setShowPassingPlaces,
+  usePassingPlacesShownFor,
+} from '@/lib/tripTracking/passingPlacesSetting';
 import BottomSheet from '@/components/BottomSheet';
 import LiveDot from '@/components/Map/Screen/LiveDot';
+import { logTripEvent } from '@/lib/tripTracking/tripLog';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // The dark fade under the instruction: clear over the map, near-black (the text color) below.
@@ -163,9 +172,13 @@ const elapsedLabel = (minutes: number) =>
       ? `${minutes} min elapsed`
       : `${Math.floor(minutes / 60)} h ${minutes % 60} min elapsed`;
 
-function RichText({ parts, soon }: Readonly<{ parts: Rich; soon: boolean }>) {
+function RichText({
+  parts,
+  soon,
+  small = false,
+}: Readonly<{ parts: Rich; soon: boolean; small?: boolean }>) {
   return (
-    <Text style={styles.instruction} numberOfLines={2}>
+    <Text style={small ? styles.logText : styles.instruction} numberOfLines={small ? 1 : 2}>
       {parts.map((part, i) =>
         typeof part === 'string' ? (
           part
@@ -179,6 +192,133 @@ function RichText({ parts, soon }: Readonly<{ parts: Rich; soon: boolean }>) {
   );
 }
 
+type Landmark = { placeId: string; name: string; along: number };
+
+/**
+ * Per ride, the popular places it passes: within PASSING_RADIUS_M of the jeep's line, in the
+ * order the jeep reaches them, with how far along the ride each is. A place near a transfer
+ * shows only under the first jeep that reaches it.
+ */
+function landmarksByLeg(trip: ActiveTrip['trip'], popular: PopularPlace[] | null): Landmark[][] {
+  const listed = new Set<string>();
+  return trip.legs.map((leg) => {
+    if (!popular) return [];
+    const onLeg = popular
+      .filter((p) => !listed.has(p.placeId))
+      .map((p) => ({ place: p, at: projectOnLine(leg.coordinates, p.location) }))
+      .filter(({ at }) => at.away <= PASSING_RADIUS_M)
+      .sort((x, y) => x.at.along - y.at.along)
+      .map(({ place, at }) => ({ placeId: place.placeId, name: place.name, along: at.along }));
+    onLeg.forEach((l) => listed.add(l.placeId));
+    return onLeg;
+  });
+}
+
+/** The "⋯" on the place pop-ups: hide them for this trip, or turn them off altogether. */
+const placePopupOptions = (tripStartedAt: number) =>
+  Alert.alert('Places you pass', undefined, [
+    { text: 'Hide for this trip', onPress: () => hidePassingPlacesForTrip(tripStartedAt) },
+    {
+      text: 'Turn off for all trips',
+      style: 'destructive',
+      onPress: () => setShowPassingPlaces(false),
+    },
+    { text: 'Cancel', style: 'cancel' },
+  ]);
+
+// How many earlier statuses stay visible above the current one
+const LOG_SIZE = 2;
+// Opacity of each earlier status, the latest first: half as visible each step back
+const PAST_OPACITY = [0.6, 0.3];
+// Riding within this distance of a popular place counts as passing it
+const PASSING_RADIUS_M = 150;
+
+type LogEntry = { id: string; parts: Rich; kind: 'status' | 'place' };
+const plain = (parts: Rich) => parts.map((p) => (typeof p === 'string' ? p : p.bold)).join('');
+
+// The log of the trip being tracked, kept outside the panel so going back from the map and
+// opening the journey again picks it up where it was. One trip at a time, by its start time.
+type SavedLog = {
+  trip: number;
+  history: LogEntry[];
+  shown: { key: string; parts: Rich };
+  passed: ReadonlySet<string>;
+};
+let savedLog: SavedLog | null = null;
+
+/**
+ * The status log under the map: when the rider's step changes (walking to the stop, riding, get
+ * off soon...), the previous status moves up into a short history. Distance updates within a
+ * step don't count. Popular places passed while riding are added too, if that's turned on.
+ */
+function useStatusLog(activeTrip: ActiveTrip, current: Now) {
+  const showPassing = usePassingPlacesShownFor(activeTrip.startedAt);
+  const popular = usePopularPlaces();
+  const currentKey = `${current.index}-${current.soon}`;
+  const [saved] = useState(() => (savedLog?.trip === activeTrip.startedAt ? savedLog : null));
+  const [history, setHistory] = useState<LogEntry[]>(saved?.history ?? []);
+  const [shown, setShown] = useState(saved?.shown ?? { key: currentKey, parts: current.title });
+  const [passed, setPassed] = useState<ReadonlySet<string>>(saved?.passed ?? new Set());
+  useEffect(() => {
+    savedLog = { trip: activeTrip.startedAt, history, shown, passed };
+  }, [activeTrip.startedAt, history, shown, passed]);
+
+  // Each place passed goes into the trip's data too, once
+  const logged = useRef(passed);
+  const logPassed = useEffectEvent(() => {
+    for (const placeId of passed) {
+      if (logged.current.has(placeId)) continue;
+      const place = popular?.find((p) => p.placeId === placeId);
+      logTripEvent(activeTrip.id, {
+        kind: 'passed_place',
+        legIndex: activeTrip.progress.legIndex,
+        routeCode: activeTrip.trip.legs[activeTrip.progress.legIndex]?.routeCode,
+        placeId,
+        placeName: place?.name,
+        position: activeTrip.position,
+        speed: activeTrip.speed,
+      });
+    }
+    logged.current = passed;
+  });
+  useEffect(() => logPassed(), [passed]);
+
+  // A new step: the last shown version of the previous status moves into the history.
+  // Within a step, keep the latest text (distances) for when it does move up.
+  if (shown.key !== currentKey) {
+    const moved: LogEntry = {
+      id: `step-${shown.key}`, // steps only move forward, so each key occurs once
+      parts: shown.parts,
+      kind: 'status',
+    };
+    setHistory((h) => [...h, moved].slice(-LOG_SIZE));
+    setShown({ key: currentKey, parts: current.title });
+  } else if (plain(shown.parts) !== plain(current.title)) {
+    setShown({ key: currentKey, parts: current.title });
+  }
+
+  // Passing a popular place while riding (once per place per trip)
+  const position = activeTrip.position;
+  if (showPassing && position && activeTrip.progress.remaining !== null && popular) {
+    const near = popular.find(
+      (p) => !passed.has(p.placeId) && metersBetween(position, p.location) <= PASSING_RADIUS_M,
+    );
+    if (near) {
+      setPassed(new Set([...passed, near.placeId]));
+      const entry: LogEntry = {
+        id: `place-${near.placeId}`,
+        parts: ['Passing ', b(near.name)],
+        kind: 'place',
+      };
+      setHistory((h) => [...h, entry].slice(-LOG_SIZE));
+    }
+  }
+
+  // Hidden (for this trip or for good): place entries leave the log too
+  const visible = showPassing ? history : history.filter((e) => e.kind !== 'place');
+  return { history: visible, currentKey, hasPlaces: visible.some((e) => e.kind === 'place') };
+}
+
 /**
  * While a trip is tracked: just the instruction for right now, on a dark fade at the bottom of
  * the map (key words in bold, red when it's time to get off). Tapping it pops up a sheet with the jeeps, every step,
@@ -188,11 +328,14 @@ export default function TripProgressBar({
   activeTrip,
   onEnd,
   controls,
+  onRecenter,
 }: Readonly<{
   activeTrip: ActiveTrip;
   onEnd: () => void;
   /** Map buttons (save, locate) to stack right above the details arrow, in one column. */
   controls?: ReactNode;
+  /** Present while the map isn't following the rider: shows a "Re-center" button. */
+  onRecenter?: () => void;
 }>) {
   const [open, setOpen] = useState(false);
 
@@ -200,8 +343,15 @@ export default function TripProgressBar({
   const insets = useSafeAreaInsets();
   const { trip } = activeTrip;
   const current = now(activeTrip);
+  const log = useStatusLog(activeTrip, current);
   const elapsed = useElapsedMinutes(activeTrip.startedAt);
+  const showPassingPlaces = usePassingPlacesShownFor(activeTrip.startedAt);
+  const popular = usePopularPlaces();
+  const landmarks = landmarksByLeg(trip, popular);
   const steps = allSteps(activeTrip);
+  // From the GPS, so free; hidden until a fix has a speed
+  const speedKmh =
+    activeTrip.position && activeTrip.speed != null ? Math.round(activeTrip.speed * 3.6) : null;
 
   return (
     <>
@@ -219,23 +369,104 @@ export default function TripProgressBar({
       >
         <View style={styles.row} pointerEvents="box-none">
           <View style={styles.instructionSlot} pointerEvents="box-none">
-            <Pressable
-              onPress={openDetails}
-              style={styles.instructionButton}
-              accessibilityRole="button"
-              accessibilityHint="Shows the trip details"
+            {onRecenter && (
+              <Animated.View
+                entering={FadeIn.duration(160)}
+                exiting={FadeOut.duration(120)}
+                style={styles.recenterSlot}
+              >
+                <Pressable
+                  onPress={onRecenter}
+                  style={({ pressed }) => [styles.recenter, pressed && styles.roundPressed]}
+                  accessibilityRole="button"
+                  accessibilityHint="Follows you again, facing the way ahead"
+                >
+                  <Ionicons name="navigate" size={16} color={colors.text} />
+                  <Text style={styles.recenterText}>Re-center</Text>
+                </Pressable>
+              </Animated.View>
+            )}
+
+            {/* Options for the place pop-ups, above them */}
+            {log.hasPlaces && (
+              <Pressable
+                onPress={() => placePopupOptions(activeTrip.startedAt)}
+                style={({ pressed }) => [styles.dots, pressed && styles.dotsPressed]}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel="Place pop-up options"
+              >
+                <Ionicons name="ellipsis-horizontal" size={16} color={colors.textOnDark} />
+              </Pressable>
+            )}
+
+            {/* Earlier statuses, newest last: smaller, and fainter the older they are. The fade is
+                on an inner view: the entering animation ends at full opacity on its own view. */}
+            {log.history.map((entry, i) => (
+              <Animated.View
+                key={entry.id}
+                entering={FadeInDown.duration(220)}
+                exiting={FadeOut.duration(160)}
+                layout={LinearTransition.duration(220)}
+                style={styles.logEntry}
+                pointerEvents="none"
+              >
+                <View
+                  style={[styles.logRow, { opacity: PAST_OPACITY[log.history.length - 1 - i] }]}
+                >
+                  {entry.kind === 'place' && (
+                    <Ionicons name="storefront-outline" size={12} color={colors.textOnDark} />
+                  )}
+                  <RichText parts={entry.parts} soon={false} small />
+                </View>
+              </Animated.View>
+            ))}
+
+            <Animated.View
+              key={log.currentKey}
+              entering={FadeInDown.duration(220)}
+              layout={LinearTransition.duration(220)}
             >
-              <RichText parts={current.title} soon={current.soon} />
-              {/* Live once GPS has a fix; the instruction and distances update with it */}
-              <View style={styles.status}>
-                <LiveDot live={!!activeTrip.position} />
-                <Text style={styles.elapsed}>
-                  {activeTrip.position ? 'Live' : 'Locating…'} · {elapsedLabel(elapsed)}
-                </Text>
-              </View>
-            </Pressable>
+              <Pressable
+                onPress={openDetails}
+                style={styles.instructionButton}
+                accessibilityRole="button"
+                accessibilityHint="Shows the trip details"
+              >
+                <RichText parts={current.title} soon={current.soon} />
+                {/* Live once GPS has a fix; the instruction and distances update with it */}
+                <View style={styles.status}>
+                  <LiveDot live={!!activeTrip.position} />
+                  <Text style={styles.elapsed}>
+                    {activeTrip.position ? 'Live' : 'Locating…'} · {elapsedLabel(elapsed)}
+                  </Text>
+                </View>
+                {/* Riding: how far along this jeep's ride you are, in its line color */}
+                {current.done !== null && (
+                  <View style={styles.rideTrack}>
+                    <View
+                      style={[
+                        styles.fill,
+                        { width: `${current.done * 100}%`, backgroundColor: current.color },
+                      ]}
+                    />
+                  </View>
+                )}
+              </Pressable>
+            </Animated.View>
           </View>
           <View style={styles.column} pointerEvents="box-none">
+            {/* Current speed, like a car's navigation, at the top of the map buttons */}
+            {speedKmh !== null && (
+              <View
+                style={styles.speed}
+                accessible
+                accessibilityLabel={`${speedKmh} kilometers per hour`}
+              >
+                <Text style={styles.speedValue}>{speedKmh}</Text>
+                <Text style={styles.speedUnit}>km/h</Text>
+              </View>
+            )}
             {controls}
             <Pressable
               onPress={openDetails}
@@ -321,6 +552,58 @@ export default function TripProgressBar({
                       )}
                     </View>
                     <Text style={type.caption}>{step.detail}</Text>
+                    {/* The popular places this ride passes, in order; ticked once passed */}
+                    {step.kind === 'ride' &&
+                      showPassingPlaces &&
+                      (landmarks[(i - 1) / 2] ?? []).map((place) => {
+                        const legIndex = (i - 1) / 2;
+                        const passed =
+                          legIndex < activeTrip.progress.legIndex ||
+                          (legIndex === activeTrip.progress.legIndex &&
+                            activeTrip.progress.along !== null &&
+                            activeTrip.progress.along >= place.along);
+                        // Riding this jeep and not there yet: how far to go
+                        const toGo =
+                          !passed &&
+                          legIndex === activeTrip.progress.legIndex &&
+                          activeTrip.progress.along !== null
+                            ? place.along - activeTrip.progress.along
+                            : null;
+                        return (
+                          <View key={place.placeId}>
+                            <View style={styles.landmark}>
+                              <Ionicons
+                                name={passed ? 'checkmark' : 'storefront-outline'}
+                                size={12}
+                                color={passed ? colors.success : colors.textSecondary}
+                              />
+                              <Text
+                                style={[styles.landmarkText, passed && styles.stepDone]}
+                                numberOfLines={1}
+                              >
+                                Passes {place.name}
+                              </Text>
+                              {toGo !== null && (
+                                <Text style={styles.landmarkDistance}>{formatDistance(toGo)}</Text>
+                              )}
+                            </View>
+                            {/* How close: from boarding this jeep to the place */}
+                            {toGo !== null && (
+                              <View style={styles.landmarkTrack}>
+                                <View
+                                  style={[
+                                    styles.fill,
+                                    {
+                                      width: `${Math.min(100, (100 * (place.along - toGo)) / (place.along || 1))}%`,
+                                      backgroundColor: step.color,
+                                    },
+                                  ]}
+                                />
+                              </View>
+                            )}
+                          </View>
+                        );
+                      })}
                     {state === 'now' && current.done !== null && (
                       <View style={styles.track}>
                         <View
@@ -357,6 +640,9 @@ export default function TripProgressBar({
   );
 }
 
+// Space above and below the current status
+const STATUS_GAP = spacing.sm;
+
 const styles = StyleSheet.create({
   // Bleeds past the bottom stack's side margins and bottom offset to the screen edges
   fade: {
@@ -385,7 +671,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xxs,
-    marginTop: spacing.xxs,
+    marginTop: STATUS_GAP,
     marginLeft: -4, // the dot's box is wider than the dot: line the dot up with the text above
   },
   elapsed: {
@@ -405,15 +691,118 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   column: {
+    alignItems: 'center',
     gap: spacing.sm,
   },
   roundPressed: {
     backgroundColor: colors.surface,
   },
+  dots: {
+    alignSelf: 'flex-end',
+    width: 32,
+    height: 24,
+    marginBottom: spacing.xs,
+    borderRadius: radius.pill,
+    backgroundColor: 'rgba(255, 255, 255, 0.14)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dotsPressed: {
+    backgroundColor: 'rgba(255, 255, 255, 0.24)',
+  },
+  // On the dark fade: a light track, the ride's color filling it
+  rideTrack: {
+    height: 4,
+    width: 220,
+    maxWidth: '100%',
+    marginTop: spacing.sm,
+    borderRadius: radius.pill,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    overflow: 'hidden',
+  },
+  // The status log: earlier statuses above the current one, small and faded, every line the
+  // same gap apart (down to the Live line)
+  logEntry: {
+    marginBottom: STATUS_GAP,
+  },
+  logRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  logText: {
+    fontFamily: fonts.regular,
+    fontSize: 14,
+    lineHeight: 19,
+    color: colors.textOnDark,
+  },
+  recenterSlot: {
+    marginBottom: spacing.md,
+  },
+  speed: {
+    width: 52,
+    height: 52,
+    borderRadius: radius.pill,
+    backgroundColor: colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...elevation.floating,
+  },
+  speedValue: {
+    fontFamily: fonts.bold,
+    fontSize: 18,
+    lineHeight: 20,
+    color: colors.text,
+    fontVariant: ['tabular-nums'],
+  },
+  speedUnit: {
+    ...type.caption,
+    fontSize: 10,
+    lineHeight: 12,
+    color: colors.textSecondary,
+  },
+  recenter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    height: 36,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.pill,
+    backgroundColor: colors.background,
+    ...elevation.floating,
+  },
+  recenterText: {
+    ...type.bodyMedium,
+  },
+  landmark: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.xxs,
+  },
+  landmarkDistance: {
+    ...type.caption,
+    fontSize: 12,
+    marginLeft: 'auto',
+    color: colors.textSecondary,
+  },
+  landmarkTrack: {
+    height: 3,
+    marginTop: spacing.xs,
+    marginLeft: 12 + spacing.xs,
+    borderRadius: radius.pill,
+    backgroundColor: colors.border,
+    overflow: 'hidden',
+  },
+  landmarkText: {
+    ...type.caption,
+    flexShrink: 1,
+    color: colors.textSecondary,
+  },
   instruction: {
     fontFamily: fonts.regular,
-    fontSize: 19,
-    lineHeight: 25,
+    fontSize: 23,
+    lineHeight: 29,
     color: colors.textOnDark,
   },
   bold: {

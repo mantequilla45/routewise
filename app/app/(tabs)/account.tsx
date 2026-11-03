@@ -1,5 +1,6 @@
 import AccountInfoSection from '@/components/Account/AccountInfoSection';
 import ProfileHeader from '@/components/Account/ProfileHeader';
+import SettingsButton from '@/components/Account/SettingsButton';
 import SignedOutView from '@/components/Account/SignedOutView';
 import { useAuth } from '@/context/auth';
 import { colors, spacing, ui } from '@/theme';
@@ -29,16 +30,19 @@ export default function Account() {
 
   if (user) {
     return (
-      <ScrollView
-        style={ui.screen}
-        contentContainerStyle={{
-          paddingTop: insets.top + spacing.xxl,
-          paddingBottom: spacing.xxl,
-        }}
-      >
-        <ProfileHeader user={user} />
-        <AccountInfoSection onSignOut={handleSignOut} />
-      </ScrollView>
+      <View style={ui.screen}>
+        <SettingsButton />
+        <ScrollView
+          style={ui.screen}
+          contentContainerStyle={{
+            paddingTop: insets.top + spacing.xxl,
+            paddingBottom: spacing.xxl,
+          }}
+        >
+          <ProfileHeader user={user} />
+          <AccountInfoSection onSignOut={handleSignOut} />
+        </ScrollView>
+      </View>
     );
   }
 

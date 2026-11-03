@@ -1,4 +1,5 @@
 import LoginModal from '@/components/LoginModal';
+import SettingsButton from '@/components/Account/SettingsButton';
 import { LOGO_ICON } from '@/constants';
 import { colors, fonts, radius, spacing, type, ui } from '@/theme';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,6 +22,7 @@ export default function SignedOutView() {
 
   return (
     <View style={[ui.screen, styles.container, { paddingTop: insets.top + spacing.xxl }]}>
+      <SettingsButton />
       <Image source={LOGO_ICON} style={styles.logo} contentFit="contain" />
 
       <View style={styles.hero}>
